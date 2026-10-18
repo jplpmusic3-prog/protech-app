@@ -1051,14 +1051,16 @@
       btn.disabled = true;
 
       try {
+        console.log("Intentando conectar con Supabase para:", email);
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
 
+        console.log("Login exitoso, cargando perfil...");
         dispararToast("Sesión iniciada con éxito", "success");
         await cargarPerfilYMostrarDashboard(data.user);
       } catch (err) {
-        dispararToast(err.message || "Credenciales incorrectas", "error");
-      } finally {
+        console.error("Error en login:", err);
+        alert("Error al iniciar sesión: " + (err.message || "Credenciales incorrectas"));
         btn.innerHTML = origText;
         btn.disabled = false;
       }
