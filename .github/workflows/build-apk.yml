@@ -25,6 +25,9 @@ jobs:
       - name: Instalar dependencias web
         run: npm install
 
+      - name: Compilar proyecto web
+        run: npm run build
+
       - name: Sincronizar Capacitor
         run: npx cap sync android
 
