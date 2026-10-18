@@ -12,7 +12,6 @@ android {
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
-             // Archivos ignorados por defecto en activos web de Capacitor
              ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
@@ -22,6 +21,18 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+
+    packaging {
+        resources.excludes += "META-INF/DEPENDENCIES"
+        resources.excludes += "META-INF/LICENSE"
+        resources.excludes += "META-INF/LICENSE.txt"
+        resources.excludes += "META-INF/license.txt"
+        resources.excludes += "META-INF/NOTICE"
+        resources.excludes += "META-INF/NOTICE.txt"
+        resources.excludes += "META-INF/notice.txt"
+        resources.excludes += "META-INF/ASL2.0"
+        resources.excludes += "META-INF/*.kotlin_module"
     }
 }
 
@@ -44,12 +55,3 @@ dependencies {
 }
 
 apply from: 'capacitor.build.gradle'
-
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
-}
