@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProTech Security — Cyber-Tech Operations OS</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Moderna, Limpia y Sobria -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    body.page-exiting {
+      animation: fadeOutPage 0.25s ease-in forwards !important;
+    }
+
+    @keyframes fadeOutPage {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-6px); }
+    }
+
+    /* ========================================================
+        VIDEO DE FONDO NÍTIDO
+        ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    /* ========================================================
+        TARJETAS Y CRISTAL CON RELIEVE CÓNCAVO (Minimalista)
+        ======================================================== */
+    .tool-card, .cyber-glass-card {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    .tool-card:hover, .cyber-glass-card:hover {
+      transform: translateY(-3px);
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        inset 5px 5px 12px rgba(0, 0, 0, 0.4), 
+        inset -5px -5px 12px rgba(255, 255, 255, 0.12),
+        0 25px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .skeleton-shimmer {
+      background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      color: transparent;
+    }
+
+    /* Animación fluida para colapsar las áreas del menú lateral */
+    .collapse-content {
+      max-height: 400px;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out;
+      opacity: 1;
+    }
+    .collapse-content.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
+    .collapse-icon {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .collapsed-btn .collapse-icon {
+      transform: rotate(-90deg);
+    }
+    
+    .workflow-pill { cursor: pointer; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: inset 4px 4px 10px rgba(0, 0, 0, 0.3), inset -4px -4px 10px rgba(255, 255, 255, 0.08), 0 10px 25px rgba(0, 0, 0, 0.25); border-radius: 1.25rem; }
+    .workflow-pill:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.11); }
+    .workflow-pill.active { background: rgba(37, 99, 235, 0.35); border-color: rgba(59, 130, 246, 0.6); box-shadow: inset 4px 4px 10px rgba(0, 0, 0, 0.4), inset -4px -4px 10px rgba(255, 255, 255, 0.15), 0 10px 25px rgba(37,99,235,0.3); }
+
+    .cyber-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    .cyber-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen relative flex flex-col md:flex-row pb-20 md:pb-0 text-white antialiased overflow-x-hidden">
+
+  <!-- VIDEO DE FONDO NÍTIDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <!-- VISTA 1: ACCESO CORPORATIVO (PANTALLA LOGIN) -->
+  <div id="seccion_login" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+      <div class="cyber-glass-card rounded-3xl p-8 space-y-6 shadow-2xl relative">
+        <i class="fa-solid fa-shield-halved absolute -right-6 -bottom-6 text-[130px] opacity-5 text-white pointer-events-none transform -rotate-12"></i>
+
+        <div class="text-center space-y-3 relative z-10">
+          <div class="flex justify-center">
+            <img src="logo.png" alt="ProTech Security" class="h-16 w-auto object-contain drop-shadow-md" onerror="this.style.display='none'; document.getElementById('login_logo_fallback').style.display='inline-flex';">
+            <div id="login_logo_fallback" style="display:none;" class="p-3.5 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/25">
+              <i class="fa-solid fa-shield-halved text-2xl"></i>
+            </div>
+          </div>
+          <div>
+            <h2 class="font-tech-head text-xl font-black text-white tracking-tight">Acceso Corporativo</h2>
+            <p class="text-xs text-white/60 mt-0.5">Ingresa tus credenciales autorizadas de ProTech Security</p>
+          </div>
+        </div>
+
+        <form id="form_login" onsubmit="ejecutarLogin(event)" class="space-y-4 text-xs relative z-10">
+          <div>
+            <label class="block text-white/80 font-semibold mb-1.5 flex items-center gap-1.5">
+              <i class="fa-solid fa-envelope text-white/60"></i> Correo Electrónico Corporativo
+            </label>
+            <input type="email" id="login_email" required placeholder="tu.nombre@protechsecurityec.com" class="cyber-input w-full text-xs rounded-xl px-3.5 py-2.5 outline-none font-medium">
+          </div>
+
+          <div>
+            <label class="block text-white/80 font-semibold mb-1.5 flex items-center gap-1.5">
+              <i class="fa-solid fa-key text-white/60"></i> Contraseña
+            </label>
+            <input type="password" id="login_password" required placeholder="••••••••" class="cyber-input w-full text-xs rounded-xl px-3.5 py-2.5 outline-none font-medium">
+          </div>
+
+          <button type="submit" id="btn_login_submit" class="w-full btn-cyber-laser bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/25 transition flex items-center justify-center gap-2 text-xs mt-2">
+            <span>Ingresar a la Plataforma</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </form>
+
+        <div class="bg-white/5 border border-white/10 p-3.5 rounded-2xl text-[11px] text-white/70 space-y-1 relative z-10 backdrop-blur-md">
+          <div class="flex items-center gap-1.5 font-bold text-white">
+            <i class="fa-solid fa-lock text-blue-400 text-[10px]"></i> Acceso Restringido
+          </div>
+          <p class="leading-relaxed">El registro de personal se gestiona internamente por Gerencia. Para solicitar credenciales, contacta con Administración.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISTA 2: DASHBOARD MASTER (SIDEBAR + CONTENIDO) -->
+  <div id="seccion_dashboard" class="hidden flex w-full min-h-screen relative z-10">
+
+    <!-- OVERLAY MÓVIL PARA CERRAR EL MENÚ -->
+    <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+    <!-- 1. SIDEBAR LATERAL IZQUIERDO -->
+    <aside id="sidebar_menu" class="fixed md:sticky top-0 left-0 z-50 h-[100dvh] w-72 flex-col justify-between cyber-glass-card bg-slate-950/80 md:bg-slate-950/40 border-y-0 border-l-0 rounded-none flex-shrink-0 p-5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out flex">
+      <div class="space-y-4 relative z-10 overflow-y-auto max-h-[calc(100vh-100px)] pr-1 hide-scrollbar">
+        
+        <!-- Logotipo & Status Core -->
+        <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+          <div class="flex items-center gap-3.5">
+            <div class="relative">
+              <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain drop-shadow" onerror="this.style.display='none'; document.getElementById('logo_nextgen').style.display='flex';">
+              <div id="logo_nextgen" style="display:none;" class="h-10 w-10 rounded-2xl gradient-cyber-brand text-white font-tech-head text-base items-center justify-center shadow-lg shadow-blue-500/25 font-black">PS</div>
+              <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-950"></span>
+              </span>
+            </div>
+            <div>
+              <h1 class="font-tech-head font-extrabold text-base text-white leading-none">ProTech</h1>
+              <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-1">Cyber-OS • v4.2</p>
+            </div>
+          </div>
+          <button onclick="toggleMobileMenu()" class="md:hidden text-white/70 hover:text-rose-400 transition p-2 bg-white/10 rounded-lg">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <!-- MENÚ NAVEGACIÓN COLAPSABLE -->
+        <nav class="space-y-3 text-xs font-semibold">
+          
+          <!-- SECCIÓN: GENERAL -->
+          <div>
+            <a href="index.html" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl bg-blue-600/30 border border-blue-400/40 text-white shadow-sm relative overflow-hidden group transition">
+              <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"></div>
+              <i class="fa-solid fa-layer-group w-4 text-center text-sm"></i>
+              <span class="font-bold">Centro de Operaciones</span>
+            </a>
+          </div>
+
+          <!-- ÁREA OPERATIVA (COLAPSABLE) -->
+          <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+            <div onclick="toggleArea('sec_operativa', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+            </div>
+            <div id="sec_operativa" class="collapse-content space-y-1 mt-2">
+              <a href="agenda_tickets.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs shadow-sm border border-blue-400/30">
+                  <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <span>Agenda & Tickets</span>
+              </a>
+              
+              <!-- TICKET HUMANO / DERIVACIONES DEL BOT -->
+              <a href="bandeja_tickets_humanos.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs shadow-sm border border-amber-400/30">
+                  <i class="fa-solid fa-headset"></i>
+                </div>
+                <span>Tickets Humanos (Bot)</span>
+              </a>
+
+              <a href="inspecciones_index.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs shadow-sm border border-blue-400/30">
+                  <i class="fa-solid fa-clipboard-list"></i>
+                </div>
+                <span>Inspección</span>
+              </a>
+              <a href="orden_trabajo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs shadow-sm border border-amber-400/30">
+                  <i class="fa-solid fa-screwdriver-wrench"></i>
+                </div>
+                <span>Órdenes de Trabajo</span>
+              </a>
+              <a href="clientes_tech.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs shadow-sm border border-cyan-400/30">
+                  <i class="fa-solid fa-address-book"></i>
+                </div>
+                <span>Ficha Técnica / Clientes</span>
+              </a>
+              <a href="acta_entrega.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center text-xs shadow-sm border border-teal-400/30">
+                  <i class="fa-solid fa-file-signature"></i>
+                </div>
+                <span>Acta de Entrega</span>
+              </a>
+              <a href="bandeja_operativa.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center text-xs shadow-sm border border-orange-400/30">
+                  <i class="fa-solid fa-list-check"></i>
+                </div>
+                <span>Monitor General OTs</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- ÁREA COMERCIAL (COLAPSABLE) -->
+          <div id="menu_area_comercial" class="hidden cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+            <div onclick="toggleArea('sec_comercial', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-purple-300 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-store"></i> Área Comercial</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+            </div>
+            <div id="sec_comercial" class="collapse-content space-y-1 mt-2">
+              <a href="proforma.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs shadow-sm border border-purple-400/30">
+                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+                <span>Generador de Proformas</span>
+              </a>
+              <a href="catalogo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs shadow-sm border border-indigo-400/30">
+                  <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+                <span>Catálogo de Precios</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- ÁREA FINANCIERA (COLAPSABLE) -->
+          <div id="menu_area_financiera" class="hidden cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+            <div onclick="toggleArea('sec_financiera', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-emerald-300 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-vault"></i> Área Financiera</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+            </div>
+            <div id="sec_financiera" class="collapse-content space-y-1 mt-2">
+              <a href="finanzas.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs shadow-sm border border-emerald-400/30">
+                  <i class="fa-solid fa-cash-register"></i>
+                </div>
+                <span>Caja & Cartera</span>
+              </a>
+              <a href="bandeja.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center text-xs shadow-sm border border-teal-400/30">
+                  <i class="fa-solid fa-table-list"></i>
+                </div>
+                <span>Bandeja Financiera</span>
+              </a>
+              <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs shadow-sm border border-blue-400/30">
+                  <i class="fa-solid fa-chart-pie"></i>
+                </div>
+                <span>Dashboard Analítico</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- SEGURIDAD Y ACCESO (ADMIN COLAPSABLE) -->
+          <div id="menu_item_usuarios" class="hidden cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+            <div onclick="toggleArea('sec_admin', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-rose-300 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-users-gear"></i> Administración</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+            </div>
+            <div id="sec_admin" class="collapse-content space-y-1 mt-2">
+              <a href="usuarios.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+                <div class="h-6 w-6 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs shadow-sm border border-rose-400/30">
+                  <i class="fa-solid fa-users-gear"></i>
+                </div>
+                <span>Personal & Roles (RBAC)</span>
+              </a>
+            </div>
+          </div>
+
+        </nav>
+      </div>
+
+      <!-- Perfil Táctico con Vidrio Glaseado -->
+      <div class="p-3.5 rounded-2xl cyber-glass-card border border-white/20 flex items-center justify-between shadow-sm relative z-10 mt-3">
+        <div class="flex items-center gap-3 overflow-hidden">
+          <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-tech-head font-bold text-xs shadow-md">
+            JP
+          </div>
+          <div class="truncate">
+            <p id="user_display_name" class="text-xs font-bold text-white truncate">Juan Pablo Luna</p>
+            <p id="user_role_badge" class="font-tech-mono text-[9px] text-blue-300 uppercase font-bold">Administrador</p>
+          </div>
+        </div>
+        <button onclick="cerrarSesion()" class="text-white/70 hover:text-rose-400 p-2 rounded-lg hover:bg-white/10 transition" title="Desconectar">
+          <i class="fa-solid fa-power-off text-xs"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- 2. CONTENIDO PRINCIPAL -->
+    <div class="flex-1 flex flex-col min-w-0">
+
+      <!-- CABECERA FLOTANTE TÁCTICA -->
+      <header class="cyber-glass-card border-x-0 border-t-0 rounded-none sticky top-0 z-40 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between bg-slate-950/30 backdrop-blur-md" style="overflow: visible !important;">
+        <div class="flex items-center gap-3 md:gap-4">
+          
+          <!-- BOTÓN HAMBURGUESA (MÓVIL) -->
+          <button onclick="toggleMobileMenu()" class="md:hidden text-white hover:text-blue-400 transition p-1.5 bg-white/10 border border-white/20 rounded-lg shadow-sm">
+            <i class="fa-solid fa-bars text-lg"></i>
+          </button>
+          
+          <div class="flex items-center gap-2 md:hidden">
+            <img src="logo.png" alt="ProTech" class="h-6 w-auto object-contain">
+            <span class="font-tech-head font-extrabold text-sm text-white hidden sm:inline">ProTech</span>
+          </div>
+
+          <!-- BUSCADOR GLOBAL (OMNIBOX) -->
+          <div class="hidden lg:flex items-center relative group">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-white/50 group-hover:text-blue-400 transition z-10"></i>
+            <input type="text" id="input_buscador_global" oninput="ejecutarBusquedaGlobal(this.value)" placeholder="Buscar clientes, OTs, proformas..." class="cyber-input pl-10 pr-14 py-2.5 rounded-xl w-80 text-xs font-medium placeholder-white/50 shadow-sm border border-white/20 outline-none relative z-10">
+            <div class="absolute right-2.5 text-[9px] font-tech-mono text-white/60 border border-white/20 rounded-md px-1.5 py-0.5 bg-white/10 flex items-center gap-1 shadow-sm pointer-events-none z-10">
+              <i class="fa-brands fa-windows text-[8px]"></i> K
+            </div>
+
+            <!-- CONTENEDOR FLOTANTE DE RESULTADOS DE BÚSQUEDA -->
+            <div id="resultados_busqueda_flotante" class="absolute top-[110%] left-0 right-0 bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 max-h-80 overflow-y-auto hidden z-50 p-2 space-y-1 text-white">
+              <!-- Los resultados se inyectan aquí -->
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTONES DERECHA HOMOLOGADOS -->
+        <div class="flex items-center gap-2 md:gap-3 flex-shrink-0">
+          <!-- BOTÓN DE ACTIVAR NOTIFICACIONES PUSH NATIVAS -->
+          <button onclick="activarNotificacionesPush()" class="cyber-glass-card px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-white text-xs font-semibold flex items-center gap-2 shadow-sm border border-blue-400/40 bg-blue-600/20 hover:bg-blue-600/30 transition">
+            <i class="fa-solid fa-bell text-blue-400 text-sm md:text-xs"></i> 
+            <span class="hidden md:inline">Activar Alertas</span>
+          </button>
+          
+          <button onclick="dispararToast('Sincronización con Supabase exitosa.', 'success')" class="cyber-glass-card px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-white text-xs font-semibold flex items-center gap-2 shadow-sm border border-white/20 transition">
+            <i class="fa-solid fa-bolt text-blue-400 text-sm md:text-xs"></i> 
+            <span class="hidden md:inline">Sincronizar</span>
+          </button>
+          <a href="inspecciones_index.html" class="cyber-glass-card px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-white text-xs font-bold flex items-center gap-2 shadow-sm border border-white/20 transition whitespace-nowrap">
+            <i class="fa-solid fa-plus text-blue-400 text-[12px] md:text-[10px]"></i>
+            <span class="hidden md:inline">Nuevo Relevamiento</span>
+            <span class="inline md:hidden">Nuevo</span>
+          </a>
+        </div>
+      </header>
+
+      <main class="p-4 md:p-8 space-y-7 max-w-7xl w-full mx-auto relative z-10 flex-grow">
+
+        <!-- WORKFLOW PIPELINE INTERACTIVO -->
+        <section class="space-y-4">
+          <div class="flex items-center justify-between px-1">
+            <div class="flex items-center gap-2.5">
+              <span class="h-2 w-2 rounded-full bg-blue-400"></span>
+              <span class="font-tech-mono text-[11px] font-bold uppercase tracking-wider text-white/70">Filtro de Estado: Flujo Dinámico</span>
+            </div>
+            <span id="label_fase_activa" class="font-tech-mono text-[11px] font-bold text-blue-300 bg-blue-500/20 border border-blue-400/30 px-2.5 py-1 rounded-full shadow-sm transition-all duration-300">
+              Fase Activa: TERRENO
+            </span>
+
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
+            <div id="pill_inspeccion" onclick="filtrarPipeline('inspeccion', this)" class="workflow-pill opacity-60 p-4 rounded-2xl flex flex-col justify-between transition-all duration-300">
+              <span class="font-tech-mono text-[10px] font-bold text-white/50">01 / INSPECCIÓN</span>
+              <span class="font-tech-head font-bold text-xs text-white mt-2">Relevamiento</span>
+              <span class="font-tech-mono text-[10px] text-emerald-400 font-bold mt-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-clipboard-list text-xs"></i> Por Cotizar
+              </span>
+
+            </div>
+            <div id="pill_comercial" onclick="filtrarPipeline('comercial', this)" class="workflow-pill opacity-60 p-4 rounded-2xl flex flex-col justify-between transition-all duration-300">
+              <span class="font-tech-mono text-[10px] font-bold text-white/50">02 / COMERCIAL</span>
+              <span class="font-tech-head font-bold text-xs text-white mt-2">Proformas</span>
+              <span class="font-tech-mono text-[10px] text-emerald-400 font-bold mt-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-file-invoice-dollar text-xs"></i> Enviadas
+              </span>
+
+            </div>
+            <div id="pill_finanzas" onclick="filtrarPipeline('finanzas', this)" class="workflow-pill opacity-60 p-4 rounded-2xl flex flex-col justify-between transition-all duration-300">
+              <span class="font-tech-mono text-[10px] font-bold text-white/50">03 / FINANZAS</span>
+              <span class="font-tech-head font-bold text-xs text-white mt-2">Caja & Cobros</span>
+              <span class="font-tech-mono text-[10px] text-indigo-300 font-bold mt-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-vault text-xs"></i> Pendientes
+              </span>
+
+            </div>
+            <div id="pill_terreno" onclick="filtrarPipeline('terreno', this)" class="workflow-pill active p-4 rounded-2xl flex flex-col justify-between transition-all duration-300">
+              <span class="font-tech-mono text-[10px] font-bold text-white/50">04 / TERRENO</span>
+              <span class="font-tech-head font-bold text-xs text-white mt-2">Ejecución de OT</span>
+              <span class="font-tech-mono text-[10px] text-blue-400 font-bold mt-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-screwdriver-wrench text-xs"></i> En Proceso
+              </span>
+
+            </div>
+            <div id="pill_entrega" onclick="filtrarPipeline('entrega', this)" class="workflow-pill opacity-60 p-4 rounded-2xl flex flex-col justify-between transition-all duration-300 col-span-2 sm:col-span-1">
+              <span class="font-tech-mono text-[10px] font-bold text-white/50">05 / ENTREGA</span>
+              <span class="font-tech-head font-bold text-xs text-white mt-2">Acta & Cierre</span>
+              <span class="font-tech-mono text-[10px] text-emerald-400 font-bold mt-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-check-double text-xs"></i> Finalizadas
+              </span>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- KPIS TÁCTICOS -->
+        <section id="panel_metricas_admin" class="grid grid-cols-2 lg:grid-cols-5 gap-4 hidden">
+          <svg style="width:0;height:0;position:absolute;" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="gradTicket" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.2"></stop>
+                <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"></stop>
+              </linearGradient>
+            </defs>
+          </svg>
+
+          <!-- KPI: TICKETS PENDIENTES -->
+          <div class="cyber-glass-card rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden">
+            <svg class="absolute bottom-0 inset-x-0 w-full h-16 pointer-events-none" viewBox="0 0 100 30" preserveAspectRatio="none">
+              <path class="sparkline-fill" d="M0 25 Q 25 10, 50 18 T 100 5 L 100 30 L 0 30 Z" fill="url(#gradTicket)"></path>
+            </svg>
+            <span class="font-tech-mono text-[10px] uppercase font-bold text-white/70 tracking-wider relative z-10">Tickets Pendientes</span>
+            <div class="mt-4 relative z-10">
+              <div class="flex items-baseline justify-between">
+                <span id="kpi-tickets-count" class="font-tech-head font-black text-3xl text-white font-tech-mono skeleton-shimmer px-2 py-0.5 rounded text-transparent">0</span>
+                <span class="font-tech-mono text-[10px] font-bold text-white/80 bg-white/10 px-2.5 py-1 rounded-xl border border-white/20 shadow-sm">Por Atender</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden">
+            <svg class="absolute bottom-0 inset-x-0 w-full h-16 pointer-events-none" viewBox="0 0 100 30" preserveAspectRatio="none">
+              <path class="sparkline-fill" d="M0 25 Q 25 10, 50 18 T 100 5 L 100 30 L 0 30 Z" fill="url(#gradTicket)"></path>
+            </svg>
+            <span class="font-tech-mono text-[10px] uppercase font-bold text-white/70 tracking-wider relative z-10">Proformas Emitidas</span>
+            <div class="mt-4 relative z-10">
+              <div class="flex items-baseline justify-between">
+                <span id="kpi-proformas-count" class="font-tech-head font-black text-3xl text-white font-tech-mono skeleton-shimmer px-2 py-0.5 rounded text-transparent">0</span>
+                <span id="kpi-proformas-val" class="font-tech-mono text-[10px] font-bold text-white/90 bg-white/10 px-2.5 py-1 rounded-xl border border-white/20 shadow-sm">$0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden">
+            <svg class="absolute bottom-0 inset-x-0 w-full h-16 pointer-events-none" viewBox="0 0 100 30" preserveAspectRatio="none">
+              <path class="sparkline-fill" d="M0 20 Q 30 5, 60 15 T 100 8 L 100 30 L 0 30 Z" fill="url(#gradTicket)"></path>
+            </svg>
+            <span class="font-tech-mono text-[10px] uppercase font-bold text-white/70 tracking-wider relative z-10">Órdenes de Trabajo</span>
+            <div class="mt-4 relative z-10">
+              <div class="flex items-baseline justify-between">
+                <span id="kpi-ots-count" class="font-tech-head font-black text-3xl text-white font-tech-mono skeleton-shimmer px-2 py-0.5 rounded text-transparent">0</span>
+                <span class="font-tech-mono text-[10px] font-bold text-white/90 bg-white/10 px-2.5 py-1 rounded-xl border border-white/20 shadow-sm">Activas</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden">
+            <svg class="absolute bottom-0 inset-x-0 w-full h-16 pointer-events-none" viewBox="0 0 100 30" preserveAspectRatio="none">
+              <path class="sparkline-fill" d="M0 28 Q 20 12, 50 14 T 100 2 L 100 30 L 0 30 Z" fill="url(#gradTicket)"></path>
+            </svg>
+            <span class="font-tech-mono text-[10px] uppercase font-bold text-white/70 tracking-wider relative z-10">Inspecciones</span>
+            <div class="mt-4 relative z-10">
+              <div class="flex items-baseline justify-between">
+                <span id="kpi-inspecciones-count" class="font-tech-head font-black text-3xl text-white font-tech-mono skeleton-shimmer px-2 py-0.5 rounded text-transparent">0</span>
+                <span class="font-tech-mono text-[10px] font-bold text-white/90 bg-white/10 px-2.5 py-1 rounded-xl border border-white/20 shadow-sm">Por Revisar</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card rounded-3xl p-5 flex flex-col justify-between relative overflow-hidden">
+            <svg class="absolute bottom-0 inset-x-0 w-full h-16 pointer-events-none" viewBox="0 0 100 30" preserveAspectRatio="none">
+              <path class="sparkline-fill" d="M0 22 Q 35 15, 65 8 T 100 12 L 100 30 L 0 30 Z" fill="url(#gradTicket)"></path>
+            </svg>
+            <span class="font-tech-mono text-[10px] uppercase font-bold text-white/70 tracking-wider relative z-10">Saldos por Cobrar</span>
+            <div class="mt-4 relative z-10">
+              <div class="flex items-baseline justify-between">
+                <span id="kpi-saldos-val" class="font-tech-head font-black text-3xl text-emerald-400 font-tech-mono">$0.00</span>
+                <span class="font-tech-mono text-[10px] font-bold text-white/90 bg-white/10 px-2.5 py-1 rounded-xl border border-white/20 shadow-sm">Pendiente</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- FEED DE ACTIVIDAD RECIENTE -->
+        <section id="panel_actividad_reciente" class="cyber-glass-card rounded-3xl p-6 relative overflow-hidden mt-6 hidden">
+          <div class="flex items-center justify-between border-b border-white/15 pb-4 mb-4 relative z-10">
+            <h3 class="font-tech-head font-extrabold text-sm text-white flex items-center gap-2">
+              <div class="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse"></div>
+              Resultados del Filtro de Etapa
+            </h3>
+            <button onclick="filtrarPipeline('terreno', document.getElementById('pill_terreno'))" class="text-[10px] font-bold text-blue-300 bg-blue-500/20 px-3 py-1.5 rounded-lg border border-blue-400/30 hover:bg-blue-500/30 transition shadow-sm">
+              <i class="fa-solid fa-rotate-right"></i> Recargar
+            </button>
+          </div>
+          
+          <div class="overflow-x-auto relative z-10">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="text-[10px] uppercase text-white/60 border-b border-white/15">
+                  <th class="py-2.5 font-bold pl-2 w-28">Ref / ID</th>
+                  <th class="py-2.5 font-bold">Cliente / Proyecto</th>
+                  <th class="py-2.5 font-bold w-32 text-center">Módulo</th>
+                  <th class="py-2.5 font-bold w-36 text-center">Estado Actual</th>
+                  <th class="py-2.5 font-bold text-right w-24">Fecha</th>
+                  <th class="py-2.5 font-bold text-center w-16">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tabla_actividad_body" class="divide-y divide-white/10 text-white/90">
+                <tr>
+                  <td colspan="6" class="text-center py-10">
+                    <i class="fa-solid fa-spinner fa-spin text-blue-400 text-lg mb-2 block"></i>
+                    <span class="text-white/50 font-medium">Sincronizando operaciones...</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </main>
+
+      <footer class="text-center py-4 text-[11px] text-white/50 border-t border-white/10 bg-slate-950/40 backdrop-blur-sm relative z-10">
+        <p>© 2026 ProTech Security. Todos los derechos reservados. | Quito, Ecuador</p>
+      </footer>
+    </div>
+
+  </div>
+
+  <!-- MODAL OBLIGATORIO: CAMBIO DE CONTRASEÑA -->
+  <div id="modal_forzar_password" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex justify-center items-center p-4">
+    <div class="cyber-glass-card w-full max-w-md rounded-3xl p-7 space-y-5 border border-white/20 shadow-2xl relative">
+      <div class="text-center space-y-2">
+        <div class="inline-flex p-3 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 mb-1">
+          <i class="fa-solid fa-key text-xl"></i>
+        </div>
+        <h3 class="font-tech-head text-base font-black text-white tracking-tight">Cambio de Contraseña Requerido</h3>
+        <p class="text-xs text-white/70">Por seguridad corporativa, debes sustituir tu clave temporal antes de comenzar a trabajar.</p>
+      </div>
+
+      <form id="form_forzar_password" onsubmit="ejecutarCambioPasswordObligatorio(event)" class="space-y-3.5 text-xs">
+        <div>
+          <label class="block text-white/80 font-semibold mb-1">Nueva Contraseña Definitiva</label>
+          <input type="password" id="nueva_pwd_input" required minlength="6" placeholder="Mínimo 6 caracteres" class="cyber-input w-full rounded-xl px-3.5 py-2.5 outline-none font-medium">
+        </div>
+        <div>
+          <label class="block text-white/80 font-semibold mb-1">Confirmar Nueva Contraseña</label>
+          <input type="password" id="confirma_pwd_input" required minlength="6" placeholder="Repite tu contraseña" class="cyber-input w-full rounded-xl px-3.5 py-2.5 outline-none font-medium">
+        </div>
+        <button type="submit" id="btn_forzar_submit" class="w-full btn-cyber-laser bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 mt-3">
+          <span>Actualizar Contraseña & Continuar</span>
+          <i class="fa-solid fa-shield-check text-xs"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast_container" class="fixed bottom-6 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Motor Interactivo Global -->
+  <script src="ui-core.js"></script>
+
+  <script>
+    // FUNCIÓN DE MENÚ MÓVIL OFF-CANVAS
+    function toggleMobileMenu() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      
+      if (sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+      }
+    }
+
+    // Colapsar y expandir áreas del menú lateral
+    function toggleArea(idContent, headerElement) {
+      const content = document.getElementById(idContent);
+      if (content) {
+        content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed-btn');
+      }
+    }
+
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let perfilUsuarioActual = null;
+
+    // REGISTRO AUTOMÁTICO DEL SERVICE WORKER + VERIFICACIÓN DE SESIÓN
+    window.addEventListener('load', async () => {
+      if ('serviceWorker' in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.register('/sw.js');
+          console.log('Service Worker registrado con éxito:', reg.scope);
+        } catch (err) {
+          console.error('Fallo al registrar el Service Worker:', err);
+        }
+      }
+      await verificarSesionActiva();
+    });
+
+    async function cargarMetricasDashboard() {
+      if (!supabaseClient) return;
+      try {
+        const { count: countTickets } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true }).eq('estado', 'pendiente');
+        if (countTickets !== null) {
+          const el = document.getElementById('kpi-tickets-count');
+          if (el) { 
+            el.textContent = countTickets; 
+            el.classList.remove('skeleton-shimmer', 'text-transparent'); 
+          }
+        }
+
+        const { data: proformas } = await supabaseClient.from('proformas').select('*');
+        if (proformas) {
+          const elCount = document.getElementById('kpi-proformas-count');
+          if(elCount) { elCount.textContent = proformas.length; elCount.classList.remove('skeleton-shimmer', 'text-transparent'); }
+          const totalVal = proformas.reduce((acc, p) => acc + Number(p.total || 0), 0);
+          document.getElementById('kpi-proformas-val').textContent = `$${totalVal.toFixed(2)}`;
+        }
+
+        const { data: ots } = await supabaseClient.from('ordenes_trabajo').select('*');
+        if (ots) {
+          const elCount = document.getElementById('kpi-ots-count');
+          if(elCount) { elCount.textContent = ots.length; elCount.classList.remove('skeleton-shimmer', 'text-transparent'); }
+          const totalSaldos = ots.reduce((acc, o) => acc + Number(o.saldo || 0), 0);
+          document.getElementById('kpi-saldos-val').textContent = `$${totalSaldos.toFixed(2)}`;
+        }
+
+        const { count } = await supabaseClient.from('inspecciones').select('*', { count: 'exact', head: true });
+        if (count !== null) {
+          const elCount = document.getElementById('kpi-inspecciones-count');
+          if(elCount) { elCount.textContent = count; elCount.classList.remove('skeleton-shimmer', 'text-transparent'); }
+        }
+      } catch (err) {
+        console.error("Error al cargar métricas:", err);
+      }
+    }
+
+    // ==========================================
+    // BUSCADOR GLOBAL INTELIGENTE (OMNIBOX)
+    // ==========================================
+    let searchTimeout = null;
+    async function ejecutarBusquedaGlobal(query) {
+      const contenedor = document.getElementById('resultados_busqueda_flotante');
+      if (!contenedor) return;
+
+      const q = (query || '').trim();
+      if (q.length < 2) {
+        contenedor.classList.add('hidden');
+        contenedor.innerHTML = '';
+        return;
+      }
+
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(async () => {
+        contenedor.classList.remove('hidden');
+        contenedor.innerHTML = `<div class="p-3 text-center text-white/60 text-xs"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Buscando en bases de datos...</div>`;
+
+        if (!supabaseClient) {
+          contenedor.innerHTML = `<div class="p-3 text-center text-white/60 text-xs">Supabase no inicializado.</div>`;
+          return;
+        }
+
+        try {
+          const [resIns, resPrf, resOt] = await Promise.all([
+            supabaseClient.from('inspecciones').select('id, cliente, created_at').ilike('cliente', `%${q}%`).limit(3),
+            supabaseClient.from('proformas').select('numero_proforma, cliente, total, created_at').or(`cliente.ilike.%${q}%,numero_proforma.ilike.%${q}%`).limit(3),
+            supabaseClient.from('ordenes_trabajo').select('numero_ot, cliente, estado, created_at').or(`cliente.ilike.%${q}%,numero_ot.ilike.%${q}%`).limit(3)
+          ]);
+
+          const inspecciones = resIns.data || [];
+          const proformas = resPrf.data || [];
+          const ots = resOt.data || [];
+
+          if (inspecciones.length === 0 && proformas.length === 0 && ots.length === 0) {
+            contenedor.innerHTML = `<div class="p-3 text-center text-white/60 text-xs">No se encontraron coincidencias para "${q}".</div>`;
+            return;
+          }
+
+          contenedor.innerHTML = '';
+
+          if (inspecciones.length > 0) {
+            contenedor.innerHTML += `<div class="px-2 py-1 text-[9px] font-tech-mono uppercase text-blue-400 font-bold bg-blue-500/20 rounded">Inspecciones</div>`;
+            inspecciones.forEach(i => {
+              contenedor.innerHTML += `
+                <a href="inspecciones_index.html?id=${i.id}" class="flex items-center justify-between p-2 hover:bg-white/10 rounded-xl transition text-xs">
+                  <div><strong class="text-white">${i.cliente || 'Sin Cliente'}</strong><p class="text-[10px] text-white/60">ID: ${i.id}</p></div>
+                  <span class="text-[10px] font-mono text-white/70">${new Date(i.created_at).toLocaleDateString()}</span>
+                </a>`;
+            });
+          }
+
+          if (proformas.length > 0) {
+            contenedor.innerHTML += `<div class="px-2 py-1 text-[9px] font-tech-mono uppercase text-purple-400 font-bold bg-purple-500/20 rounded mt-1">Proformas</div>`;
+            proformas.forEach(p => {
+              contenedor.innerHTML += `
+                <a href="proforma.html" class="flex items-center justify-between p-2 hover:bg-white/10 rounded-xl transition text-xs">
+                  <div><strong class="text-white">${p.numero_proforma}</strong> - <span class="text-white/80">${p.cliente}</span></div>
+                  <span class="text-[10px] font-mono font-bold text-emerald-400">$${Number(p.total || 0).toFixed(2)}</span>
+                </a>`;
+            });
+          }
+
+          if (ots.length > 0) {
+            contenedor.innerHTML += `<div class="px-2 py-1 text-[9px] font-tech-mono uppercase text-amber-400 font-bold bg-amber-500/20 rounded mt-1">Órdenes de Trabajo</div>`;
+            ots.forEach(o => {
+              contenedor.innerHTML += `
+                <a href="orden_trabajo.html" class="flex items-center justify-between p-2 hover:bg-white/10 rounded-xl transition text-xs">
+                  <div><strong class="text-white">${o.numero_ot}</strong> - <span class="text-white/80">${o.cliente}</span></div>
+                  <span class="text-[9px] font-bold bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-400/30">${o.estado || 'Activa'}</span>
+                </a>`;
+            });
+          }
+
+        } catch (err) {
+          console.error("Error en búsqueda global:", err);
+          contenedor.innerHTML = `<div class="p-3 text-center text-rose-400 text-xs">Error al buscar en el servidor.</div>`;
+        }
+      }, 300);
+    }
+
+    document.addEventListener('click', (e) => {
+      const buscador = document.getElementById('input_buscador_global');
+      const contenedor = document.getElementById('resultados_busqueda_flotante');
+      if (buscador && contenedor && !buscador.contains(e.target) && !contenedor.contains(e.target)) {
+        contenedor.classList.add('hidden');
+      }
+    });
+
+    // ==========================================
+    // LÓGICA DEL PIPELINE: FILTRAR TABLA INFERIOR
+    // ==========================================
+    async function filtrarPipeline(fase, elemento) {
+      if (elemento) {
+        document.querySelectorAll('.workflow-pill').forEach(pill => {
+          pill.classList.remove('active');
+          pill.classList.add('opacity-60');
+        });
+        elemento.classList.add('active');
+        elemento.classList.remove('opacity-60');
+        
+        const labelFase = document.getElementById('label_fase_activa');
+        if(labelFase) labelFase.innerText = `Fase Activa: ${fase.toUpperCase()}`;
+      }
+
+      if (!supabaseClient) return;
+      const tbody = document.getElementById('tabla_actividad_body');
+      
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-blue-400 text-lg mb-2 block"></i><span class="text-white/65 font-medium">Buscando datos en la fase seleccionada...</span></td></tr>`;
+
+      try {
+        let datosTabla = [];
+        
+        if (fase === 'inspeccion') {
+          const { data } = await supabaseClient.from('inspecciones').select('*').order('created_at', { ascending: false }).limit(8);
+          datosTabla = (data || []).map(i => ({ ref: i.id.toString().slice(0,8), cliente: i.cliente || 'Por Confirmar', tipo: 'INSPECCIÓN', estado: 'Completado', fecha: i.created_at, link: `inspecciones_index.html?id=${i.id}` }));
+        } else if (fase === 'comercial') {
+          const { data } = await supabaseClient.from('proformas').select('*').order('created_at', { ascending: false }).limit(8);
+          datosTabla = (data || []).map(p => ({ ref: p.numero_proforma || 'PRF-000', cliente: p.cliente, tipo: 'PROFORMA', estado: p.estado || 'Emitida', fecha: p.created_at, link: `proforma.html` }));
+        } else if (fase === 'finanzas') {
+          const { data } = await supabaseClient.from('ordenes_trabajo').select('*').gt('saldo', 0).order('created_at', { ascending: false }).limit(8);
+          datosTabla = (data || []).map(o => ({ ref: o.numero_ot || 'OT-000', cliente: o.cliente, tipo: 'COBRO CAJA', estado: 'Pendiente Pago', fecha: o.created_at, link: `finanzas.html` }));
+        } else if (fase === 'terreno') {
+          const { data } = await supabaseClient.from('ordenes_trabajo').select('*').ilike('estado', '%activ%').order('created_at', { ascending: false }).limit(8);
+          datosTabla = (data || []).map(o => ({ ref: o.numero_ot || 'OT-000', cliente: o.cliente, tipo: 'ORDEN TRABAJO', estado: o.estado, fecha: o.created_at, link: `orden_trabajo.html` }));
+        } else if (fase === 'entrega') {
+          const { data } = await supabaseClient.from('ordenes_trabajo').select('*').ilike('estado', '%finaliz%').order('created_at', { ascending: false }).limit(8);
+          datosTabla = (data || []).map(o => ({ ref: o.numero_ot || 'OT-000', cliente: o.cliente, tipo: 'ACTA FINAL', estado: 'Por Entregar', fecha: o.created_at, link: `acta_entrega.html` }));
+        }
+
+        if (datosTabla.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-white/60 font-medium">No se encontraron registros activos en esta fase.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = '';
+        datosTabla.forEach(item => {
+          const dateObj = new Date(item.fecha);
+          const dateStr = dateObj.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
+          const estadoBadge = getEstadoBadge(item.estado);
+          
+          tbody.innerHTML += `
+            <tr class="hover:bg-white/5 transition duration-200 group">
+              <td class="py-3.5 pl-2 font-tech-mono font-bold text-white uppercase">${item.ref}</td>
+              <td class="py-3.5 font-semibold text-white/90">${item.cliente}</td>
+              <td class="py-3.5 text-center"><span class="bg-white/10 text-white/80 px-2 py-0.5 rounded text-[9px] font-bold tracking-wide border border-white/20">${item.tipo}</span></td>
+              <td class="py-3.5 text-center flex justify-center">${estadoBadge}</td>
+              <td class="py-3.5 text-right font-tech-mono text-[10px] text-white/65">${dateStr}</td>
+              <td class="py-3.5 text-center">
+                <a href="${item.link}" class="inline-block text-white/60 hover:text-blue-400 transition p-1.5 rounded-lg hover:bg-white/10 group-hover:scale-110" title="Ver Detalles">
+                  <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                </a>
+              </td>
+            </tr>
+          `;
+        });
+
+      } catch (err) {
+        console.error("Error al filtrar pipeline:", err);
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-rose-400 font-medium"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Error al conectar con Supabase.</td></tr>`;
+      }
+    }
+
+    function getEstadoBadge(estado) {
+      const e = (estado || '').toLowerCase();
+      if (e.includes('activa') || e.includes('proceso') || e.includes('ejecucion')) {
+        return `<span class="bg-blue-500/20 text-blue-300 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-blue-400/30 flex items-center w-max gap-1.5 shadow-sm"><span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span> En Proceso</span>`;
+      }
+      if (e.includes('finaliz') || e.includes('complet') || e.includes('entreg')) {
+        return `<span class="bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-emerald-400/30 flex items-center w-max gap-1.5 shadow-sm"><i class="fa-solid fa-check"></i> Completado</span>`;
+      }
+      if (e.includes('espera') || e.includes('pendien')) {
+        return `<span class="bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-amber-400/30 flex items-center w-max gap-1.5 shadow-sm"><i class="fa-solid fa-clock"></i> Pendiente</span>`;
+      }
+      return `<span class="bg-white/10 text-white/80 px-2.5 py-0.5 rounded-full text-[9px] font-bold border border-white/20 shadow-sm">${estado || 'Pendiente'}</span>`;
+    }
+
+    async function verificarSesionActiva() {
+      if (!supabaseClient) {
+        document.body.classList.add('session-checked');
+        mostrarVistaLogin();
+        return;
+      }
+
+      try {
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        if (error) throw error;
+
+        if (session && session.user) {
+          await cargarPerfilYMostrarDashboard(session.user);
+        } else {
+          mostrarVistaLogin();
+        }
+      } catch (err) {
+        console.error("Error sesión:", err);
+        mostrarVistaLogin();
+      } finally {
+        document.body.classList.add('session-checked');
+      }
+    }
+
+    // ==========================================
+    // CONTROL DE ACCESOS (RBAC) 
+    // ==========================================
+    async function cargarPerfilYMostrarDashboard(user) {
+      try {
+        let { data: perfil } = await supabaseClient
+          .from('perfiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (!perfil) {
+          perfil = {
+            id: user.id,
+            email: user.email,
+            nombre: user.user_metadata?.nombre || user.email.split('@')[0],
+            rol: user.user_metadata?.rol || 'tecnico',
+            debe_cambiar_password: user.user_metadata?.debe_cambiar_password || false
+          };
+        }
+
+        perfilUsuarioActual = perfil;
+
+        if (perfil.debe_cambiar_password) {
+          document.getElementById('modal_forzar_password').classList.remove('hidden');
+        }
+
+        document.getElementById('user_display_name').textContent = perfil.nombre || perfil.email;
+        
+        const badgeRole = document.getElementById('user_role_badge');
+        const panelMetricas = document.getElementById('panel_metricas_admin');
+        const panelActividad = document.getElementById('panel_actividad_reciente');
+        const menuUsuarios = document.getElementById('menu_item_usuarios');
+        const menuComercial = document.getElementById('menu_area_comercial');
+        const menuFinanciero = document.getElementById('menu_area_financiera');
+
+        const rolLimpio = (perfil.rol || '').trim().toLowerCase();
+        const esAdmin = rolLimpio === 'admin' || rolLimpio === 'administrador';
+
+        if (esAdmin) {
+          badgeRole.textContent = 'Administrador';
+          panelMetricas.classList.remove('hidden');
+          panelActividad.classList.remove('hidden');
+          if (menuUsuarios) menuUsuarios.classList.remove('hidden');
+          if (menuComercial) menuComercial.classList.remove('hidden');
+          if (menuFinanciero) menuFinanciero.classList.remove('hidden');
+          
+          await cargarMetricasDashboard();
+          setTimeout(() => {
+            filtrarPipeline('terreno', document.getElementById('pill_terreno'));
+          }, 400);
+
+        } else {
+          badgeRole.textContent = 'Técnico Campo';
+          panelMetricas.classList.add('hidden');
+          panelActividad.classList.remove('hidden');
+          
+          if (menuUsuarios) menuUsuarios.classList.add('hidden');
+          if (menuComercial) menuComercial.classList.add('hidden');
+          if (menuFinanciero) menuFinanciero.classList.add('hidden');
+          
+          setTimeout(() => {
+            filtrarPipeline('terreno', document.getElementById('pill_terreno'));
+          }, 400);
+        }
+
+        document.getElementById('seccion_login').classList.add('hidden');
+        document.getElementById('seccion_dashboard').classList.remove('hidden');
+
+      } catch (err) {
+        console.error("Error perfil:", err);
+        dispararToast("Error al cargar perfil", "error");
+      }
+    }
+
+    async function ejecutarLogin(event) {
+      event.preventDefault();
+      const email = document.getElementById('login_email').value.trim();
+      const password = document.getElementById('login_password').value;
+      const btn = document.getElementById('btn_login_submit');
+
+      const origText = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Validando...`;
+      btn.disabled = true;
+
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        dispararToast("Sesión iniciada con éxito", "success");
+        await cargarPerfilYMostrarDashboard(data.user);
+      } catch (err) {
+        dispararToast(err.message || "Credenciales incorrectas", "error");
+      } finally {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+      }
+    }
+
+    async function cerrarSesion() {
+      try {
+        await supabaseClient.auth.signOut();
+        perfilUsuarioActual = null;
+        dispararToast("Sesión finalizada", "success");
+        mostrarVistaLogin();
+      } catch (err) {
+        console.error("Error al salir:", err);
+      }
+    }
+
+    function mostrarVistaLogin() {
+      document.getElementById('seccion_dashboard').classList.add('hidden');
+      document.getElementById('modal_forzar_password').classList.add('hidden');
+      document.getElementById('seccion_login').classList.remove('hidden');
+    }
+
+    // ==========================================
+    // MOTOR DE WEB PUSH NATIVO (PROTECH) - ACTUALIZADO
+    // ==========================================
+    async function activarNotificacionesPush() {
+      if (!('serviceWorker' in navigator)) {
+        alert("Tu dispositivo o navegador no soporta notificaciones nativas.");
+        return;
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const publicVapidKey = 'BAbD5LO8CaG3-PFYux8m0YGJxkeYoQIXOuEP0q0vqBEhiYL_ZkigNTUxhpqFEJd4pK9EXbwsUf2ZZVL0bEg2qRY';
+
+        // 1. Limpiar suscripción previa (si existía) para evitar conflictos con la nueva llave VAPID
+        const existingSubscription = await registration.pushManager.getSubscription();
+        if (existingSubscription) {
+          await existingSubscription.unsubscribe();
+        }
+
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          alert("Permiso de notificaciones denegado por el usuario.");
+          return;
+        }
+
+        // 2. Suscribir limpiamente con la llave VAPID correcta
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+        });
+
+        console.log('Suscripción generada con éxito:', JSON.stringify(subscription));
+
+        // 3. Guardar la suscripción automáticamente en Supabase si hay sesión activa
+        if (supabaseClient && perfilUsuarioActual) {
+          const { error } = await supabaseClient
+            .from('push_subscriptions')
+            .upsert({
+              user_id: perfilUsuarioActual.id,
+              endpoint: subscription.endpoint,
+              subscription_data: subscription,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'endpoint' });
+
+          if (error) {
+            console.error("Error al guardar suscripción en Supabase:", error);
+          }
+        }
+
+        if (typeof dispararToast === 'function') {
+          dispararToast("¡Dispositivo registrado con éxito para alertas nativas!", "success");
+        } else {
+          alert("¡Dispositivo registrado con éxito!");
+        }
+
+      } catch (error) {
+        console.error('Error al activar notificaciones push:', error);
+        alert("Hubo un error al activar las notificaciones.");
+      }
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+  </script>
+</body>
+</html>

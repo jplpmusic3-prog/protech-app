@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProTech Security — Kanban Operativo</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Moderna -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    body {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Ocultar barra de scroll en el Kanban para mayor limpieza */
+    .hide-scrollbar::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .hide-scrollbar::-webkit-scrollbar-track {
+      background: rgba(241, 245, 249, 0.5);
+      border-radius: 10px;
+    }
+    .hide-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(203, 213, 225, 0.8);
+      border-radius: 10px;
+    }
+    .hide-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 1);
+    }
+
+    /* Tarjetas Kanban (Glassmorphism & Priority Borders) */
+    .kanban-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.85) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 10px -2px rgba(15, 23, 42, 0.05);
+      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease, opacity 0.2s ease;
+      cursor: grab;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+    .kanban-card:active {
+      cursor: grabbing;
+      transform: scale(0.98) rotate(1deg);
+      box-shadow: 0 15px 25px -5px rgba(15, 23, 42, 0.1);
+    }
+    .kanban-card.is-dragging {
+      opacity: 0.4;
+    }
+    
+    /* Indicadores Tácticos de Prioridad */
+    .border-prioridad-urgente { border-left: 4px solid #f43f5e !important; box-shadow: -3px 0 12px -2px rgba(244, 63, 94, 0.2); }
+    .border-prioridad-normal { border-left: 4px solid #f59e0b !important; }
+    .border-prioridad-baja { border-left: 4px solid #0ea5e9 !important; }
+
+    /* Área de Drop de la columna */
+    .kanban-column-dropzone {
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+      border: 2px dashed transparent;
+      min-height: 150px;
+    }
+    .kanban-column-dropzone.drag-over {
+      background-color: rgba(241, 245, 249, 0.8);
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    /* Animación colapsable del menú */
+    .collapse-content {
+      max-height: 400px;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out;
+      opacity: 1;
+    }
+    .collapse-content.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
+    .collapse-icon { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapsed-btn .collapse-icon { transform: rotate(-90deg); }
+  </style>
+</head>
+<body class="min-h-screen relative flex flex-col md:flex-row pb-20 md:pb-0 text-slate-800 antialiased overflow-x-hidden bg-slate-50">
+
+  <!-- PANTALLA DE CARGA ANTI-FALLOS -->
+  <div id="loader_inicial" class="fixed inset-0 bg-slate-900 z-[9999] flex flex-col items-center justify-center transition-opacity duration-500">
+    <div class="relative">
+      <i class="fa-solid fa-shield-halved text-5xl text-blue-500 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]"></i>
+      <div class="absolute inset-0 border-t-2 border-blue-400 rounded-full animate-spin"></div>
+    </div>
+    <div class="text-blue-400 mt-5 font-tech-mono text-[10px] uppercase tracking-widest animate-pulse">Sincronizando Base de Datos...</div>
+  </div>
+
+  <div class="bg-grain"></div>
+  <div class="fixed inset-0 pointer-events-none -z-10 bg-cyber-matrix overflow-hidden">
+    <div class="holo-orb-1 absolute -top-40 left-1/4 w-[650px] h-[650px] rounded-full bg-gradient-to-tr from-cyan-400/25 via-blue-500/20 to-indigo-500/20"></div>
+    <div class="holo-orb-2 absolute top-1/3 -right-40 w-[700px] h-[700px] rounded-full bg-gradient-to-bl from-purple-400/20 via-indigo-400/20 to-pink-400/15"></div>
+  </div>
+
+  <!-- VISTA DASHBOARD (SIDEBAR + CONTENIDO) -->
+  <div id="seccion_dashboard" class="hidden w-full min-h-screen relative">
+
+    <!-- OVERLAY MÓVIL PARA CERRAR EL MENÚ -->
+    <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+    <!-- 1. SIDEBAR LATERAL IZQUIERDO -->
+    <aside id="sidebar_menu" class="fixed md:sticky top-0 left-0 z-50 h-[100dvh] w-72 flex-col justify-between cyber-glass-card bg-white/95 md:bg-white/40 border-y-0 border-l-0 rounded-none flex-shrink-0 p-5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out flex">
+      <div class="space-y-4 relative z-10 overflow-y-auto max-h-[calc(100vh-100px)] pr-1">
+        
+        <div class="flex items-center justify-between pb-3.5 border-b border-slate-200/70">
+          <div class="flex items-center gap-3.5">
+            <div class="relative">
+              <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain drop-shadow" onerror="this.style.display='none'; document.getElementById('logo_nextgen').style.display='flex';">
+              <div id="logo_nextgen" style="display:none;" class="h-10 w-10 rounded-2xl gradient-cyber-brand text-white font-tech-head text-base items-center justify-center shadow-lg shadow-blue-500/25 font-black">PS</div>
+              <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white"></span>
+              </span>
+            </div>
+            <div>
+              <h1 class="font-tech-head font-extrabold text-base text-slate-900 leading-none">ProTech</h1>
+              <p class="font-tech-mono text-[9px] uppercase tracking-wider text-indigo-600 font-bold mt-1">Cyber-OS • v4.2</p>
+            </div>
+          </div>
+          <button onclick="toggleMobileMenu()" class="md:hidden text-slate-400 hover:text-rose-500 transition p-2 bg-slate-100/50 rounded-lg">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <nav class="space-y-3 text-xs font-semibold">
+          <!-- SECCIÓN: GENERAL -->
+          <div>
+            <a href="index.html" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl text-slate-600 hover:text-indigo-600 hover:bg-white/90 transition group">
+              <i class="fa-solid fa-layer-group w-4 text-center text-sm"></i>
+              <span>Centro de Operaciones</span>
+            </a>
+          </div>
+
+          <!-- ÁREA OPERATIVA -->
+          <div class="bg-white/50 border border-slate-200/70 rounded-2xl p-2.5 shadow-sm">
+            <div onclick="toggleArea('sec_operativa', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-700 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+            </div>
+            <div id="sec_operativa" class="collapse-content space-y-1 mt-2">
+              <a href="inspecciones_index.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-white/90 transition group">
+                <div class="h-6 w-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs shadow-sm border border-blue-100/50">
+                  <i class="fa-solid fa-video"></i>
+                </div>
+                <span>Inspección CCTV</span>
+              </a>
+              <a href="orden_trabajo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-white/90 transition group">
+                <div class="h-6 w-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs shadow-sm border border-amber-100/50">
+                  <i class="fa-solid fa-screwdriver-wrench"></i>
+                </div>
+                <span>Órdenes de Trabajo</span>
+              </a>
+              <a href="agenda_tickets.html" class="flex items-center gap-3 px-3 py-2 rounded-xl bg-orange-50 border border-orange-100/50 text-orange-700 shadow-sm relative overflow-hidden transition group">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-r"></div>
+                <div class="h-6 w-6 rounded-lg bg-orange-500 text-white flex items-center justify-center text-xs shadow-md shadow-orange-500/30">
+                  <i class="fa-solid fa-list-check"></i>
+                </div>
+                <span class="font-bold">Monitor General OTs</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- ÁREA COMERCIAL -->
+          <div id="menu_area_comercial" class="hidden bg-white/50 border border-slate-200/70 rounded-2xl p-2.5 shadow-sm">
+            <div onclick="toggleArea('sec_comercial', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-purple-700 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-store"></i> Área Comercial</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+            </div>
+            <div id="sec_comercial" class="collapse-content space-y-1 mt-2">
+              <a href="proforma.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:text-purple-600 hover:bg-white/90 transition group">
+                <div class="h-6 w-6 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-xs shadow-sm border border-purple-100/50">
+                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+                <span>Generador de Proformas</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- ÁREA FINANCIERA -->
+          <div id="menu_area_financiera" class="hidden bg-white/50 border border-slate-200/70 rounded-2xl p-2.5 shadow-sm">
+            <div onclick="toggleArea('sec_financiera', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-emerald-700 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-vault"></i> Área Financiera</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+            </div>
+            <div id="sec_financiera" class="collapse-content space-y-1 mt-2">
+              <a href="finanzas.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:text-emerald-600 hover:bg-white/90 transition group">
+                <div class="h-6 w-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs shadow-sm border border-emerald-100/50">
+                  <i class="fa-solid fa-cash-register"></i>
+                </div>
+                <span>Caja & Cartera</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- SEGURIDAD Y ACCESO -->
+          <div id="menu_item_usuarios" class="hidden bg-white/50 border border-slate-200/70 rounded-2xl p-2.5 shadow-sm">
+            <div onclick="toggleArea('sec_admin', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-rose-700 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-users-gear"></i> Administración</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+            </div>
+            <div id="sec_admin" class="collapse-content space-y-1 mt-2">
+              <a href="usuarios.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:text-rose-600 hover:bg-white/90 transition group">
+                <div class="h-6 w-6 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs shadow-sm border border-rose-100/50">
+                  <i class="fa-solid fa-users-gear"></i>
+                </div>
+                <span>Personal & Roles</span>
+              </a>
+            </div>
+          </div>
+
+        </nav>
+      </div>
+
+      <!-- Perfil Táctico -->
+      <div class="p-3.5 rounded-2xl cyber-glass-card border border-white flex items-center justify-between shadow-sm relative z-10 mt-3 bg-white">
+        <div class="flex items-center gap-3 overflow-hidden">
+          <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-tech-head font-bold text-xs shadow-md">
+            JP
+          </div>
+          <div class="truncate">
+            <p id="user_display_name" class="text-xs font-bold text-slate-900 truncate">Usuario</p>
+            <p id="user_role_badge" class="font-tech-mono text-[9px] text-indigo-600 uppercase font-bold">Cargando...</p>
+          </div>
+        </div>
+        <button onclick="cerrarSesion()" class="text-slate-400 hover:text-rose-600 p-2 rounded-lg hover:bg-rose-50 transition" title="Desconectar">
+          <i class="fa-solid fa-power-off text-xs"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- 2. CONTENIDO PRINCIPAL: KANBAN -->
+    <div class="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden">
+
+      <!-- CABECERA FLOTANTE TÁCTICA -->
+      <header class="cyber-glass-card border-x-0 border-t-0 rounded-none z-40 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between flex-shrink-0" style="overflow: visible !important;">
+        <div class="flex items-center gap-3 md:gap-4">
+          <button onclick="toggleMobileMenu()" class="md:hidden text-slate-700 hover:text-blue-600 transition p-1.5 bg-white/50 border border-slate-200 rounded-lg shadow-sm">
+            <i class="fa-solid fa-bars text-lg"></i>
+          </button>
+          
+          <div class="flex items-center gap-2 md:hidden">
+            <img src="logo.png" alt="ProTech" class="h-6 w-auto object-contain">
+          </div>
+
+          <div class="hidden lg:flex items-center relative group">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-slate-400 group-hover:text-blue-600 transition z-10"></i>
+            <input type="text" id="input_buscador_global" placeholder="Buscar OT, cliente..." class="cyber-input pl-10 pr-14 py-2.5 rounded-xl w-80 text-xs font-medium placeholder-slate-400 shadow-sm border border-slate-200/80 outline-none relative z-10">
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 md:gap-3 flex-shrink-0">
+          <button onclick="sincronizarTableroSupabase()" class="btn-cyber-laser px-3 md:px-4 py-2 md:py-2.5 rounded-xl bg-white border border-slate-200/80 text-slate-700 text-xs font-semibold flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-arrows-rotate text-indigo-600 text-sm md:text-xs"></i> 
+            <span class="hidden md:inline">Actualizar Tablero</span>
+          </button>
+          <a href="orden_trabajo.html" class="btn-cyber-laser px-3 md:px-5 py-2 md:py-2.5 rounded-xl gradient-cyber-brand text-white font-bold text-xs shadow-lg shadow-blue-600/25 flex items-center gap-2">
+            <i class="fa-solid fa-plus text-[12px] md:text-[10px]"></i>
+            <span class="hidden md:inline">Nueva OT</span>
+            <span class="inline md:hidden">Nueva</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- TABLERO KANBAN -->
+      <main class="flex-1 p-4 md:p-6 overflow-hidden flex flex-col">
+        
+        <div class="flex items-center justify-between mb-4 flex-shrink-0">
+          <div>
+            <h2 class="font-tech-head font-extrabold text-xl text-slate-900 tracking-tight flex items-center gap-2">
+              <i class="fa-solid fa-diagram-project text-blue-600"></i> Monitor General de OTs
+            </h2>
+            <p class="font-tech-mono text-[10px] uppercase tracking-wider text-slate-500 mt-1">Sincronizado con Supabase • Arrastrar & Soltar para mover</p>
+          </div>
+        </div>
+
+        <!-- CONTENEDOR HORIZONTAL DE COLUMNAS -->
+        <div class="flex-1 flex gap-5 overflow-x-auto overflow-y-hidden pb-4 hide-scrollbar">
+          
+          <!-- COLUMNA 1: Relevamiento -->
+          <div class="flex flex-col flex-shrink-0 w-[300px] max-h-full bg-slate-100/60 rounded-3xl border border-slate-200/70 p-3.5 shadow-inner relative">
+            <div class="flex items-center justify-between mb-3 px-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                <h3 class="font-tech-head font-bold text-sm text-slate-700 uppercase tracking-tight">1. Relevamiento</h3>
+              </div>
+              <span id="count_col1" class="font-tech-mono text-[10px] font-bold bg-white text-slate-500 px-2 py-0.5 rounded-md border border-slate-200 shadow-sm">0</span>
+            </div>
+            <!-- Zona Drop -->
+            <div id="col_relevamiento" class="kanban-column-dropzone flex-1 overflow-y-auto space-y-3 hide-scrollbar pb-10 rounded-xl" data-col="relevamiento">
+              <!-- Las tarjetas se inyectan por JS -->
+            </div>
+          </div>
+
+          <!-- COLUMNA 2: En Cotización -->
+          <div class="flex flex-col flex-shrink-0 w-[300px] max-h-full bg-slate-100/60 rounded-3xl border border-slate-200/70 p-3.5 shadow-inner relative">
+            <div class="flex items-center justify-between mb-3 px-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                <h3 class="font-tech-head font-bold text-sm text-purple-900 uppercase tracking-tight">2. En Cotización</h3>
+              </div>
+              <span id="count_col2" class="font-tech-mono text-[10px] font-bold bg-white text-purple-600 px-2 py-0.5 rounded-md border border-purple-200 shadow-sm">0</span>
+            </div>
+            <div id="col_cotizacion" class="kanban-column-dropzone flex-1 overflow-y-auto space-y-3 hide-scrollbar pb-10 rounded-xl" data-col="cotizacion"></div>
+          </div>
+
+          <!-- COLUMNA 3: Por Programar -->
+          <div class="flex flex-col flex-shrink-0 w-[300px] max-h-full bg-slate-100/60 rounded-3xl border border-slate-200/70 p-3.5 shadow-inner relative">
+            <div class="flex items-center justify-between mb-3 px-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <h3 class="font-tech-head font-bold text-sm text-amber-900 uppercase tracking-tight">3. Por Programar</h3>
+              </div>
+              <span id="count_col3" class="font-tech-mono text-[10px] font-bold bg-white text-amber-600 px-2 py-0.5 rounded-md border border-amber-200 shadow-sm">0</span>
+            </div>
+            <div id="col_programar" class="kanban-column-dropzone flex-1 overflow-y-auto space-y-3 hide-scrollbar pb-10 rounded-xl" data-col="programar"></div>
+          </div>
+
+          <!-- COLUMNA 4: En Ejecución -->
+          <div class="flex flex-col flex-shrink-0 w-[300px] max-h-full bg-indigo-50/50 rounded-3xl border border-indigo-100 p-3.5 shadow-inner relative">
+            <div class="flex items-center justify-between mb-3 px-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.6)]"></span>
+                <h3 class="font-tech-head font-bold text-sm text-indigo-900 uppercase tracking-tight">4. En Ejecución</h3>
+              </div>
+              <span id="count_col4" class="font-tech-mono text-[10px] font-bold bg-white text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-200 shadow-sm">0</span>
+            </div>
+            <div id="col_ejecucion" class="kanban-column-dropzone flex-1 overflow-y-auto space-y-3 hide-scrollbar pb-10 rounded-xl" data-col="ejecucion"></div>
+          </div>
+
+          <!-- COLUMNA 5: Entregado -->
+          <div class="flex flex-col flex-shrink-0 w-[300px] max-h-full bg-emerald-50/40 rounded-3xl border border-emerald-100/70 p-3.5 shadow-inner relative">
+            <div class="flex items-center justify-between mb-3 px-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <h3 class="font-tech-head font-bold text-sm text-emerald-900 uppercase tracking-tight">5. Entregado</h3>
+              </div>
+              <span id="count_col5" class="font-tech-mono text-[10px] font-bold bg-white text-emerald-600 px-2 py-0.5 rounded-md border border-emerald-200 shadow-sm">0</span>
+            </div>
+            <div id="col_entregado" class="kanban-column-dropzone flex-1 overflow-y-auto space-y-3 hide-scrollbar pb-10 rounded-xl" data-col="entregado"></div>
+          </div>
+
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- PANEL DESLIZABLE DE DETALLES (SLIDE-OVER) -->
+  <div id="slideover_detalle" class="fixed inset-y-0 right-0 z-[60] w-full sm:w-[420px] bg-white/95 backdrop-blur-3xl shadow-[-10px_0_30px_rgba(15,23,42,0.1)] border-l border-slate-200 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <!-- Cabecera Slide-over -->
+    <div class="px-6 py-5 border-b border-slate-200/70 flex items-center justify-between bg-slate-50/50">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
+          <i class="fa-solid fa-file-contract text-lg"></i>
+        </div>
+        <div>
+          <h3 id="slide_ref" class="font-tech-mono font-bold text-sm text-indigo-700">OT-000</h3>
+          <p id="slide_estado" class="text-[10px] uppercase font-bold text-slate-400">Detalle del Proyecto</p>
+        </div>
+      </div>
+      <button onclick="cerrarSlideOver()" class="text-slate-400 hover:text-rose-600 p-2 bg-white rounded-lg border border-slate-200 shadow-sm transition">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+    
+    <!-- Contenido Slide-over -->
+    <div class="flex-1 overflow-y-auto p-6 space-y-6 hide-scrollbar">
+      
+      <div>
+        <label class="font-tech-mono text-[10px] text-slate-400 uppercase font-bold tracking-wider">Cliente / Empresa</label>
+        <p id="slide_cliente" class="font-tech-head font-bold text-lg text-slate-900 mt-1">Cargando...</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="cyber-glass-card rounded-2xl p-3.5 border border-slate-200">
+          <label class="font-tech-mono text-[9px] text-slate-400 uppercase font-bold">Módulo Origen</label>
+          <div id="slide_sistema" class="font-bold text-xs text-slate-700 mt-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-microchip text-slate-400"></i> N/A
+          </div>
+        </div>
+        <div class="cyber-glass-card rounded-2xl p-3.5 border border-slate-200">
+          <label class="font-tech-mono text-[9px] text-slate-400 uppercase font-bold">Prioridad Operativa</label>
+          <div id="slide_prioridad" class="font-bold text-xs mt-1.5 flex items-center gap-1.5">
+            N/A
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <label class="font-tech-mono text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-2 block">Detalles de la Solicitud</label>
+        <div id="slide_descripcion" class="bg-slate-50 border border-slate-100 p-4 rounded-2xl text-xs text-slate-600 leading-relaxed shadow-inner font-medium">
+          Sin descripción detallada.
+        </div>
+      </div>
+
+      <div class="pt-2 flex items-center justify-between cyber-glass-card p-4 rounded-2xl border border-indigo-100 bg-indigo-50/30">
+        <div>
+          <label class="font-tech-mono text-[9px] text-indigo-400 uppercase font-bold">Técnico / Encargado</label>
+          <p id="slide_tecnico" class="font-bold text-xs text-indigo-900 mt-0.5">Pendiente</p>
+        </div>
+        <div class="h-10 w-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-tech-head font-bold shadow-md shadow-indigo-600/30 text-sm">
+          <span id="slide_tecnico_init">?</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pie del Slide-over -->
+    <div class="p-6 border-t border-slate-200/70 bg-white">
+      <a id="btn_abrir_ot_completa" href="#" class="w-full btn-cyber-laser bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-600/25 transition flex items-center justify-center gap-2 text-xs">
+        <i class="fa-solid fa-pen-to-square"></i> Abrir Documento Completo
+      </a>
+    </div>
+  </div>
+  
+  <!-- OVERLAY FONDO SLIDE-OVER -->
+  <div id="slideover_overlay" onclick="cerrarSlideOver()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden transition-opacity"></div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toast_container" class="fixed bottom-6 right-4 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    // ==========================================
+    // UTILIDADES BÁSICAS
+    // ==========================================
+    function mostrarToast(mensaje, tipo = 'success') {
+      const container = document.getElementById('toast_container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `flex items-center gap-2 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white transform transition-all duration-300 translate-y-10 opacity-0 ${tipo === 'success' ? 'bg-emerald-600 border border-emerald-500' : 'bg-rose-600 border border-rose-500'}`;
+      toast.innerHTML = `<i class="fa-solid ${tipo === 'success' ? 'fa-check-circle' : 'fa-triangle-exclamation'} text-sm"></i> <span>${mensaje}</span>`;
+      container.appendChild(toast);
+      
+      requestAnimationFrame(() => toast.classList.remove('translate-y-10', 'opacity-0'));
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function toggleMobileMenu() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      sidebar.classList.toggle('-translate-x-full');
+      overlay.classList.toggle('hidden');
+    }
+
+    function toggleArea(idContent, headerElement) {
+      const content = document.getElementById(idContent);
+      if (content) {
+        content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed-btn');
+      }
+    }
+
+    function calcularTiempoRelativo(fechaIso) {
+      if(!fechaIso) return 'N/A';
+      const d = new Date(fechaIso);
+      const hoy = new Date();
+      const dif = Math.floor((hoy - d) / (1000 * 60 * 60 * 24));
+      
+      if (dif === 0) return 'Hoy';
+      if (dif === 1) return 'Ayer';
+      return `hace ${dif} días`;
+    }
+
+    // ==========================================
+    // INICIALIZACIÓN Y SEGURIDAD RBAC
+    // ==========================================
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+    let perfilUsuarioActual = null;
+
+    window.addEventListener('load', async () => {
+      await verificarSesionActiva();
+      inicializarDragAndDrop();
+    });
+
+    async function verificarSesionActiva() {
+      if (!supabaseClient) {
+        document.body.classList.add('session-checked');
+        return; 
+      }
+      try {
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        if (session && session.user) {
+          await cargarPerfil(session.user);
+        } else {
+          document.body.classList.add('session-checked');
+        }
+      } catch (err) {
+        console.error("Error sesión:", err);
+      } 
+    }
+
+    async function cargarPerfil(user) {
+      try {
+        let { data: perfil } = await supabaseClient.from('perfiles').select('*').eq('id', user.id).single();
+        if (!perfil) return;
+        perfilUsuarioActual = perfil;
+
+        document.getElementById('user_display_name').textContent = perfil.nombre || perfil.email.split('@')[0];
+        const rolLimpio = (perfil.rol || '').trim().toLowerCase();
+        const esAdmin = rolLimpio === 'admin' || rolLimpio === 'administrador';
+        
+        document.getElementById('user_role_badge').textContent = esAdmin ? 'Administrador' : 'Técnico Campo';
+
+        if (esAdmin) {
+          document.getElementById('menu_item_usuarios')?.classList.remove('hidden');
+          document.getElementById('menu_area_comercial')?.classList.remove('hidden');
+          document.getElementById('menu_area_financiera')?.classList.remove('hidden');
+        }
+
+        await sincronizarTableroSupabase();
+        
+      } catch (err) {
+        console.error("Error perfil:", err);
+      } finally {
+        const loader = document.getElementById('loader_inicial');
+        if(loader) { loader.style.opacity='0'; setTimeout(()=>loader.remove(),300); }
+        document.getElementById('seccion_dashboard').classList.remove('hidden');
+        document.getElementById('seccion_dashboard').classList.add('flex');
+        document.body.classList.add('session-checked');
+      }
+    }
+
+    async function cerrarSesion() {
+      if(supabaseClient) await supabaseClient.auth.signOut();
+      window.location.href = 'index.html';
+    }
+
+    // ==========================================
+    // MOTOR KANBAN: CARGA DESDE SUPABASE REAL
+    // ==========================================
+    async function sincronizarTableroSupabase() {
+      if (!supabaseClient) return;
+
+      try {
+        ['col_relevamiento', 'col_cotizacion', 'col_programar', 'col_ejecucion', 'col_entregado']
+          .forEach(id => document.getElementById(id).innerHTML = '');
+
+        const [resTickets, resPrf, resOt] = await Promise.all([
+          supabaseClient.from('tickets').select('*').order('created_at', { ascending: false }),
+          supabaseClient.from('proformas').select('*').order('created_at', { ascending: false }),
+          supabaseClient.from('ordenes_trabajo').select('*').order('created_at', { ascending: false })
+        ]);
+
+        const tickets = resTickets.data || [];
+        const proformas = resPrf.data || [];
+        const ots = resOt.data || [];
+
+        // Conjunto de inspección IDs que ya tienen una Orden de Trabajo generada o proforma aprobada
+        const inspeccionesConOT = new Set();
+        ots.forEach(ot => {
+          if (ot.inspeccion_id) inspeccionesConOT.add(String(ot.inspeccion_id));
+        });
+
+        // 1. Llenar columnas basándonos en los tickets reales (excluyendo los que ya avanzaron a OT)
+        tickets.forEach(item => {
+          if (inspeccionesConOT.has(String(item.id))) {
+            return; // Omitir ticket de cotización/relevamiento si ya tiene OT activa en ejecución/programación
+          }
+
+          const estadoTicket = (item.estado || '').toLowerCase().trim();
+          
+          let colDestino = 'col_relevamiento'; // Por defecto si está recién creado
+          
+          if (estadoTicket.includes('cotiza') || estadoTicket.includes('cotización')) {
+            colDestino = 'col_cotizacion'; // Cae en la Columna 2: En Cotización
+          } else if (estadoTicket.includes('programar')) {
+            colDestino = 'col_programar';
+          } else if (estadoTicket.includes('ejecucion') || estadoTicket.includes('proceso')) {
+            colDestino = 'col_ejecucion';
+          } else if (estadoTicket.includes('completado') || estadoTicket.includes('entregado') || estadoTicket.includes('finalizado')) {
+            colDestino = 'col_entregado';
+          }
+
+          document.getElementById(colDestino).appendChild(crearTarjetaHTML({
+            id: 'INS-' + (item.id ? item.id.toString().substring(0, 4).toUpperCase() : '0000'),
+            cliente: item.cliente || 'Sin Cliente',
+            tipo: 'Relevamiento',
+            tecnico: 'Juan Pablo Luna',
+            prio: 'normal',
+            fecha: calcularTiempoRelativo(item.created_at),
+            col: colDestino,
+            desc: item.motivo || 'Relevamiento y dimensionamiento en sitio.',
+            link: `inspecciones_index.html?id=${item.id}`
+          }));
+        });
+
+        // 2. Llenar Columna "En Cotización" con las Proformas (excluyendo las aprobadas, facturadas o rechazadas)
+        proformas.forEach(item => {
+          const estadoPrf = (item.estado || 'emitida').toLowerCase();
+          if (estadoPrf === 'aprobada' || estadoPrf === 'facturada' || estadoPrf === 'rechazada') {
+            return; // Salta esta proforma porque ya fue aprobada y tiene OT activa
+          }
+
+          document.getElementById('col_cotizacion').appendChild(crearTarjetaHTML({
+            id: item.numero_proforma || 'PRF-???',
+            cliente: item.cliente || 'Sin Cliente',
+            tipo: 'Cotización',
+            tecnico: item.vendedor || 'Comercial',
+            prio: 'normal',
+            fecha: calcularTiempoRelativo(item.created_at),
+            col: 'col_cotizacion',
+            desc: `Documento generado. Total: $${item.total || 0}. Estado: ${item.estado || 'Emitida'}.`,
+            link: `proforma.html`
+          }));
+        });
+
+        // 3. Llenar OTs
+        ots.forEach(item => {
+          const est = (item.estado || '').toLowerCase();
+          let colDestino = 'col_programar';
+          
+          if(est.includes('activ') || est.includes('proces') || est.includes('ejecuc')) {
+            colDestino = 'col_ejecucion';
+          } else if(est.includes('finaliz') || est.includes('entreg') || est.includes('complet')) {
+            colDestino = 'col_entregado';
+          }
+
+          document.getElementById(colDestino).appendChild(crearTarjetaHTML({
+            id: item.numero_ot || 'OT-???',
+            cliente: item.cliente || 'Sin Cliente',
+            tipo: 'Instalación',
+            tecnico: item.tecnico_asignado || item.tecnicos || 'Sin Asignar',
+            prio: item.prioridad || 'normal',
+            fecha: calcularTiempoRelativo(item.created_at),
+            col: colDestino,
+            desc: item.descripcion || item.trabajo_realizar || `Estado actual del sistema: ${item.estado}`,
+            link: `orden_trabajo.html`
+          }));
+        });
+
+        actualizarContadores();
+
+      } catch (error) {
+        console.error("Error sincronizando Kanban con Supabase:", error);
+        mostrarToast("Fallo al conectar con la base de datos.", "error");
+      }
+    }
+
+    function crearTarjetaHTML(p) {
+      const card = document.createElement('div');
+      
+      let borderClass = 'border-prioridad-normal';
+      let iconColor = 'text-amber-500';
+      if(p.prio === 'urgente' || p.prio === 'alta') { borderClass = 'border-prioridad-urgente'; iconColor = 'text-rose-500'; }
+      if(p.prio === 'baja') { borderClass = 'border-prioridad-baja'; iconColor = 'text-sky-500'; }
+
+      let fechaClass = 'text-slate-400';
+      if(p.fecha.includes('hace') && parseInt(p.fecha.replace(/[^0-9]/g, '')) > 3) {
+        fechaClass = 'text-rose-500 font-bold bg-rose-50 px-1.5 py-0.5 rounded';
+      }
+
+      let init = p.tecnico.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+      if(init === 'SI' || init === 'SA' || init === 'PO') init = 'JP';
+
+      card.className = `kanban-card p-4 rounded-xl flex flex-col gap-3 ${borderClass}`;
+      card.draggable = true;
+      card.dataset.id = p.id;
+      
+      card.dataset.cliente = p.cliente;
+      card.dataset.tipo = p.tipo;
+      card.dataset.tecnico = p.tecnico;
+      card.dataset.prio = p.prio;
+      card.dataset.desc = p.desc;
+      card.dataset.fecha = p.fecha;
+      card.dataset.link = p.link;
+
+      card.innerHTML = `
+        <div class="flex items-start justify-between gap-2 pointer-events-none">
+          <div>
+            <span class="font-tech-mono text-[9px] font-black uppercase text-slate-400 tracking-wider">${p.id}</span>
+            <h4 class="font-tech-head font-bold text-sm text-slate-800 leading-tight mt-0.5">${p.cliente}</h4>
+          </div>
+          <div class="h-6 w-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 shadow-sm shrink-0">
+            ${init}
+          </div>
+        </div>
+        
+        <div class="flex items-center justify-between mt-1 pointer-events-none">
+          <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[9px] font-bold border border-slate-200 flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-microchip ${iconColor}"></i> ${p.tipo}
+          </span>
+          <span class="font-tech-mono text-[9px] ${fechaClass}">
+            <i class="fa-regular fa-clock"></i> ${p.fecha}
+          </span>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        if(!card.classList.contains('is-dragging')) {
+          abrirSlideOver(card);
+        }
+      });
+
+      return card;
+    }
+
+    // ==========================================
+    // MOTOR KANBAN: DRAG & DROP
+    // ==========================================
+    let tarjetaArrastrada = null;
+
+    function inicializarDragAndDrop() {
+      const columnas = document.querySelectorAll('.kanban-column-dropzone');
+      
+      document.addEventListener('dragstart', (e) => {
+        if(e.target.classList.contains('kanban-card')) {
+          tarjetaArrastrada = e.target;
+          setTimeout(() => e.target.classList.add('is-dragging'), 0);
+        }
+      });
+
+      document.addEventListener('dragend', (e) => {
+        if(e.target.classList.contains('kanban-card')) {
+          e.target.classList.remove('is-dragging');
+          tarjetaArrastrada = null;
+          actualizarContadores();
+          mostrarToast('Posición actualizada en el tablero.', 'success');
+        }
+      });
+
+      columnas.forEach(columna => {
+        columna.addEventListener('dragover', (e) => {
+          e.preventDefault(); 
+          columna.classList.add('drag-over');
+        });
+
+        columna.addEventListener('dragleave', () => {
+          columna.classList.remove('drag-over');
+        });
+
+        columna.addEventListener('drop', (e) => {
+          e.preventDefault();
+          columna.classList.remove('drag-over');
+          if (tarjetaArrastrada) {
+            columna.appendChild(tarjetaArrastrada);
+          }
+        });
+      });
+    }
+
+    function actualizarContadores() {
+      const cols = ['relevamiento', 'cotizacion', 'programar', 'ejecucion', 'entregado'];
+      cols.forEach((colId, index) => {
+        const columna = document.getElementById(`col_${colId}`);
+        if(columna) {
+           document.getElementById(`count_col${index + 1}`).textContent = columna.children.length;
+        }
+      });
+    }
+
+    // ==========================================
+    // PANEL SLIDE-OVER (DETALLES RÁPIDOS)
+    // ==========================================
+    function abrirSlideOver(card) {
+      document.getElementById('slide_ref').textContent = card.dataset.id;
+      document.getElementById('slide_cliente').textContent = card.dataset.cliente;
+      document.getElementById('slide_sistema').innerHTML = `<i class="fa-solid fa-folder-open text-indigo-500"></i> ${card.dataset.tipo}`;
+      document.getElementById('slide_descripcion').textContent = card.dataset.desc;
+      
+      const tec = card.dataset.tecnico;
+      document.getElementById('slide_tecnico').textContent = tec;
+      document.getElementById('slide_tecnico_init').textContent = (tec.includes('Asignar')) ? '?' : tec.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+
+      const pLabel = document.getElementById('slide_prioridad');
+      const p = card.dataset.prio;
+      if(p === 'urgente' || p === 'alta') pLabel.innerHTML = `<span class="bg-rose-50 text-rose-600 px-2.5 py-1 rounded text-[10px] uppercase shadow-sm border border-rose-200"><i class="fa-solid fa-fire text-rose-500"></i> Alta / Urgente</span>`;
+      else if(p === 'baja') pLabel.innerHTML = `<span class="bg-sky-50 text-sky-600 px-2.5 py-1 rounded text-[10px] uppercase shadow-sm border border-sky-200"><i class="fa-solid fa-snowflake text-sky-500"></i> Baja</span>`;
+      else pLabel.innerHTML = `<span class="bg-amber-50 text-amber-600 px-2.5 py-1 rounded text-[10px] uppercase shadow-sm border border-amber-200"><i class="fa-solid fa-bolt text-amber-500"></i> Normal</span>`;
+
+      document.getElementById('btn_abrir_ot_completa').href = card.dataset.link;
+
+      const panel = document.getElementById('slideover_detalle');
+      const overlay = document.getElementById('slideover_overlay');
+      
+      overlay.classList.remove('hidden');
+      panel.classList.remove('translate-x-full');
+    }
+
+    function cerrarSlideOver() {
+      const panel = document.getElementById('slideover_detalle');
+      const overlay = document.getElementById('slideover_overlay');
+      
+      panel.classList.add('translate-x-full');
+      setTimeout(() => { overlay.classList.add('hidden'); }, 300);
+    }
+  </script>
+</body>
+</html>

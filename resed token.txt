@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Inspección - ProTech Security</title>
+  
+  <meta name="theme-color" content="#0f172a">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Moderna y Técnica -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Librería html2pdf para generar el PDF en cliente -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background-color: #f4f7f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+
+    .bg-blueprint {
+      background-image: 
+        linear-gradient(to right, rgba(148, 163, 184, 0.15) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+      background-size: 40px 40px;
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+    }
+    
+    .bg-orbs {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .orb-1 { position: absolute; top: -20%; left: 10%; width: 600px; height: 600px; background: radial-gradient(circle, rgba(56,189,248,0.15) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; }
+    .orb-2 { position: absolute; bottom: -10%; right: 5%; width: 700px; height: 700px; background: radial-gradient(circle, rgba(129,140,248,0.12) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .font-tech-head { font-family: var(--tech-sans); }
+
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(203, 213, 225, 0.8); border-radius: 10px; }
+
+    .glass-panel {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(238, 242, 249, 0.75) 100%); 
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 4px 15px -3px rgba(15, 23, 42, 0.05);
+      border-radius: 1rem;
+    }
+
+    .dash-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(238, 242, 249, 0.75) 100%);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .dash-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 25px -5px rgba(15, 23, 42, 0.1);
+      border-color: #3b82f6;
+    }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: #475569; transition: all 0.2s; margin-bottom: 0.25rem;
+    }
+    .menu-link:hover { background: #f1f5f9; color: #2563eb; }
+    .menu-link.active { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border-color: #2563eb !important; }
+
+    @media print {
+      header, main, aside, nav, .no-print, #toast_container, #lightbox_modal, .bg-blueprint, .bg-orbs, #mobile_menu_overlay { display: none !important; }
+      html, body { background: #ffffff !important; color: #000000 !important; }
+      #modal_dossier_informe { position: static !important; display: block !important; background: transparent !important; z-index: 9999 !important; }
+      #modal_dossier_informe > div { max-height: none !important; border: none !important; box-shadow: none !important; width: 100% !important; }
+    }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800">
+
+  <div class="bg-blueprint"></div>
+  <div class="bg-orbs">
+    <div class="orb-1"></div>
+    <div class="orb-2"></div>
+  </div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL -->
+  <aside id="sidebar_menu" class="fixed md:static top-0 left-0 z-50 h-screen w-72 flex-col justify-between bg-white/90 backdrop-blur-xl border-r border-slate-200/80 flex-shrink-0 p-5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out flex shadow-xl md:shadow-none">
+    <div class="space-y-5 overflow-y-auto max-h-[calc(100vh-100px)] pr-2 hide-scrollbar">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+            <div id="logo_fallback" style="display:none;" class="h-10 w-10 rounded-xl bg-slate-900 text-white font-bold text-base items-center justify-center">PS</div>
+            <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white"></span>
+            </span>
+          </div>
+          <div>
+            <h1 class="font-tech-head font-extrabold text-[15px] text-slate-900 leading-tight">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-indigo-600 font-bold">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="space-y-4">
+        <div class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200/80 ring-1 ring-slate-100">
+          <div class="w-full flex items-center justify-center font-tech-mono text-[10px] uppercase font-bold text-blue-700 tracking-wider p-1.5 mb-2 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-clipboard-list"></i> Módulo Inspección</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="navegarA('inspecciones_index.html')" class="menu-link active w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] shadow-sm transition-colors"><i class="fa-solid fa-gauge-high"></i></div>
+              Panel Principal
+            </button>
+            <button onclick="navegarA('inspeccion_cliente.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-slate-100 border border-slate-200/60 text-slate-600 flex items-center justify-center text-[10px] shadow-sm transition-colors"><i class="fa-solid fa-address-card"></i></div>
+              1. Datos del Cliente
+            </button>
+            <button onclick="navegarA('inspeccion_cctv.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-blue-50 border border-blue-100/50 text-blue-600 flex items-center justify-center text-[10px] shadow-sm transition-colors"><i class="fa-solid fa-video"></i></div>
+              2. CCTV & Audio
+            </button>
+            <button onclick="navegarA('inspeccion_alarmas.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-amber-50 border border-amber-100/50 text-amber-600 flex items-center justify-center text-[10px] shadow-sm transition-colors"><i class="fa-solid fa-bell"></i></div>
+              3. Alarmas
+            </button>
+            <button onclick="navegarA('inspeccion_redes.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-indigo-50 border border-indigo-100/50 text-indigo-600 flex items-center justify-center text-[10px] shadow-sm transition-colors"><i class="fa-solid fa-network-wired"></i></div>
+              4. Redes & Fibra
+            </button>
+            <button onclick="navegarA('inspeccion_cercos.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-rose-50 border border-rose-100/50 text-rose-600 flex items-center justify-center text-[10px] shadow-sm transition-colors"><i class="fa-solid fa-bolt"></i></div>
+              5. Cercos Eléctricos
+            </button>
+            <button onclick="navegarA('inspeccion_acceso.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-teal-50 border border-teal-100/50 text-teal-600 flex items-center justify-center text-[10px] shadow-sm transition-colors"><i class="fa-solid fa-fingerprint"></i></div>
+              6. Control Acceso
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-slate-50/50 rounded-2xl p-2.5 border border-slate-200/80">
+          <div class="w-full flex items-center justify-center font-tech-mono text-[10px] uppercase font-bold text-slate-500 tracking-wider p-1.5 mb-2 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-file-invoice"></i> Resumen</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="navegarA('inspeccion_equipos.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-blue-50 border border-blue-100/50 text-blue-800 flex items-center justify-center text-[10px] shadow-sm transition-colors"><i class="fa-solid fa-boxes-stacked"></i></div>
+              Consolidado Equipos
+            </button>
+            <button onclick="navegarA('inspeccion_materiales.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-emerald-50 border border-emerald-100/50 text-emerald-600 flex items-center justify-center text-[10px] shadow-sm transition-colors"><i class="fa-solid fa-toolbox"></i></div>
+              Calculadora Materiales
+            </button>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between mt-4">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+          JP
+        </div>
+        <div class="truncate">
+          <p id="user_display_name" class="text-[11px] font-bold text-slate-900 truncate">Juan Pablo Luna Paredes</p>
+          <p class="font-tech-mono text-[9px] text-purple-600 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition" title="Cerrar Sesión">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden">
+    <header class="bg-white/70 backdrop-blur-xl border-b border-slate-200/80 px-6 py-4 flex items-center justify-between flex-shrink-0 z-30">
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-slate-700 p-1.5 border border-slate-200 rounded-lg bg-white">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="hidden md:flex relative w-72">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input type="text" placeholder="Buscar OT, cliente..." class="w-full text-xs pl-8 pr-3 py-2.5 rounded-xl border border-slate-200 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <button onclick="window.location.href='index.html'" class="px-2.5 sm:px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs sm:text-[11px] font-bold flex items-center gap-1 hover:bg-slate-50 transition shadow-sm" title="Salir al Portal">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span class="hidden md:inline">Salir</span>
+        </button>
+        
+        <button onclick="window.location.href='catalogo.html'" class="px-2.5 sm:px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white text-xs sm:text-[11px] font-bold flex items-center gap-1 transition shadow-sm" title="Catálogo Oficial">
+          <i class="fa-solid fa-book-open"></i>
+          <span class="hidden md:inline">Catálogo</span>
+        </button>
+
+        <button onclick="abrirModalInforme()" class="px-3 sm:px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-md" title="Vista Previa del Informe">
+          <i class="fa-solid fa-file-invoice text-amber-300"></i>
+          <span class="hidden sm:inline">Vista Previa</span>
+        </button>
+        
+        <button id="btn_guardar_cloud" onclick="procesarYFinalizarInspeccion()" class="px-3 sm:px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 shadow-md transition-colors" title="Guardar & Notificar">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span class="hidden sm:inline">Guardar & Notificar</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-6 relative">
+      <div class="max-w-6xl mx-auto">
+        <div class="mb-8">
+          <h2 class="font-tech-head font-extrabold text-[24px] text-slate-900 tracking-tight flex items-center gap-3">
+            <i class="fa-solid fa-satellite-dish text-blue-600"></i> Formulario de Inspección Técnica
+          </h2>
+          <p class="font-tech-mono text-[10px] uppercase tracking-wider text-slate-500 mt-1.5">
+            SINCRONIZADO CON SUPABASE • RELEVAMIENTO Y DIMENSIONAMIENTO EN SITIO
+          </p>
+        </div>
+
+        <div class="space-y-6">
+          <div class="glass-panel p-5 border-l-4 border-l-amber-400 flex flex-col md:flex-row justify-between md:items-center gap-4">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded uppercase font-tech-mono">Ticket Activo</span>
+                <span id="dash_id_ticket" class="text-[10px] text-slate-400 font-tech-mono"># INS-0000</span>
+              </div>
+              <h2 id="dash_cliente" class="text-xl font-bold text-slate-900">Cargando Cliente...</h2>
+              <p id="dash_ubicacion" class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i> Cargando ubicación...</p>
+            </div>
+            <div class="bg-white/60 p-3 rounded-lg border border-slate-200/60 max-w-sm w-full md:w-auto">
+              <p class="text-[10px] font-bold uppercase text-slate-400 font-tech-mono mb-1">Motivo / Requerimiento</p>
+              <p id="dash_motivo" class="text-[11px] text-slate-700 font-medium line-clamp-2">Cargando requerimiento...</p>
+            </div>
+          </div>
+
+          <div class="glass-panel p-4 bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-purple-600/10 border border-indigo-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-lg shadow-md">
+                <i class="fa-solid fa-file-pdf"></i>
+              </div>
+              <div>
+                <h4 class="font-tech-head font-extrabold text-sm text-slate-900">Dossier Técnico e Informe Consolidado</h4>
+                <p class="text-[11px] text-slate-500">Previsualiza en tiempo real todos los subsistemas relevados con fotos y equipos.</p>
+              </div>
+            </div>
+            <button onclick="abrirModalInforme()" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 whitespace-nowrap">
+              <i class="fa-solid fa-eye"></i> <span>Abrir Vista Previa del Informe</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-panel p-4 flex items-center gap-4">
+              <div class="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600"><i class="fa-solid fa-video"></i></div>
+              <div><p class="text-[10px] uppercase font-bold text-slate-400">Cámaras</p><p id="kpi_cctv" class="text-lg font-black text-slate-800 leading-none">0</p></div>
+            </div>
+            <div class="glass-panel p-4 flex items-center gap-4">
+              <div class="h-10 w-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600"><i class="fa-solid fa-bell"></i></div>
+              <div><p class="text-[10px] uppercase font-bold text-slate-400">Zonas Alarma</p><p id="kpi_alarmas" class="text-lg font-black text-slate-800 leading-none">0</p></div>
+            </div>
+            <div class="glass-panel p-4 flex items-center gap-4">
+              <div class="h-10 w-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600"><i class="fa-solid fa-network-wired"></i></div>
+              <div><p class="text-[10px] uppercase font-bold text-slate-400">Nodos Red</p><p id="kpi_redes" class="text-lg font-black text-slate-800 leading-none">0</p></div>
+            </div>
+            <div class="glass-panel p-4 flex items-center gap-4">
+              <div class="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-800"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <div><p class="text-[10px] uppercase font-bold text-slate-400">Total Equipos</p><p id="kpi_equipos" class="text-lg font-black text-slate-800 leading-none">0</p></div>
+            </div>
+          </div>
+
+          <h3 class="font-tech-mono text-[11px] font-bold text-slate-500 uppercase tracking-wider pt-2 border-b border-slate-200 pb-2">Seleccionar Subsistema a Relevar</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div onclick="navegarA('inspeccion_cliente.html')" class="dash-card group">
+              <div class="flex items-start justify-between mb-3">
+                <div class="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 group-hover:bg-blue-600 group-hover:text-white transition"><i class="fa-solid fa-address-card text-lg"></i></div>
+                <span class="text-[9px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">PASO 1</span>
+              </div>
+              <h4 class="font-bold text-sm text-slate-800">Datos del Cliente</h4>
+              <p class="text-[11px] text-slate-500 mt-1">Información de contacto, ubicación y modalidad de obra.</p>
+            </div>
+
+            <div onclick="navegarA('inspeccion_cctv.html')" class="dash-card group">
+              <div class="flex items-start justify-between mb-3">
+                <div class="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition"><i class="fa-solid fa-video text-lg"></i></div>
+              </div>
+              <h4 class="font-bold text-sm text-slate-800">CCTV & Audio</h4>
+              <p class="text-[11px] text-slate-500 mt-1">Levantamiento de cámaras, grabador, discos duros y accesorios.</p>
+            </div>
+
+            <div onclick="navegarA('inspeccion_alarmas.html')" class="dash-card group">
+              <div class="flex items-start justify-between mb-3">
+                <div class="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition"><i class="fa-solid fa-bell text-lg"></i></div>
+              </div>
+              <h4 class="font-bold text-sm text-slate-800">Sistema de Alarmas</h4>
+              <p class="text-[11px] text-slate-500 mt-1">Configuración de panel central, comunicadores y zonas de intrusión.</p>
+            </div>
+
+            <div onclick="navegarA('inspeccion_redes.html')" class="dash-card group">
+              <div class="flex items-start justify-between mb-3">
+                <div class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition"><i class="fa-solid fa-network-wired text-lg"></i></div>
+              </div>
+              <h4 class="font-bold text-sm text-slate-800">Redes & Fibra Óptica</h4>
+              <p class="text-[11px] text-slate-500 mt-1">Gabinete principal, puntos de red, fibra y equipos activos.</p>
+            </div>
+
+            <div onclick="navegarA('inspeccion_cercos.html')" class="dash-card group">
+              <div class="flex items-start justify-between mb-3">
+                <div class="h-10 w-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition"><i class="fa-solid fa-bolt text-lg"></i></div>
+              </div>
+              <h4 class="font-bold text-sm text-slate-800">Cercos Eléctricos</h4>
+              <p class="text-[11px] text-slate-500 mt-1">Energizador, cálculo de perímetro, postería y accesorios.</p>
+            </div>
+
+            <div onclick="navegarA('inspeccion_acceso.html')" class="dash-card group">
+              <div class="flex items-start justify-between mb-3">
+                <div class="h-10 w-10 rounded-lg bg-teal-50 flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition"><i class="fa-solid fa-fingerprint text-lg"></i></div>
+              </div>
+              <h4 class="font-bold text-sm text-slate-800">Control de Acceso</h4>
+              <p class="text-[11px] text-slate-500 mt-1">Terminales biométricos, cerraduras, botones y fuentes.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticketId = urlParams.get('id');
+
+    function navegarA(pagina) {
+      let urlDestino = pagina;
+      if (ticketId) {
+        urlDestino += '?id=' + ticketId;
+      }
+      window.location.href = urlDestino;
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      if (ticketId) {
+        document.getElementById('dash_id_ticket').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+
+        if (supabaseClient) {
+          try {
+            const { data: ticket, error } = await supabaseClient
+              .from('tickets')
+              .select('*')
+              .eq('id', ticketId)
+              .maybeSingle();
+
+            if (ticket && !error) {
+              document.getElementById('dash_cliente').innerText = ticket.cliente || "Cliente sin registrar";
+              document.getElementById('dash_ubicacion').innerHTML = `<i class='fa-solid fa-location-dot mr-1'></i> ${ticket.direccion || 'Dirección no registrada'}`;
+              document.getElementById('dash_motivo').innerText = ticket.motivo || "Sin observaciones previas.";
+
+              const { data: cctvRes } = await supabaseClient
+                .from('inspeccion_cctv')
+                .select('*')
+                .eq('ticket_id', ticketId)
+                .maybeSingle();
+
+              const camaras = cctvRes?.camaras || [];
+              const totalCctv = cctvRes?.total_camaras || camaras.length || 0;
+
+              document.getElementById('kpi_cctv').innerText = totalCctv;
+              document.getElementById('kpi_equipos').innerText = totalCctv;
+            } else {
+              document.getElementById('dash_cliente').innerText = "Ticket no encontrado";
+              document.getElementById('dash_motivo').innerText = "No se pudo recuperar la información de este ticket.";
+            }
+          } catch (err) {
+            console.error("Error consultando ticket:", err);
+          }
+        }
+      } else {
+        document.getElementById('dash_id_ticket').innerText = "# NUEVO";
+        document.getElementById('dash_cliente').innerText = "Inspección Nueva";
+        document.getElementById('dash_ubicacion').innerHTML = "<i class='fa-solid fa-location-dot mr-1'></i> Sin ubicación asignada";
+        document.getElementById('dash_motivo').innerText = "Seleccione un cliente o inicie el registro desde cero.";
+      }
+    });
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    // =========================================================================
+    // FLUJO COMPLETO: GENERAR PDF, SUBIR A STORAGE, REGISTRAR Y NOTIFICAR
+    // =========================================================================
+    async function procesarYFinalizarInspeccion() {
+      const btn = document.getElementById('btn_guardar_cloud');
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Generando PDF...`;
+      btn.disabled = true;
+
+      try {
+        if (!ticketId || !supabaseClient) {
+          throw new Error("No hay un Ticket ID válido en la sesión actual.");
+        }
+
+        // 1. Obtener datos del ticket de Supabase
+        const { data: ticketData, error: ticketErr } = await supabaseClient
+          .from('tickets')
+          .select('*')
+          .eq('id', ticketId)
+          .single();
+
+        if (ticketErr || !ticketData) {
+          throw new Error("No se pudo leer el ticket de Supabase.");
+        }
+
+        const nombreCliente = ticketData.cliente || "Cliente General";
+        const codigoInforme = `PRO-TECH-2026-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+        // 2. Asegurar renderizado del modal para capturarlo correctamente con html2pdf
+        const modal = document.getElementById('modal_dossier_informe');
+        const estabaOculto = modal.classList.contains('hidden');
+        if (estabaOculto) {
+          await abrirModalInforme();
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
+
+        const elementoInforme = document.getElementById('dossier_contenido_body');
+        if (!elementoInforme) {
+          throw new Error("No se encontró el contenedor del informe para generar el PDF.");
+        }
+
+        const opcionesPdf = {
+          margin:       10,
+          filename:     `Dossier_${codigoInforme}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true, logging: false },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Convirtiendo PDF...`;
+        
+        // Generar archivo binario PDF mediante blob
+        const pdfBlob = await html2pdf().from(elementoInforme).set(opcionesPdf).outputPdf('blob');
+        
+        if (estabaOculto) {
+          cerrarModalInforme();
+        }
+
+        if (!pdfBlob) {
+          throw new Error("Falló la conversión del documento a PDF.");
+        }
+
+        // 3. Subir al Bucket 'dossieres' de Supabase Storage
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Subiendo a Storage...`;
+        const nombreArchivo = `${codigoInforme}.pdf`;
+        
+        const { error: uploadErr } = await supabaseClient.storage
+          .from('dossieres')
+          .upload(nombreArchivo, pdfBlob, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
+
+        if (uploadErr) {
+          throw new Error("Error al subir al Storage: " + uploadErr.message);
+        }
+
+        // Obtener URL pública del PDF recién subido
+        const { data: urlData } = supabaseClient.storage
+          .from('dossieres')
+          .getPublicUrl(nombreArchivo);
+        
+        const urlPublicaPdf = urlData?.publicUrl || null;
+
+        // 4. Registrar en la tabla dossieres_generados
+        const { data: dossierInsertado, error: dossierError } = await supabaseClient
+          .from('dossieres_generados')
+          .insert([{
+            ticket_id: ticketId,
+            codigo_unico: codigoInforme,
+            cliente_nombre: nombreCliente,
+            enlace_pdf: urlPublicaPdf,
+            resumen_datos: { ticket: ticketData },
+            enviado_correo: false
+          }])
+          .select()
+          .single();
+
+        if (dossierError) {
+          console.warn("Aviso registrando en dossieres_generados:", dossierError.message);
+        }
+
+        // 5. Enviar correo a través de la Edge Function pasando el urlPdf
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Enviando Correo...`;
+        let correoOK = false;
+        
+        try {
+          const { error: emailErr } = await supabaseClient.functions.invoke('enviar-correo', {
+            body: {
+              cliente: nombreCliente,
+              codigoInforme: codigoInforme,
+              correoDestino: "jpluna@protechsecurityec.com",
+              urlPdf: urlPublicaPdf
+            }
+          });
+
+          if (!emailErr) {
+            correoOK = true;
+            if (dossierInsertado?.id) {
+              await supabaseClient
+                .from('dossieres_generados')
+                .update({ enviado_correo: true })
+                .eq('id', dossierInsertado.id);
+            }
+          } else {
+            console.error("Fallo reportado por Edge Function:", emailErr);
+          }
+        } catch (eMail) {
+          console.error("Excepción en llamada de correo:", eMail);
+        }
+
+        // 6. Actualizar el ticket a completado
+        await supabaseClient
+          .from('tickets')
+          .update({ estado: 'completado' })
+          .eq('id', ticketId);
+
+        alert(`¡Inspección finalizada exitosamente!\n\n` +
+              `• Código Único: ${codigoInforme}\n` +
+              `• PDF en Cloud: ${urlPublicaPdf ? 'GUARDADO' : 'NO DISPONIBLE'}\n` +
+              `• Notificación con enlace: ${correoOK ? 'ENVIADA' : 'FALLÓ'}\n` +
+              `• Ticket: COMPLETADO`);
+
+        window.location.href = 'agenda_tickets.html';
+
+      } catch (err) {
+        console.error("Error al procesar la inspección:", err);
+        alert("Ocurrió un error: " + err.message);
+      } finally {
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+      }
+    }
+
+    async function abrirModalInforme() {
+      const modal = document.getElementById('modal_dossier_informe');
+      const container = document.getElementById('dossier_contenido_body');
+      modal.classList.remove('hidden');
+
+      container.innerHTML = `
+        <div class="text-center py-16 text-slate-400">
+          <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600 mb-3 block"></i>
+          <p class="font-bold text-slate-700 text-sm">Compilando datos del informe...</p>
+        </div>
+      `;
+
+      if (!ticketId || !supabaseClient) {
+        container.innerHTML = `<div class="text-center py-10 text-rose-500 font-bold">No hay un ticket activo vinculado.</div>`;
+        return;
+      }
+
+      try {
+        const [resTicket, resCCTV] = await Promise.all([
+          supabaseClient.from('tickets').select('*').eq('id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_cctv').select('*').eq('ticket_id', ticketId).maybeSingle()
+        ]);
+
+        const tk = resTicket.data || {};
+        const cctv = resCCTV.data || {};
+        const camaras = cctv.camaras || [];
+
+        let tablaCamarasHTML = '';
+        if (camaras.length > 0) {
+          tablaCamarasHTML = `
+            <div class="overflow-x-auto mt-2">
+              <table class="w-full text-left border border-slate-200 rounded-xl overflow-hidden text-[11px]">
+                <thead class="bg-slate-100/80 font-tech-mono uppercase text-[9px] text-slate-500 border-b border-slate-200">
+                  <tr>
+                    <th class="p-2.5">Punto</th>
+                    <th class="p-2.5">Modelo Cámara</th>
+                    <th class="p-2.5">Tecnología</th>
+                    <th class="p-2.5">Canalización</th>
+                    <th class="p-2.5 text-right">Metros (+10%)</th>
+                    <th class="p-2.5 text-center">Foto</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${camaras.map((c, i) => `
+                    <tr>
+                      <td class="p-2.5 font-bold text-slate-900">${c.ubicacion || 'Punto #' + (i+1)}</td>
+                      <td class="p-2.5 font-medium text-slate-700">${c.descripcion_catalogo || 'Cámara Estándar'}</td>
+                      <td class="p-2.5 text-blue-700 text-[10px] font-bold">${c.tipo_tecnologia || 'IP'}</td>
+                      <td class="p-2.5 text-slate-600">${c.canalizacion || 'EMT 3/4"'}</td>
+                      <td class="p-2.5 font-tech-mono font-bold text-right text-slate-800">${c.distancia_m || 0} m</td>
+                      <td class="p-2.5 text-center">
+                        ${c.foto_base64 ? `<img src="${c.foto_base64}" class="h-8 w-8 rounded-lg object-cover mx-auto border border-slate-200 shadow-sm">` : '<span class="text-slate-300">-</span>'}
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        } else {
+          tablaCamarasHTML = `<p class="text-slate-400 italic text-[11px] mt-1">No se han registrado cámaras en este ticket aún.</p>`;
+        }
+
+        container.innerHTML = `
+          <!-- Membrete Corporativo -->
+          <div class="border-b-2 border-slate-800 pb-4 flex justify-between items-start">
+            <div>
+              <h1 class="font-tech-head font-black text-xl text-slate-900">PROTECH SECURITY</h1>
+              <p class="font-tech-mono text-[9px] uppercase tracking-widest text-indigo-600 font-bold">Ingeniería en Seguridad Electrónica & Redes</p>
+              <p class="text-[10px] text-slate-500 mt-1">Quito, Ecuador • contacto@protechsecurityec.com</p>
+            </div>
+            <div class="text-right font-tech-mono">
+              <span class="bg-blue-50 text-blue-800 border border-blue-200 font-bold px-2.5 py-1 rounded text-[10px]">TICKET #${ticketId.substring(0,8).toUpperCase()}</span>
+              <p class="text-[10px] text-slate-500 mt-1.5">${new Date().toLocaleDateString('es-EC', { dateStyle: 'long' })}</p>
+            </div>
+          </div>
+
+          <!-- 1. Datos Generales -->
+          <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200/80">
+            <h4 class="font-bold text-[11px] uppercase tracking-wider text-slate-800 border-b border-slate-200 pb-2 mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-address-card text-blue-600"></i> 1. Información General del Cliente y Sitio
+            </h4>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-[11px]">
+              <div><strong class="text-slate-500 block text-[9px] uppercase">Cliente:</strong> <span class="font-bold text-slate-900">${tk.cliente || 'No registrado'}</span></div>
+              <div><strong class="text-slate-500 block text-[9px] uppercase">Teléfono:</strong> <span>${tk.telefono || 'No registrado'}</span></div>
+              <div><strong class="text-slate-500 block text-[9px] uppercase">Ubicación:</strong> <span>${tk.direccion || 'No especificada'}</span></div>
+              <div class="sm:col-span-3 mt-1"><strong class="text-slate-500 block text-[9px] uppercase">Motivo del Ticket:</strong> <span>${tk.motivo || 'Relevamiento general'}</span></div>
+            </div>
+          </div>
+
+          <!-- 2. Detalle de CCTV -->
+          <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+            <h4 class="font-bold text-[11px] uppercase tracking-wider text-slate-800 border-b border-slate-200 pb-2 flex items-center justify-between">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-video text-blue-600"></i> 2. Subsistema de Video Vigilancia (CCTV)</span>
+              <span class="font-tech-mono text-[10px] text-blue-600 font-bold">${camaras.length} Cámaras Proyectadas</span>
+            </h4>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 p-3 bg-slate-50 rounded-xl text-[10px] font-tech-mono">
+              <div><span class="text-slate-400 block">Grabador:</span><strong>${cctv.accion_grabador || 'N/A'}</strong></div>
+              <div><span class="text-slate-400 block">Cable Total (+10%):</span><strong class="text-blue-600">${cctv.total_metros_utp || '0 m'}</strong></div>
+              <div><span class="text-slate-400 block">Punto Eléctrico:</span><strong>${cctv.condicion_electrica || 'No registrado'}</strong></div>
+              <div><span class="text-slate-400 block">Switch PoE:</span><strong>${cctv.switch_poe_catalogo_id ? 'Configurado' : 'No Requiere'}</strong></div>
+            </div>
+
+            ${tablaCamarasHTML}
+          </div>
+
+          <!-- 3. Pie de Certificación -->
+          <div class="pt-6 border-t border-slate-200 flex justify-between items-end text-[10px] text-slate-500">
+            <div>
+              <p class="font-bold text-slate-800">Técnico Certificado: Juan Pablo Luna</p>
+              <p>Relevamiento registrado con ProTech Cyber-OS v4.2</p>
+            </div>
+            <div class="text-right">
+              <p class="font-tech-mono font-bold text-slate-800">DOCUMENTO TÉCNICO PRE-VENTA</p>
+              <p>Sujeto a validación en generador de proformas</p>
+            </div>
+          </div>
+        `;
+
+      } catch (err) {
+        console.error("Error al generar informe consolidado:", err);
+        container.innerHTML = `<div class="text-center py-10 text-rose-500 font-bold">Error al consultar los registros en Supabase.</div>`;
+      }
+    }
+
+    function cerrarModalInforme() {
+      document.getElementById('modal_dossier_informe').classList.add('hidden');
+    }
+  </script>
+
+  <!-- MODAL DE DOSSIER TÉCNICO -->
+  <div id="modal_dossier_informe" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[80] hidden flex justify-center items-center p-2 sm:p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+            <i class="fa-solid fa-file-contract"></i>
+          </div>
+          <div>
+            <h3 class="font-tech-head font-extrabold text-sm text-slate-900 leading-tight">Dossier Técnico Preliminar</h3>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-slate-500">Inspección & Dimensionamiento en Sitio</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="window.print()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-indigo-600 text-white text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm">
+            <i class="fa-solid fa-print"></i> <span>Imprimir / PDF</span>
+          </button>
+          <button onclick="cerrarModalInforme()" class="text-slate-400 hover:text-rose-500 p-2 rounded-lg hover:bg-rose-50 transition">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+      </div>
+      <div id="dossier_contenido_body" class="p-6 sm:p-8 overflow-y-auto hide-scrollbar space-y-6 text-xs text-slate-700"></div>
+    </div>
+  </div>
+
+</body>
+</html>

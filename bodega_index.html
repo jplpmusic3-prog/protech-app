@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo & Bodega - ProTech Cyber-OS</title>
+  
+  <meta name="theme-color" content="#0f172a">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía & Estilos Base -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background-color: #f4f7f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    .bg-blueprint {
+      background-image: 
+        linear-gradient(to right, rgba(148, 163, 184, 0.15) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+      background-size: 40px 40px;
+      position: fixed; inset: 0; z-index: -2; pointer-events: none;
+    }
+    .bg-orbs {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden;
+    }
+    .orb-1 { position: absolute; top: -20%; left: 10%; width: 600px; height: 600px; background: radial-gradient(circle, rgba(56,189,248,0.15) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; }
+    .orb-2 { position: absolute; bottom: -10%; right: 5%; width: 700px; height: 700px; background: radial-gradient(circle, rgba(129,140,248,0.12) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(203, 213, 225, 0.8); border-radius: 10px; }
+
+    .glass-panel {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(238, 242, 249, 0.75) 100%); 
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 4px 15px -3px rgba(15, 23, 42, 0.05);
+      border-radius: 1rem;
+    }
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: #475569; transition: all 0.2s; margin-bottom: 0.25rem;
+    }
+    .menu-link:hover { background: #f1f5f9; color: #2563eb; }
+    .menu-link.active { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border-color: #2563eb !important; }
+    .menu-link.disabled { opacity: 0.5; cursor: not-allowed; }
+    .menu-link.disabled:hover { background: transparent; color: #475569; }
+
+    .glass-input {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(203, 213, 225, 0.8);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-input:focus {
+      background: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      outline: none;
+    }
+    button { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    button:active { transform: scale(0.97); }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800">
+
+  <div class="bg-blueprint"></div>
+  <div class="bg-orbs">
+    <div class="orb-1"></div>
+    <div class="orb-2"></div>
+  </div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL MAESTRA -->
+  <aside id="sidebar_menu" class="fixed md:static top-0 left-0 z-50 h-screen w-72 flex-col justify-between bg-white/90 backdrop-blur-xl border-r border-slate-200/85 flex-shrink-0 p-5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out flex shadow-xl md:shadow-none">
+    <div class="space-y-4 overflow-y-auto max-h-[calc(100vh-100px)] pr-2 hide-scrollbar">
+      
+      <!-- Logo Superior -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+            <div id="logo_fallback" style="display:none;" class="h-10 w-10 rounded-xl bg-slate-900 text-white font-bold text-base items-center justify-center">PS</div>
+            <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white"></span>
+            </span>
+          </div>
+          <div>
+            <h1 class="font-bold text-[15px] text-slate-900 leading-tight">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-indigo-600 font-bold">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="space-y-3">
+        <!-- Centro de Operaciones -->
+        <div class="bg-slate-50 rounded-2xl p-2.5 border border-slate-200/80">
+          <div class="w-full flex items-center justify-center font-tech-mono text-[10px] uppercase font-bold text-slate-700 tracking-wider p-1 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-layer-group text-indigo-600"></i> Centro de Operaciones</span>
+          </div>
+        </div>
+
+        <!-- Área Operativa -->
+        <div class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200/80 ring-1 ring-slate-100">
+          <div class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-700 tracking-wider p-1.5 mb-1 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-gears"></i> Área Operativa</span>
+            <i class="fa-solid fa-chevron-down text-[9px]"></i>
+          </div>
+          <div class="space-y-1">
+            <a href="agenda_tickets.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-days"></i></div>
+              Agenda & Tickets
+            </a>
+            <a href="inspecciones_index.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-check"></i></div>
+              Inspección
+            </a>
+            <a href="bandeja_operativa.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-orange-50 text-orange-600 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-display"></i></div>
+              Monitor General OTs
+            </a>
+          </div>
+        </div>
+
+        <!-- Área Comercial -->
+        <div class="bg-white rounded-2xl p-2.5 shadow-sm border border-slate-200/80 ring-1 ring-slate-100">
+          <div class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-purple-700 tracking-wider p-1.5 mb-1 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-store"></i> Área Comercial</span>
+            <i class="fa-solid fa-chevron-down text-[9px]"></i>
+          </div>
+          <div class="space-y-1">
+            <a href="catalogo.html" class="menu-link active">
+              <div class="icon-box h-6 w-6 rounded-md bg-purple-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-book-open"></i></div>
+              Catálogo & Bodega
+            </a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Perfil de Usuario Inferior -->
+    <div class="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between mt-2">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-md">JP</div>
+        <div class="truncate">
+          <p class="text-[11px] font-bold text-slate-900 truncate">Juan Pablo Luna</p>
+          <p class="font-tech-mono text-[9px] text-purple-600 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition" title="Cerrar Sesión">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden">
+    
+    <!-- HEADER SUPERIOR -->
+    <header class="bg-white/70 backdrop-blur-xl border-b border-slate-200/80 px-6 py-4 flex items-center justify-between flex-shrink-0 z-30">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-slate-700 p-1.5 border border-slate-200 rounded-lg bg-white">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="hidden md:flex relative w-72">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input type="text" id="filtro_busqueda" oninput="filtrarTabla()" placeholder="Buscar producto o SKU..." class="w-full text-xs pl-8 pr-3 py-2.5 rounded-xl border border-slate-200 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <select id="filtro_subsistema" onchange="filtrarTabla()" class="text-xs px-3 py-2 rounded-xl bg-white border border-slate-200 font-semibold text-slate-700 shadow-sm outline-none">
+          <option value="TODOS">Todos los Subsistemas</option>
+          <option value="CCTV">CCTV</option>
+          <option value="Alarmas">Alarmas</option>
+          <option value="Redes">Redes</option>
+          <option value="Cercos">Cercos</option>
+          <option value="Acceso">Acceso</option>
+          <option value="Materiales">Materiales</option>
+          <option value="Servicio">Servicio</option>
+        </select>
+        <label class="cursor-pointer px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 text-xs font-semibold shadow-sm flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-file-arrow-up text-emerald-400"></i><span>CSV</span>
+          <input type="file" id="archivo_csv" accept=".csv" class="hidden" onchange="importarCSV(event)">
+        </label>
+        <button onclick="abrirModalMasivo()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 text-xs font-semibold shadow-sm flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-percent text-amber-400"></i><span class="hidden sm:inline">Ajuste Masivo</span>
+        </button>
+        <button onclick="abrirModalNuevo()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition">
+          <i class="fa-solid fa-circle-plus"></i><span class="hidden sm:inline">Nuevo Ítem</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- CUERPO PRINCIPAL -->
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-6 relative space-y-6">
+      
+      <div class="mb-2">
+        <h2 class="font-extrabold text-[24px] text-slate-900 tracking-tight flex items-center gap-3">
+          <i class="fa-solid fa-boxes-stacked text-blue-600"></i> Catálogo Maestro & Bodega
+        </h2>
+        <p class="font-tech-mono text-[10px] uppercase tracking-wider text-slate-500 mt-1.5">CONTROL UNIFICADO DE PRECIOS, COSTOS & EXISTENCIAS</p>
+      </div>
+
+      <!-- TABLA UNIFICADA -->
+      <div class="glass-panel overflow-hidden border border-slate-200/80 shadow-xl rounded-2xl">
+        <div class="overflow-x-auto bg-white/70">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-600 font-tech-mono uppercase text-[10px] tracking-wider border-b border-slate-200">
+                <th class="py-3 px-3.5">Subsistema</th>
+                <th class="py-3 px-3.5">Código SKU</th>
+                <th class="py-3 px-3.5">Marca / Modelo</th>
+                <th class="py-3 px-3.5 w-1/4">Descripción del Producto</th>
+                <th class="py-3 px-3.5 text-center">Abastecimiento</th>
+                <th class="py-3 px-3.5 text-center">Stock Físico</th>
+                <th class="py-3 px-3.5 text-right">Costo Dist. ($)</th>
+                <th class="py-3 px-3.5 text-right">PVP Sugerido ($)</th>
+                <th class="py-3 px-3.5 text-center">Estado</th>
+                <th class="py-3 px-3.5 text-center w-28">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla_catalogo_body" class="divide-y divide-slate-100 text-slate-700">
+              <tr>
+                <td colspan="10" class="text-center py-12 text-slate-400 font-tech-mono text-xs italic">Cargando datos unificados desde Supabase...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="p-4 bg-slate-50/80 border-t border-slate-200/60 flex justify-between items-center text-xs text-slate-500 font-tech-mono">
+          <span id="contador_registros" class="font-bold text-slate-700">Total: 0 productos</span>
+          <span class="text-[10px] uppercase text-indigo-600 font-bold">Sincronizado en tiempo real con Supabase</span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODAL: AGREGAR / EDITAR PRODUCTO & STOCK -->
+  <div id="modal_producto" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[80] hidden flex justify-center items-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col">
+      
+      <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/80">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+            <i class="fa-solid fa-box-open"></i>
+          </div>
+          <div>
+            <h3 id="modal_titulo" class="font-bold text-sm text-slate-900 leading-tight">Gestión de Ítem & Stock</h3>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-slate-500">Precios y Bodega unificados</p>
+          </div>
+        </div>
+        <button onclick="cerrarModal()" class="text-slate-400 hover:text-rose-500 p-2 rounded-lg hover:bg-rose-50 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form onsubmit="guardarProducto(event)" class="p-6 space-y-4 text-xs bg-slate-50/30">
+        <input type="hidden" id="prod_id">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-slate-500 mb-1">Subsistema *</label>
+            <select id="prod_subsistema" required onchange="generarCodigoAutomatico()" class="glass-input w-full text-xs rounded-xl p-2.5 font-medium text-slate-800">
+              <option value="CCTV">CCTV</option>
+              <option value="Alarmas">Alarmas</option>
+              <option value="Redes">Redes</option>
+              <option value="Cercos">Cercos</option>
+              <option value="Acceso">Acceso</option>
+              <option value="Materiales">Materiales</option>
+              <option value="Servicio">Servicio</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-slate-500 mb-1">Categoría *</label>
+            <select id="prod_categoria" onchange="generarCodigoAutomatico()" class="glass-input w-full text-xs rounded-xl p-2.5 font-medium text-slate-800">
+              <option value="Equipo">Equipo</option>
+              <option value="Material">Material</option>
+              <option value="Accesorio">Accesorio</option>
+              <option value="Servicio">Servicio</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-slate-500 mb-1">Marca</label>
+            <input type="text" id="prod_marca" placeholder="Hikvision, Dahua..." class="glass-input w-full text-xs rounded-xl p-2.5 font-medium text-slate-900">
+          </div>
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-slate-500 mb-1">Modelo</label>
+            <input type="text" id="prod_modelo" placeholder="DS-2CD1323..." class="glass-input w-full text-xs rounded-xl p-2.5 font-medium text-slate-900">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-tech-mono uppercase font-bold text-blue-700 mb-1">Código Interno / SKU</label>
+          <input type="text" id="prod_codigo" placeholder="CCT-EQP-0001" class="w-full text-xs border rounded-xl p-2.5 outline-none font-mono font-bold bg-blue-50/80 text-blue-900 border-blue-200 shadow-inner">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-tech-mono uppercase font-bold text-slate-500 mb-1">Descripción Completa *</label>
+          <input type="text" id="prod_descripcion" required placeholder="Cámara Domo IP..." class="glass-input w-full text-xs rounded-xl p-2.5 font-medium text-slate-900">
+        </div>
+
+        <!-- SECCIÓN DE INVENTARIO & ABASTECIMIENTO -->
+        <div class="grid grid-cols-2 gap-3 p-3 bg-blue-50/50 border border-blue-100 rounded-2xl">
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-blue-800 mb-1">Tipo Abastecimiento</label>
+            <select id="prod_abastecimiento" class="glass-input w-full text-xs rounded-xl p-2 font-semibold text-slate-800">
+              <option value="bajo_pedido">Bajo Pedido (JIT)</option>
+              <option value="bodega_propia">Bodega Propia (Stock)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-blue-800 mb-1">Stock Físico Actual</label>
+            <input type="number" min="0" id="prod_stock" value="0" class="glass-input w-full text-xs rounded-xl p-2 font-bold text-slate-900 text-center">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-slate-500 mb-1">Unidad de Medida</label>
+            <select id="prod_unidad" class="glass-input w-full text-xs rounded-xl p-2.5 font-medium text-slate-800">
+              <option value="Unidad">Unidad</option>
+              <option value="Metros">Metros</option>
+              <option value="Tramos">Tramos</option>
+              <option value="Pares">Pares</option>
+              <option value="Global">Global</option>
+            </select>
+          </div>
+          <div class="flex items-center pt-5">
+            <label class="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-200 w-full shadow-sm">
+              <input type="checkbox" id="prod_activo" checked class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+              <span class="text-xs font-bold text-slate-700">Producto Activo</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- SECCIÓN DE PRECIOS & MARGEN -->
+        <div class="p-4 bg-white border border-slate-200/80 rounded-2xl space-y-3.5 shadow-sm">
+          <div class="grid grid-cols-3 gap-2.5 items-end">
+            <div>
+              <label class="block text-[10px] font-tech-mono uppercase font-bold text-slate-500 mb-1">Costo Dist. ($)</label>
+              <input type="number" step="0.01" min="0" id="prod_costo" oninput="calcularPVPDesdePorcentaje()" value="0.00" class="glass-input w-full text-xs rounded-xl p-2.5 font-bold text-slate-800 text-center">
+            </div>
+            <div>
+              <label class="block text-[10px] font-tech-mono uppercase font-bold text-blue-600 mb-1">% Ganancia</label>
+              <input type="number" step="1" min="0" id="prod_porcentaje" oninput="calcularPVPDesdePorcentaje()" value="35" class="glass-input w-full text-xs rounded-xl p-2.5 font-bold text-blue-600 text-center bg-blue-50/30">
+            </div>
+            <div>
+              <label class="block text-[10px] font-tech-mono uppercase font-bold text-emerald-700 mb-1">PVP Sugerido *</label>
+              <input type="number" step="0.01" min="0" id="prod_pvp" required oninput="calcularPorcentajeDesdePVP()" value="0.00" class="w-full text-xs border border-emerald-300 rounded-xl p-2.5 font-black text-emerald-900 text-center bg-emerald-50 shadow-inner">
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-200/60 flex justify-end gap-2">
+          <button type="button" onclick="cerrarModal()" class="px-4 py-2.5 bg-slate-200/80 hover:bg-slate-300 text-slate-700 rounded-xl font-semibold transition">Cancelar</button>
+          <button type="submit" id="btn_guardar" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-md shadow-blue-600/25 transition">Guardar Ítem</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- MODAL: AJUSTE MASIVO -->
+  <div id="modal_masivo" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[80] hidden flex justify-center items-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-6 py-4 flex justify-between items-center shadow-sm">
+        <h3 class="font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-percent text-amber-200"></i> Ajuste Masivo de Precios</h3>
+        <button onclick="cerrarModalMasivo()" class="text-white font-black text-lg px-2">✕</button>
+      </div>
+      <div class="p-6 space-y-4 text-xs bg-slate-50/50">
+        <div>
+          <label class="block text-[10px] font-tech-mono uppercase font-bold text-slate-500 mb-1">Aplicar a:</label>
+          <select id="masivo_subsistema" class="glass-input w-full text-xs rounded-xl p-2.5 font-medium text-slate-800">
+            <option value="TODOS">Todo el Catálogo Completo</option>
+            <option value="CCTV">Solo CCTV</option>
+            <option value="Alarmas">Solo Alarmas</option>
+            <option value="Redes">Solo Redes</option>
+            <option value="Cercos">Solo Cercos</option>
+            <option value="Acceso">Solo Acceso</option>
+            <option value="Materiales">Solo Materiales</option>
+            <option value="Servicio">Solo Servicio</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-tech-mono uppercase font-bold text-slate-500 mb-1">Porcentaje de Ganancia (%):</label>
+          <input type="number" step="1" min="1" id="masivo_porcentaje" value="35" class="w-full text-sm border border-amber-300 rounded-xl p-2.5 outline-none font-black text-amber-900 bg-amber-50 text-center shadow-inner">
+        </div>
+        <div class="pt-4 border-t border-slate-200/60 flex justify-end gap-2">
+          <button type="button" onclick="cerrarModalMasivo()" class="px-4 py-2.5 bg-slate-200 text-slate-700 rounded-xl font-semibold">Cancelar</button>
+          <button type="button" id="btn_aplicar_masivo" onclick="ejecutarAjusteMasivo()" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold">Aplicar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let CATALOGO_DATA = [];
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    function calcularPVPDesdePorcentaje() {
+      const costo = parseFloat(document.getElementById('prod_costo').value) || 0;
+      const pct = parseFloat(document.getElementById('prod_porcentaje').value) || 0;
+      const pvp = costo * (1 + (pct / 100));
+      document.getElementById('prod_pvp').value = pvp.toFixed(2);
+    }
+
+    function calcularPorcentajeDesdePVP() {
+      const costo = parseFloat(document.getElementById('prod_costo').value) || 0;
+      const pvp = parseFloat(document.getElementById('prod_pvp').value) || 0;
+      if (costo > 0) {
+        const pct = ((pvp - costo) / costo) * 100;
+        document.getElementById('prod_porcentaje').value = Math.round(pct);
+      }
+    }
+
+    async function generarCodigoAutomatico() {
+      if (document.getElementById('prod_id').value || !supabaseClient) return;
+      const subsistema = document.getElementById('prod_subsistema').value;
+      const categoria = document.getElementById('prod_categoria').value;
+      
+      const prefijosSub = { 'CCTV': 'CCT', 'Alarmas': 'ALM', 'Redes': 'RED', 'Cercos': 'CER', 'Acceso': 'ACC', 'Materiales': 'MAT', 'Servicio': 'SRV' };
+      const prefijosCat = { 'Equipo': 'EQP', 'Material': 'MAT', 'Accesorio': 'ACC', 'Servicio': 'SRV' };
+
+      const patron = `${prefijosSub[subsistema] || 'GEN'}-${prefijosCat[categoria] || 'GEN'}-`;
+      const { data } = await supabaseClient.from('catalogo_precios').select('codigo').ilike('codigo', `${patron}%`);
+      const correlativo = (data ? data.length + 1 : 1).toString().padStart(4, '0');
+      document.getElementById('prod_codigo').value = `${patron}${correlativo}`;
+    }
+
+    async function cargarCatalogo() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('catalogo_precios')
+          .select('*')
+          .order('subsistema', { ascending: true })
+          .order('descripcion', { ascending: true });
+
+        if (error) throw error;
+        CATALOGO_DATA = data || [];
+        renderTabla(CATALOGO_DATA);
+      } catch (err) {
+        alert('Error al cargar catálogo: ' + err.message);
+      }
+    }
+
+    function renderTabla(lista) {
+      const tbody = document.getElementById('tabla_catalogo_body');
+      const contador = document.getElementById('contador_registros');
+      tbody.innerHTML = '';
+      contador.innerText = `Total: ${lista.length} productos`;
+
+      if (lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-slate-400 font-tech-mono text-xs italic">No se encontraron productos registrados.</td></tr>`;
+        return;
+      }
+
+      lista.forEach(item => {
+        const costo = parseFloat(item.costo_distribuidor || 0);
+        const pvp = parseFloat(item.pvp_sugerido || 0);
+        const marcaModelo = [item.marca, item.modelo].filter(Boolean).join(' / ') || '<span class="text-slate-400 italic">Sin especificar</span>';
+        const activo = item.activo !== false;
+        
+        const esBodega = item.tipo_abastecimiento === 'bodega_propia';
+        const stockVal = item.stock_actual || 0;
+        
+        const badgeAbastecimiento = esBodega 
+          ? '<span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Bodega Propia</span>' 
+          : '<span class="px-2 py-0.5 rounded text-[9px] font-bold bg-sky-50 text-sky-700 border border-sky-200">Bajo Pedido</span>';
+
+        const stockHtml = esBodega 
+          ? `<span class="font-tech-mono font-bold ${stockVal <= 1 ? 'text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200' : 'text-emerald-700'}">${stockVal <= 1 ? '<i class="fa-solid fa-triangle-exclamation text-[10px]"></i> ' : ''}${stockVal}</span>` 
+          : '<span class="text-slate-400 font-tech-mono">0 (JIT)</span>';
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50/80 border-b border-slate-100 transition ${!activo ? 'opacity-60 bg-slate-50/50' : ''}">
+            <td class="py-3 px-3.5 font-bold text-slate-800">${item.subsistema}</td>
+            <td class="py-3 px-3.5 text-slate-700 font-mono text-[11px] font-semibold">${item.codigo || '-'}</td>
+            <td class="py-3 px-3.5 text-slate-800 font-medium text-xs">${marcaModelo}</td>
+            <td class="py-3 px-3.5 font-semibold text-slate-900">${item.descripcion}</td>
+            <td class="py-3 px-3.5 text-center">${badgeAbastecimiento}</td>
+            <td class="py-3 px-3.5 text-center">${stockHtml}</td>
+            <td class="py-3 px-3.5 text-right font-semibold text-slate-600 font-tech-mono">$${costo.toFixed(2)}</td>
+            <td class="py-3 px-3.5 text-right font-black text-emerald-700 bg-emerald-50/30 font-tech-mono">$${pvp.toFixed(2)}</td>
+            <td class="py-3 px-3.5 text-center">
+              <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${activo ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">${activo ? 'Activo' : 'Inactivo'}</span>
+            </td>
+            <td class="py-3 px-3.5 text-center space-x-2">
+              <button onclick="editarProducto('${item.id}')" class="text-blue-600 hover:text-blue-800 font-bold transition">Editar</button>
+              <button onclick="eliminarProducto('${item.id}')" class="text-rose-500 hover:text-rose-700 font-bold transition">✕</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function filtrarTabla() {
+      const q = document.getElementById('filtro_busqueda').value.toLowerCase().trim();
+      const sub = document.getElementById('filtro_subsistema').value;
+
+      const filtrados = CATALOGO_DATA.filter(item => {
+        const matchSub = (sub === 'TODOS' || item.subsistema === sub);
+        const matchText = (item.descripcion?.toLowerCase().includes(q) || item.codigo?.toLowerCase().includes(q) || item.marca?.toLowerCase().includes(q));
+        return matchSub && matchText;
+      });
+
+      renderTabla(filtrados);
+    }
+
+    function abrirModalNuevo() {
+      document.getElementById('modal_titulo').innerText = 'Nuevo Ítem / Stock';
+      document.getElementById('prod_id').value = '';
+      document.getElementById('prod_subsistema').value = 'CCTV';
+      document.getElementById('prod_categoria').value = 'Equipo';
+      document.getElementById('prod_marca').value = '';
+      document.getElementById('prod_modelo').value = '';
+      document.getElementById('prod_descripcion').value = '';
+      document.getElementById('prod_unidad').value = 'Unidad';
+      document.getElementById('prod_activo').checked = true;
+      document.getElementById('prod_costo').value = '0.00';
+      document.getElementById('prod_porcentaje').value = '35';
+      document.getElementById('prod_pvp').value = '0.00';
+      document.getElementById('prod_abastecimiento').value = 'bajo_pedido';
+      document.getElementById('prod_stock').value = '0';
+      
+      generarCodigoAutomatico();
+      document.getElementById('modal_producto').classList.remove('hidden');
+    }
+
+    function cerrarModal() {
+      document.getElementById('modal_producto').classList.add('hidden');
+    }
+
+    function editarProducto(id) {
+      const item = CATALOGO_DATA.find(p => p.id === id);
+      if (!item) return;
+
+      document.getElementById('modal_titulo').innerText = 'Editar Ítem & Inventario';
+      document.getElementById('prod_id').value = item.id;
+      document.getElementById('prod_subsistema').value = item.subsistema;
+      document.getElementById('prod_categoria').value = item.categoria || 'Equipo';
+      document.getElementById('prod_marca').value = item.marca || '';
+      document.getElementById('prod_modelo').value = item.modelo || '';
+      document.getElementById('prod_codigo').value = item.codigo || '';
+      document.getElementById('prod_descripcion').value = item.descripcion;
+      document.getElementById('prod_unidad').value = item.unidad || 'Unidad';
+      document.getElementById('prod_activo').checked = item.activo !== false;
+      document.getElementById('prod_abastecimiento').value = item.tipo_abastecimiento || 'bajo_pedido';
+      document.getElementById('prod_stock').value = item.stock_actual || 0;
+      
+      const costo = parseFloat(item.costo_distribuidor || 0);
+      const pvp = parseFloat(item.pvp_sugerido || 0);
+      document.getElementById('prod_costo').value = costo.toFixed(2);
+      document.getElementById('prod_pvp').value = pvp.toFixed(2);
+      
+      const pct = costo > 0 ? Math.round(((pvp - costo) / costo) * 100) : 35;
+      document.getElementById('prod_porcentaje').value = pct;
+
+      document.getElementById('modal_producto').classList.remove('hidden');
+    }
+
+    async function guardarProducto(event) {
+      event.preventDefault();
+      const btn = document.getElementById('btn_guardar');
+      btn.disabled = true;
+      btn.innerText = 'Guardando...';
+
+      const id = document.getElementById('prod_id').value;
+      const registro = {
+        subsistema: document.getElementById('prod_subsistema').value,
+        categoria: document.getElementById('prod_categoria').value,
+        marca: document.getElementById('prod_marca').value.trim() || null,
+        modelo: document.getElementById('prod_modelo').value.trim() || null,
+        codigo: document.getElementById('prod_codigo').value.trim(),
+        descripcion: document.getElementById('prod_descripcion').value.trim().toUpperCase(),
+        unidad: document.getElementById('prod_unidad').value,
+        activo: document.getElementById('prod_activo').checked,
+        costo_distribuidor: parseFloat(document.getElementById('prod_costo').value) || 0,
+        pvp_sugerido: parseFloat(document.getElementById('prod_pvp').value) || 0,
+        tipo_abastecimiento: document.getElementById('prod_abastecimiento').value,
+        stock_actual: parseInt(document.getElementById('prod_stock').value) || 0
+      };
+
+      try {
+        if (id) {
+          const { error } = await supabaseClient.from('catalogo_precios').update(registro).eq('id', id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient.from('catalogo_precios').insert([registro]);
+          if (error) throw error;
+        }
+        cerrarModal();
+        await cargarCatalogo();
+      } catch (err) {
+        alert('Error al guardar: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Guardar Ítem';
+      }
+    }
+
+    async function eliminarProducto(id) {
+      const item = CATALOGO_DATA.find(p => p.id === id);
+      if (!confirm(`¿Estás seguro de eliminar "${item?.descripcion || 'este producto'}"?`)) return;
+
+      try {
+        const { error } = await supabaseClient.from('catalogo_precios').delete().eq('id', id);
+        if (error) throw error;
+        await cargarCatalogo();
+      } catch (err) {
+        alert('Error al eliminar: ' + err.message);
+      }
+    }
+
+    function abrirModalMasivo() { document.getElementById('modal_masivo').classList.remove('hidden'); }
+    function cerrarModalMasivo() { document.getElementById('modal_masivo').classList.add('hidden'); }
+
+    async function ejecutarAjusteMasivo() {
+      const subsistema = document.getElementById('masivo_subsistema').value;
+      const pct = parseFloat(document.getElementById('masivo_porcentaje').value) || 0;
+      const factor = 1 + (pct / 100);
+
+      const itemsAfectados = CATALOGO_DATA.filter(item => (subsistema === 'TODOS' || item.subsistema === subsistema) && parseFloat(item.costo_distribuidor || 0) > 0);
+      if (itemsAfectados.length === 0) { alert('No hay productos con costo mayor a 0.'); return; }
+
+      if (!confirm(`Se actualizará el PVP de ${itemsAfectados.length} productos aplicando un +${pct}%. ¿Continuar?`)) return;
+
+      try {
+        for (const item of itemsAfectados) {
+          const nuevoPVP = parseFloat((parseFloat(item.costo_distribuidor) * factor).toFixed(2));
+          await supabaseClient.from('catalogo_precios').update({ pvp_sugerido: nuevoPVP }).eq('id', item.id);
+        }
+        alert(`✓ Se actualizaron ${itemsAfectados.length} productos exitosamente.`);
+        cerrarModalMasivo();
+        await cargarCatalogo();
+      } catch (err) {
+        alert('Error en ajuste masivo: ' + err.message);
+      }
+    }
+
+    function importarCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async function(results) {
+          const filas = results.data;
+          if (filas.length === 0) { alert('CSV vacío.'); return; }
+
+          const registros = filas.map(f => ({
+            subsistema: f.subsistema || 'CCTV',
+            codigo: f.codigo || '',
+            marca: f.marca || null,
+            modelo: f.modelo || null,
+            descripcion: (f.descripcion || 'Sin descripción').toUpperCase(),
+            unidad: f.unidad || 'Unidad',
+            costo_distribuidor: parseFloat(f.costo_distribuidor) || 0,
+            pvp_sugerido: parseFloat(f.pvp_sugerido) || 0,
+            categoria: f.categoria || 'Equipo',
+            tipo_abastecimiento: f.tipo_abastecimiento || 'bajo_pedido',
+            stock_actual: parseInt(f.stock_actual) || 0,
+            activo: f.activo !== 'false' && f.activo !== false
+          }));
+
+          if (confirm(`Se importarán ${registros.length} productos con stock y precios. ¿Continuar?`)) {
+            try {
+              const { error } = await supabaseClient.from('catalogo_precios').insert(registros);
+              if (error) throw error;
+              alert(`✓ ${registros.length} importados con éxito.`);
+              await cargarCatalogo();
+            } catch (err) {
+              alert('Error importando: ' + err.message);
+            }
+          }
+        }
+      });
+    }
+
+    cargarCatalogo();
+  </script>
+</body>
+</html>

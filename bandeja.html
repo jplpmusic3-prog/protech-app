@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Bandeja Comercial & Aprobaciones — ProTech Security</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Técnica Homologada -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO Y MICRO-RETÍCULA CAD (GPU SAFE)
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.16), transparent 60%),
+        linear-gradient(rgba(2, 6, 23, 0.65), rgba(2, 6, 23, 0.8));
+    }
+    .tech-grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+    }
+
+    /* ========================================================
+       2. TARJETAS CYBER-GLASS CON LUZ ESPECULAR (GPU SAFE)
+       ======================================================== */
+    .cyber-glass-card, .glass-card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.82) 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.08),
+        inset -1px -1px 3px rgba(0, 0, 0, 0.5),
+        0 12px 28px -6px rgba(0, 0, 0, 0.55) !important;
+      border-radius: 1.25rem !important;
+      position: relative !important;
+      color: #ffffff !important;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease;
+    }
+    .cyber-glass-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 12%;
+      right: 12%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.55), transparent);
+      pointer-events: none;
+    }
+    .cyber-glass-card:hover, .glass-card:hover {
+      border-color: rgba(59, 130, 246, 0.5) !important;
+    }
+
+    .btn-glass-action {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.92) 0%, rgba(51, 65, 85, 0.88) 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+      border-radius: 0.875rem !important;
+      transition: all 0.18s ease;
+      color: #ffffff !important;
+    }
+    .btn-glass-action:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(51, 65, 85, 0.98) 0%, rgba(71, 85, 105, 0.92) 100%) !important;
+      border-color: rgba(59, 130, 246, 0.65) !important;
+    }
+    .btn-glass-action:active:not(:disabled) { transform: scale(0.97); }
+    .btn-glass-action:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-cyber-purple {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+      border: 1px solid rgba(147, 197, 253, 0.45) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 16px rgba(37, 99, 235, 0.4) !important;
+      border-radius: 0.875rem !important;
+      color: #ffffff !important;
+      transition: all 0.18s ease;
+    }
+    .btn-cyber-purple:hover:not(:disabled) {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 20px rgba(37, 99, 235, 0.55) !important;
+    }
+
+    .cyber-input {
+      background: rgba(15, 23, 42, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #ffffff !important;
+      box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.45) !important;
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder { color: rgba(255, 255, 255, 0.45); }
+    .cyber-input:focus {
+      background: rgba(30, 41, 59, 0.98) !important;
+      border-color: rgba(59, 130, 246, 0.85) !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+      outline: none;
+    }
+    .cyber-input option { background: #0f172a; color: #ffffff; }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .font-tech-head { font-family: var(--tech-sans); }
+    .hide-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    /* Menú lateral colapsable */
+    #sidebar_menu {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, opacity 0.25s ease;
+    }
+    @media (min-width: 768px) {
+      #sidebar_menu.collapsed {
+        width: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        border-right-width: 0 !important;
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+    }
+
+    .collapse-content {
+      max-height: 420px; overflow: hidden; transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out; opacity: 1;
+    }
+    .collapse-content.collapsed { max-height: 0; opacity: 0; }
+    .collapse-icon { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapsed-btn .collapse-icon { transform: rotate(-90deg); }
+
+    /* ========================================================
+       ANIMACIÓN DE SALIDA AL PORTAL PRINCIPAL (CYBER-EXIT)
+       ======================================================== */
+    body.cyber-exit-active {
+      pointer-events: none;
+      overflow: hidden;
+    }
+    body.cyber-exit-active aside,
+    body.cyber-exit-active header,
+    body.cyber-exit-active main {
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.55s ease, filter 0.55s ease;
+      transform: scale(0.96) translateY(-10px);
+      opacity: 0;
+      filter: blur(8px);
+    }
+    #cyber_exit_overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.98) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #cyber_exit_overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .exit-card-box {
+      transform: translateY(16px) scale(0.95);
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #cyber_exit_overlay.active .exit-card-box {
+      transform: translateY(0) scale(1);
+    }
+    @keyframes progressPulse {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+    .animate-cyber-bar {
+      animation: progressPulse 1.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen relative flex flex-col md:flex-row pb-20 md:pb-0 text-white antialiased overflow-x-hidden session-checked">
+
+  <!-- CONTENEDOR DE NOTIFICACIONES CYBER-TOAST -->
+  <div id="toast_container" class="fixed top-4 right-4 z-[9990] flex flex-col gap-2.5 max-w-xs sm:max-w-sm w-full pointer-events-none px-2 sm:px-0"></div>
+
+  <!-- OVERLAY DE TRANSICIÓN AL CENTRO DE OPERACIONES -->
+  <div id="cyber_exit_overlay" class="no-print">
+    <div class="exit-card-box cyber-glass-card p-6 sm:p-8 rounded-2xl border border-blue-500/40 flex flex-col items-center text-center max-w-xs w-full mx-4 shadow-2xl">
+      <div class="w-14 h-14 rounded-2xl bg-blue-600/20 border border-blue-400/40 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20">
+        <i id="exit_icon" class="fa-solid fa-shield-halved text-2xl text-blue-400 animate-bounce"></i>
+      </div>
+      <span id="exit_badge" class="font-tech-mono text-[10px] uppercase tracking-widest text-emerald-400 font-bold mb-1">
+        ● Módulo Financiero
+      </span>
+      <h3 id="exit_title" class="font-tech-head font-extrabold text-base text-white mb-1">
+        Centro de Operaciones
+      </h3>
+      <p id="exit_sub_label" class="text-xs text-white/60 mb-5">
+        Retornando al portal principal...
+      </p>
+      <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden border border-white/10">
+        <div id="exit_progress_bar" class="h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 w-0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIDEO DE FONDO Y RETÍCULA TÉCNICA -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline preload="auto">
+      <source src="fondo-tech.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+  <div class="tech-grid-overlay"></div>
+
+  <!-- OVERLAY MÓVIL -->
+  <div id="mobile_menu_overlay" onclick="cerrarMobileMenu()" class="fixed inset-0 bg-slate-950/80 z-40 hidden transition-opacity duration-300"></div>
+
+  <!-- BARRA LATERAL TÁCTICA -->
+  <aside id="sidebar_menu" class="fixed md:sticky top-0 left-0 z-50 h-[100dvh] w-72 flex-col justify-between border-r border-white/15 p-4 sm:p-5 flex bg-slate-950/95 md:bg-slate-950/55 flex-shrink-0 no-print -translate-x-full md:translate-x-0">
+    <div class="space-y-4 relative z-10 overflow-y-auto max-h-[calc(100vh-110px)] pr-1 hide-scrollbar">
+      
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-9 w-auto object-contain drop-shadow" onerror="this.style.display='none'; document.getElementById('logo_nextgen').style.display='flex';">
+            <div id="logo_nextgen" style="display:none;" class="h-9 w-9 rounded-xl bg-blue-600 text-white font-tech-head text-sm items-center justify-center shadow-lg font-black">PS</div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="font-tech-head font-extrabold text-[15px] text-white leading-tight">ProTech</h1>
+              <span id="protech_net_status_badge" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-[8px] font-tech-mono text-emerald-300 font-bold">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>ONLINE
+              </span>
+            </div>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-0.5">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+        <button type="button" onclick="cerrarMobileMenu()" class="md:hidden text-white/70 hover:text-rose-400 transition p-1.5 bg-white/10 rounded-lg">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <nav class="space-y-3 text-xs font-semibold">
+        <div>
+          <a href="index.html" onclick="event.preventDefault(); transicionSalidaPortal('index.html', true);" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white shadow-sm relative overflow-hidden group transition hover:bg-white/15 cursor-pointer">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"></div>
+            <i class="fa-solid fa-layer-group w-4 text-center text-sm text-blue-400"></i>
+            <span class="font-bold">Centro de Operaciones</span>
+          </a>
+        </div>
+
+        <!-- ÁREA OPERATIVA -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_operativa', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_operativa" class="collapse-content space-y-1 mt-2">
+            <a href="agenda_tickets.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
+              <span>Agenda & Tickets</span>
+            </a>
+            <a href="inspecciones_index.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-list"></i></div>
+              <span>Dashboard Inspección</span>
+            </a>
+            <a href="orden_trabajo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+              <span>Órdenes de Trabajo</span>
+            </a>
+            <a href="acta_entrega.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-signature"></i></div>
+              <span>Acta de Entrega</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ÁREA COMERCIAL -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_comercial', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-store"></i> Área Comercial</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_comercial" class="collapse-content space-y-1 mt-2">
+            <a href="proforma.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+              <span>Generador de Proformas</span>
+            </a>
+            <a href="bandeja.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white bg-blue-600/40 font-bold transition group border border-blue-400/50 shadow-sm">
+              <div class="icon-box h-6 w-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-folder-open"></i></div>
+              <span>Bandeja & Aprobaciones</span>
+            </a>
+            <a href="catalogo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <span>Catálogo de Precios</span>
+            </a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="p-3 rounded-2xl cyber-glass-card border border-white/20 flex items-center justify-between shadow-sm relative z-10 mt-3">
+      <div class="flex items-center gap-2.5 overflow-hidden">
+        <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-tech-head font-bold text-xs shadow-md flex-shrink-0">JP</div>
+        <div class="truncate">
+          <p class="text-[11px] font-bold text-white truncate">Juan Pablo Luna</p>
+          <p class="font-tech-mono text-[8px] text-blue-300 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="transicionSalidaPortal('index.html', true)" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition flex-shrink-0" title="Desconectar">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden">
+    
+    <!-- HEADER STICKY -->
+    <header class="border-b border-white/15 sticky top-0 z-30 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 bg-slate-950/90 flex-shrink-0 no-print">
+      <div class="flex items-center gap-2.5 sm:gap-4 min-w-0">
+        <button type="button" onclick="toggleMobileMenu()" class="text-white p-2 sm:p-2.5 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 active:scale-95 transition focus:outline-none flex-shrink-0" title="Alternar Menú">
+          <i class="fa-solid fa-bars text-xs sm:text-sm"></i>
+        </button>
+        <div class="flex items-center relative group w-full sm:w-80">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-white/40 group-focus-within:text-blue-400 transition z-10 text-xs"></i>
+          <input type="text" id="input-busqueda" oninput="aplicarFiltros()" placeholder="Buscar por cliente o N° proforma..." class="cyber-input pl-10 pr-4 py-2 rounded-xl w-full text-xs font-medium placeholder-white/40 outline-none relative z-10">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <button onclick="transicionSalidaPortal('index.html', true)" class="px-3 py-2 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-arrow-left text-blue-400"></i> <span class="hidden sm:inline">Portal Principal</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 p-3.5 sm:p-6 md:p-8 overflow-y-auto hide-scrollbar relative z-10 space-y-6 pb-28 md:pb-12">
+      <div class="max-w-[1300px] mx-auto space-y-6">
+        
+        <div class="mb-2 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <div class="inline-flex items-center gap-2 text-[10px] font-tech-mono uppercase tracking-widest text-blue-400 font-bold mb-1">
+              <i class="fa-solid fa-wallet animate-pulse"></i> MÓDULO FINANCIERO • CONTROL DE TESORERÍA Y ORDENAMIENTO DE OBRAS
+            </div>
+            <h2 class="font-tech-head font-extrabold text-xl sm:text-2xl text-white tracking-tight">
+              Bandeja Comercial & Aprobaciones
+            </h2>
+          </div>
+          <button onclick="cargarProformas()" class="px-3 py-2 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate text-blue-400"></i> <span>Actualizar Lista</span>
+          </button>
+        </div>
+
+        <!-- Tarjetas Métricas KPI -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="cyber-glass-card p-4 rounded-2xl shadow-sm space-y-1">
+            <p class="text-[10px] font-bold text-white/60 uppercase font-tech-mono">Total Emitido</p>
+            <p id="kpi-total-emitido" class="text-xl font-black text-white font-tech-mono">$0.00</p>
+            <p id="kpi-cant-emitidas" class="text-[10px] text-white/50 font-tech-mono">0 proformas registradas</p>
+          </div>
+          <div class="cyber-glass-card p-4 rounded-2xl shadow-sm space-y-1">
+            <p class="text-[10px] font-bold text-white/60 uppercase font-tech-mono">Aprobadas / Activas</p>
+            <p id="kpi-total-aprobado" class="text-xl font-black text-emerald-300 font-tech-mono">$0.00</p>
+            <p id="kpi-cant-aprobadas" class="text-[10px] text-white/50 font-tech-mono">0 obras en ejecución</p>
+          </div>
+          <div class="cyber-glass-card p-4 rounded-2xl shadow-sm space-y-1">
+            <p class="text-[10px] font-bold text-white/60 uppercase font-tech-mono">Anticipos Recaudados</p>
+            <p id="kpi-total-anticipos" class="text-xl font-black text-blue-300 font-tech-mono">$0.00</p>
+            <p class="text-[10px] text-white/50 font-tech-mono">Fondos en cuenta</p>
+          </div>
+          <div class="cyber-glass-card p-4 rounded-2xl shadow-sm space-y-1">
+            <p class="text-[10px] font-bold text-white/60 uppercase font-tech-mono">Saldos por Cobrar</p>
+            <p id="kpi-total-saldos" class="text-xl font-black text-amber-300 font-tech-mono">$0.00</p>
+            <p class="text-[10px] text-white/50 font-tech-mono">Contra entrega técnica</p>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="cyber-glass-card p-3.5 rounded-2xl shadow-sm flex flex-wrap justify-between items-center gap-3">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button onclick="filtrarEstado('todos')" id="btn-filtro-todos" class="px-3 py-1.5 text-xs font-bold rounded-xl btn-glass-action bg-blue-600/60 text-white transition shadow-sm">Todas</button>
+            <button onclick="filtrarEstado('pendiente')" id="btn-filtro-pendiente" class="px-3.5 py-1.5 text-xs font-semibold rounded-xl btn-glass-action text-white/85 transition">Pendientes</button>
+            <button onclick="filtrarEstado('aprobada')" id="btn-filtro-aprobada" class="px-3.5 py-1.5 text-xs font-semibold rounded-xl btn-glass-action text-white/85 transition">Aprobadas</button>
+            <button onclick="filtrarEstado('facturada')" id="btn-filtro-facturada" class="px-3.5 py-1.5 text-xs font-semibold rounded-xl btn-glass-action text-white/85 transition">Facturadas</button>
+            <button onclick="filtrarEstado('rechazada')" id="btn-filtro-rechazada" class="px-3.5 py-1.5 text-xs font-semibold rounded-xl btn-glass-action text-white/85 transition">Rechazadas</button>
+          </div>
+        </div>
+
+        <!-- Tabla Principal de Proformas -->
+        <div class="cyber-glass-card rounded-2xl shadow-sm overflow-hidden">
+          <div class="overflow-x-auto hide-scrollbar">
+            <table class="w-full text-left border-collapse text-xs min-w-[700px]">
+              <thead>
+                <tr class="bg-white/10 text-white font-bold uppercase text-[10px] border-b border-white/15 tracking-wider font-tech-mono">
+                  <th class="p-3.5">N° Proforma</th>
+                  <th class="p-3.5">Fecha</th>
+                  <th class="p-3.5">Cliente / Proyecto</th>
+                  <th class="p-3.5 text-right">Total Inversión</th>
+                  <th class="p-3.5 text-center">Anticipo</th>
+                  <th class="p-3.5 text-center">Saldo</th>
+                  <th class="p-3.5 text-center">Estado</th>
+                  <th class="p-3.5 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-proformas-body" class="divide-y divide-white/10 text-white/90">
+                <tr>
+                  <td colspan="8" class="p-8 text-center text-white/50 italic font-tech-mono">Cargando proformas desde Supabase...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: GESTIÓN DE APROBACIÓN & CREACIÓN DE OT -->
+  <div id="modal-aprobacion" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex justify-center items-center p-4 overflow-y-auto">
+    <div class="cyber-glass-card bg-slate-900/95 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden my-6 border border-white/20 text-white">
+      
+      <div class="bg-slate-950/80 px-6 py-4 flex justify-between items-center border-b border-white/15">
+        <div>
+          <h3 class="text-sm font-bold font-tech-head text-white">Gestión Comercial de Proforma</h3>
+          <p id="modal-subtitulo-prf" class="text-[11px] text-white/60 font-tech-mono">PRF-2026-0000 | Cliente</p>
+        </div>
+        <button onclick="cerrarModalAprobacion()" class="text-white/70 hover:text-white text-lg font-black px-2">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs bg-slate-950/40">
+        
+        <div>
+          <label class="block text-xs font-bold text-white/80 mb-1.5">Perfil de Aprobación Comercial:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="seleccionarTipoAprobacion('anticipo')" id="btn-tipo-anticipo" class="p-2.5 rounded-xl border-2 border-blue-400 bg-blue-500/20 text-blue-200 font-bold flex flex-col items-center gap-1 transition shadow-sm">
+              <i class="fa-solid fa-hand-holding-dollar text-base"></i>
+              <span>Cliente Nuevo</span>
+              <span class="text-[9px] font-normal text-white/70">Requiere Anticipo (50%)</span>
+            </button>
+            <button type="button" onclick="seleccionarTipoAprobacion('confianza')" id="btn-tipo-confianza" class="p-2.5 rounded-xl border border-white/20 bg-white/5 text-white/80 font-semibold flex flex-col items-center gap-1 hover:border-white/40 transition">
+              <i class="fa-solid fa-handshake text-base text-white/70"></i>
+              <span>Cliente Confianza</span>
+              <span class="text-[9px] font-normal text-white/60">Crédito / Sin Anticipo</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="bloque-campos-anticipo" class="space-y-3 bg-white/5 p-3.5 rounded-xl border border-white/10">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-white/70 mb-1">Monto Anticipo Recibido ($):</label>
+              <input type="number" step="0.01" id="input-monto-anticipo" oninput="calcularSaldoModal()" placeholder="0.00" class="cyber-input w-full text-xs font-bold text-white rounded-xl p-2 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-white/70 mb-1">Saldo Contra Entrega ($):</label>
+              <input type="text" id="input-saldo-calculado" readonly class="w-full text-xs font-bold text-amber-300 bg-amber-500/20 border border-amber-400/30 rounded-xl p-2 text-center">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-[10px] font-bold text-white/70 mb-1">Método de Pago (Anticipo):</label>
+            <select id="select-metodo-pago" class="cyber-input w-full text-xs font-semibold text-white rounded-xl p-2 outline-none">
+              <option value="Transferencia Bancaria">🏦 Transferencia Bancaria</option>
+              <option value="Efectivo">💵 Efectivo</option>
+              <option value="PayPhone (Link de Pago)">🔗 Tarjeta - PayPhone (Link de Pago)</option>
+              <option value="PayPhone (POS Celular)">📱 Tarjeta - PayPhone (POS Celular)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-semibold text-white/70 mb-1">N° Comprobante / Lote PayPhone:</label>
+            <input type="text" id="input-comprobante" placeholder="Ej. Transf. #482910 o Ref: 12345" class="cyber-input w-full text-xs rounded-xl p-2 outline-none">
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2 border-t border-white/15">
+          <h4 class="text-xs font-bold text-white uppercase tracking-wide flex items-center gap-1.5 font-tech-head">
+            <i class="fa-solid fa-wrench text-blue-400"></i> Parámetros de Orden de Trabajo (OT)
+          </h4>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-semibold text-white/70 mb-1">Técnico Líder Asignado:</label>
+              <input type="text" id="input-tecnico-asignado" placeholder="Inspector / Cuadrilla" class="cyber-input w-full text-xs rounded-xl p-2 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-white/70 mb-1">Fecha Programada Inicio:</label>
+              <input type="date" id="input-fecha-inicio" class="cyber-input w-full text-xs rounded-xl p-2 text-white font-mono outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-white/70 mb-1">Instrucciones Especiales para Campo:</label>
+            <textarea id="input-observaciones-ot" rows="2" placeholder="Requerimientos de escalera, permisos de administración, horarios de perforación..." class="cyber-input w-full text-xs rounded-xl p-2 outline-none resize-none"></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="bg-white/5 px-6 py-3.5 border-t border-white/15 flex justify-between items-center">
+        <button type="button" onclick="marcarComoRechazada()" class="text-rose-400 hover:text-rose-300 text-xs font-bold transition">
+          Marcar Rechazada
+        </button>
+        <div class="flex gap-2">
+          <button type="button" onclick="cerrarModalAprobacion()" class="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition">Cancelar</button>
+          <button type="button" onclick="confirmarAprobacionYGenerarOT()" id="btn-confirmar-aprobacion" class="px-4 py-2 btn-cyber-purple text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow">
+            <i class="fa-solid fa-check text-blue-200"></i> Aprobar & Generar OT
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let listaProformas = [];
+    let proformaSeleccionada = null;
+    let filtroEstadoActivo = 'todos';
+    let tipoAprobacionActual = 'anticipo';
+
+    function mostrarToast(mensaje, tipo = 'info') {
+      const container = document.getElementById('toast_container');
+      if (!container) return;
+      const colores = { success: 'border-emerald-400/50 text-emerald-300 bg-slate-900/95', error: 'border-rose-400/50 text-rose-300 bg-slate-900/95', info: 'border-blue-400/50 text-blue-300 bg-slate-900/95' };
+      const iconos = { success: 'fa-circle-check text-emerald-400', error: 'fa-triangle-exclamation text-rose-400', info: 'fa-circle-info text-blue-400' };
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 ${colores[tipo] || colores.info}`;
+      toast.innerHTML = `<i class="fa-solid ${iconos[tipo] || iconos.info} text-sm flex-shrink-0"></i><span class="text-xs font-semibold text-white leading-snug">${mensaje}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+      setTimeout(() => { toast.classList.add('opacity-0', 'translate-x-4'); setTimeout(() => toast.remove(), 300); }, 3600);
+    }
+
+    function transicionSalidaPortal(urlDestino = 'index.html', salidaManual = false) {
+      const overlay = document.getElementById('cyber_exit_overlay');
+      const bar = document.getElementById('exit_progress_bar');
+      const title = document.getElementById('exit_title');
+      const subLabel = document.getElementById('exit_sub_label');
+
+      if (salidaManual && subLabel) {
+        subLabel.innerText = "Retornando al Centro de Operaciones...";
+      }
+
+      document.body.classList.add('cyber-exit-active');
+      if (overlay) overlay.classList.add('active');
+      if (bar) bar.classList.add('animate-cyber-bar');
+
+      setTimeout(() => {
+        window.location.href = urlDestino;
+      }, 1350);
+    }
+
+    function toggleMobileMenu() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      if (sidebar) sidebar.classList.toggle('-translate-x-full');
+      if (overlay) overlay.classList.toggle('hidden');
+    }
+
+    function cerrarMobileMenu() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      if (sidebar) sidebar.classList.add('-translate-x-full');
+      if (overlay) overlay.classList.add('hidden');
+    }
+
+    function toggleArea(idContent, headerElement) {
+      const content = document.getElementById(idContent);
+      if (content) {
+        content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed-btn');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      cerrarMobileMenu();
+      const fechaInput = document.getElementById('input-fecha-inicio');
+      if (fechaInput) fechaInput.value = new Date().toISOString().slice(0, 10);
+      await cargarProformas();
+      document.body.classList.add('session-checked');
+    });
+
+    async function cargarProformas() {
+      try {
+        if (!supabaseClient) throw new Error("Cliente Supabase no disponible");
+
+        const { data, error } = await supabaseClient
+          .from('proformas')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        listaProformas = data || [];
+
+        actualizarKPIs();
+        aplicarFiltros();
+      } catch (err) {
+        console.error("Error al cargar proformas:", err);
+        const tbody = document.getElementById('tabla-proformas-body');
+        if (tbody) {
+          tbody.innerHTML = `
+            <tr><td colspan="8" class="p-6 text-center text-rose-400 font-bold">Error al conectar con Supabase: ${err.message}</td></tr>
+          `;
+        }
+      }
+    }
+
+    function obtenerTotalProforma(p) {
+      if (p.total !== undefined && p.total !== null) return Number(p.total);
+      if (p.total_contado !== undefined && p.total_contado !== null) return Number(p.total_contado);
+      if (p.datos_proforma && p.datos_proforma.total) {
+        return parseFloat(String(p.datos_proforma.total).replace('$', '')) || 0;
+      }
+      return 0;
+    }
+
+    function actualizarKPIs() {
+      let totalEmitido = 0;
+      let cantAprobadas = 0;
+      let totalAprobado = 0;
+      let totalAnticipos = 0;
+      let totalSaldos = 0;
+
+      listaProformas.forEach(p => {
+        const total = obtenerTotalProforma(p);
+        totalEmitido += total;
+
+        const estado = (p.estado || 'pendiente').toLowerCase();
+        if (estado === 'aprobada' || estado === 'facturada') {
+          cantAprobadas++;
+          totalAprobado += total;
+          totalAnticipos += Number(p.monto_anticipo || p.anticipo || 0);
+          totalSaldos += Number(p.saldo_pendiente || p.saldo || 0);
+        }
+      });
+
+      document.getElementById('kpi-total-emitido').textContent = `$${totalEmitido.toFixed(2)}`;
+      document.getElementById('kpi-cant-emitidas').textContent = `${listaProformas.length} proformas registradas`;
+
+      document.getElementById('kpi-total-aprobado').textContent = `$${totalAprobado.toFixed(2)}`;
+      document.getElementById('kpi-cant-aprobadas').textContent = `${cantAprobadas} obras en ejecución`;
+
+      document.getElementById('kpi-total-anticipos').textContent = `$${totalAnticipos.toFixed(2)}`;
+      document.getElementById('kpi-total-saldos').textContent = `$${totalSaldos.toFixed(2)}`;
+    }
+
+    function filtrarEstado(estado) {
+      filtroEstadoActivo = estado;
+
+      ['todos', 'pendiente', 'aprobada', 'facturada', 'rechazada'].forEach(est => {
+        const btn = document.getElementById(`btn-filtro-${est}`);
+        if (btn) {
+          if (est === estado) {
+            btn.className = "px-3.5 py-1.5 text-xs font-bold rounded-xl btn-glass-action bg-blue-600/60 text-white transition shadow-sm";
+          } else {
+            btn.className = "px-3.5 py-1.5 text-xs font-semibold rounded-xl btn-glass-action text-white/85 transition";
+          }
+        }
+      });
+
+      aplicarFiltros();
+    }
+
+    function aplicarFiltros() {
+      const termino = document.getElementById('input-busqueda')?.value.toLowerCase().trim() || '';
+      const tbody = document.getElementById('tabla-proformas-body');
+      if (!tbody) return;
+
+      let filtradas = listaProformas.filter(p => {
+        const estadoActual = (p.estado || 'pendiente').toLowerCase();
+        
+        let coincideEstado = true;
+        if (filtroEstadoActivo !== 'todos') {
+          if (filtroEstadoActivo === 'pendiente') {
+            coincideEstado = (estadoActual === 'pendiente' || estadoActual === 'emitida');
+          } else {
+            coincideEstado = (estadoActual === filtroEstadoActivo);
+          }
+        }
+        
+        const numDoc = (p.numero_documento || p.numero_proforma || `PRF-${p.id}`).toLowerCase();
+        const cliente = (p.cliente || '').toLowerCase();
+
+        const coincideTermino = cliente.includes(termino) || numDoc.includes(termino);
+        return coincideEstado && coincideTermino;
+      });
+
+      if (filtradas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-white/50 italic font-tech-mono">No se encontraron proformas con los filtros aplicados.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtradas.map(p => {
+        const fechaRaw = p.created_at || (p.datos_proforma && p.datos_proforma.fecha);
+        const fecha = fechaRaw ? new Date(fechaRaw).toLocaleDateString('es-EC') : '-';
+        const total = obtenerTotalProforma(p).toFixed(2);
+        const anticipo = Number(p.monto_anticipo || p.anticipo || 0).toFixed(2);
+        const saldo = Number(p.saldo_pendiente || p.saldo || 0).toFixed(2);
+        const numDoc = p.numero_documento || p.numero_proforma || `PRF-${p.id}`;
+
+        const estado = (p.estado || 'pendiente').toLowerCase();
+        let badgeEstado = '';
+        if (estado === 'aprobada') {
+          badgeEstado = `<span class="bg-emerald-500/20 text-emerald-300 font-bold px-2.5 py-1 rounded-lg text-[10px] uppercase font-tech-mono border border-emerald-400/30">Aprobada</span>`;
+        } else if (estado === 'facturada') {
+          badgeEstado = `<span class="bg-blue-500/20 text-blue-300 font-bold px-2.5 py-1 rounded-lg text-[10px] uppercase font-tech-mono shadow-sm border border-blue-400/30">Facturada</span>`;
+        } else if (estado === 'rechazada') {
+          badgeEstado = `<span class="bg-rose-500/20 text-rose-300 font-bold px-2.5 py-1 rounded-lg text-[10px] uppercase font-tech-mono border border-rose-400/30">Rechazada</span>`;
+        } else {
+          badgeEstado = `<span class="bg-amber-500/20 text-amber-300 font-bold px-2.5 py-1 rounded-lg text-[10px] uppercase font-tech-mono border border-amber-400/30">Pendiente</span>`;
+        }
+
+        let btnAccionesHTML = '';
+        if (estado === 'aprobada') {
+          btnAccionesHTML = `
+            <button onclick="abrirModalAprobacion('${p.id}')" class="px-3 py-1.5 btn-glass-action bg-blue-600/50 hover:bg-blue-600/70 text-white font-bold rounded-xl text-[10px] transition flex items-center gap-1 shadow-sm" title="Ver / Actualizar OT">
+              <i class="fa-solid fa-screwdriver-wrench text-blue-300"></i> OT Generada
+            </button>
+          `;
+        } else if (estado === 'facturada' || estado === 'rechazada') {
+          btnAccionesHTML = `
+            <button disabled class="px-3 py-1.5 bg-white/10 text-white/40 font-bold rounded-xl text-[10px] flex items-center gap-1 shadow-sm cursor-not-allowed" title="Documento Cerrado">
+              <i class="fa-solid fa-lock"></i> Cerrada
+            </button>
+          `;
+        } else {
+          btnAccionesHTML = `
+            <button onclick="abrirModalAprobacion('${p.id}')" class="px-3 py-1.5 btn-glass-action bg-emerald-600/60 hover:bg-emerald-600/80 text-white font-bold rounded-xl text-[10px] transition flex items-center gap-1 shadow-sm" title="Gestionar Aprobación">
+              <i class="fa-solid fa-sliders text-emerald-300"></i> Gestionar
+            </button>
+          `;
+        }
+
+        return `
+          <tr class="hover:bg-white/5 border-b border-white/10 transition">
+            <td class="p-3.5 font-mono font-bold text-blue-300">${numDoc}</td>
+            <td class="p-3.5 text-white/60 font-tech-mono">${fecha}</td>
+            <td class="p-3.5">
+              <p class="font-bold text-white">${p.cliente || 'Consumidor Final'}</p>
+              <p class="text-[10px] text-white/60">${p.ubicacion || 'Quito, Ecuador'}</p>
+            </td>
+            <td class="p-3.5 text-right font-black text-white font-tech-mono">$${total}</td>
+            <td class="p-3.5 text-center font-semibold text-emerald-300 font-tech-mono">$${anticipo}</td>
+            <td class="p-3.5 text-center font-bold text-amber-300 font-tech-mono">$${saldo}</td>
+            <td class="p-3.5 text-center">${badgeEstado}</td>
+            <td class="p-3.5 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <a href="proforma.html?proforma_id=${p.id}" target="_blank" class="p-2 bg-white/10 hover:bg-white/20 text-white/80 hover:text-white rounded-xl transition shadow-sm" title="Editar / Ver Proforma">
+                  <i class="fa-solid fa-pen-to-square text-xs"></i>
+                </a>
+                ${btnAccionesHTML}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function abrirModalAprobacion(proformaId) {
+      proformaSeleccionada = listaProformas.find(p => String(p.id) === String(proformaId));
+      if (!proformaSeleccionada) return;
+
+      const numDoc = proformaSeleccionada.numero_documento || proformaSeleccionada.numero_proforma || `PRF-${proformaSeleccionada.id}`;
+      const totalContado = obtenerTotalProforma(proformaSeleccionada);
+
+      document.getElementById('modal-subtitulo-prf').textContent = `${numDoc} | ${proformaSeleccionada.cliente || 'Cliente'} ($${totalContado.toFixed(2)})`;
+
+      const anticipoExistente = Number(proformaSeleccionada.monto_anticipo || proformaSeleccionada.anticipo || 0);
+      if (anticipoExistente > 0) {
+        document.getElementById('input-monto-anticipo').value = anticipoExistente;
+      } else {
+        document.getElementById('input-monto-anticipo').value = (totalContado * 0.50).toFixed(2);
+      }
+
+      document.getElementById('input-comprobante').value = proformaSeleccionada.comprobante_pago || '';
+      document.getElementById('select-metodo-pago').value = proformaSeleccionada.metodo_pago || 'Transferencia Bancaria';
+      document.getElementById('input-tecnico-asignado').value = proformaSeleccionada.tecnico || '';
+
+      const tipoGuardado = proformaSeleccionada.tipo_aprobacion || 'anticipo';
+      seleccionarTipoAprobacion(tipoGuardado);
+      calcularSaldoModal();
+
+      document.getElementById('modal-aprobacion').classList.remove('hidden');
+    }
+
+    function cerrarModalAprobacion() {
+      document.getElementById('modal-aprobacion').classList.add('hidden');
+    }
+
+    function seleccionarTipoAprobacion(tipo) {
+      tipoAprobacionActual = tipo;
+      const btnAnt = document.getElementById('btn-tipo-anticipo');
+      const btnConf = document.getElementById('btn-tipo-confianza');
+      const bloqueAnt = document.getElementById('bloque-campos-anticipo');
+
+      if (tipo === 'anticipo') {
+        if(btnAnt) btnAnt.className = "p-2.5 rounded-xl border-2 border-blue-400 bg-blue-500/20 text-blue-200 font-bold flex flex-col items-center gap-1 transition shadow-sm";
+        if(btnConf) btnConf.className = "p-2.5 rounded-xl border border-white/20 bg-white/5 text-white/80 font-semibold flex flex-col items-center gap-1 hover:border-white/40 transition";
+        if(bloqueAnt) bloqueAnt.classList.remove('hidden');
+        calcularSaldoModal();
+      } else {
+        if(btnConf) btnConf.className = "p-2.5 rounded-xl border-2 border-emerald-400 bg-emerald-500/20 text-emerald-200 font-bold flex flex-col items-center gap-1 transition shadow-sm";
+        if(btnAnt) btnAnt.className = "p-2.5 rounded-xl border border-white/20 bg-white/5 text-white/80 font-semibold flex flex-col items-center gap-1 hover:border-white/40 transition";
+        if(bloqueAnt) bloqueAnt.classList.add('hidden');
+        const inputAnt = document.getElementById('input-monto-anticipo');
+        if(inputAnt) inputAnt.value = 0;
+        const total = obtenerTotalProforma(proformaSeleccionada);
+        const salCalc = document.getElementById('input-saldo-calculado');
+        if(salCalc) salCalc.value = `$${total.toFixed(2)}`;
+      }
+    }
+
+    function calcularSaldoModal() {
+      if (!proformaSeleccionada) return;
+      const total = obtenerTotalProforma(proformaSeleccionada);
+      const anticipo = parseFloat(document.getElementById('input-monto-anticipo').value) || 0;
+      const saldo = Math.max(0, total - anticipo);
+      const salCalc = document.getElementById('input-saldo-calculado');
+      if (salCalc) salCalc.value = `$${saldo.toFixed(2)}`;
+    }
+
+    async function confirmarAprobacionYGenerarOT() {
+      if (!proformaSeleccionada) return;
+
+      const btn = document.getElementById('btn-confirmar-aprobacion');
+      const textoOriginal = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Generando OT...`;
+      btn.disabled = true;
+
+      try {
+        const total = obtenerTotalProforma(proformaSeleccionada);
+        let anticipo = 0;
+        let comprobanteFinal = '';
+        let metodoPago = '';
+
+        if (tipoAprobacionActual === 'anticipo') {
+          anticipo = parseFloat(document.getElementById('input-monto-anticipo').value) || 0;
+          metodoPago = document.getElementById('select-metodo-pago').value;
+          const refIngresada = document.getElementById('input-comprobante').value.trim();
+          comprobanteFinal = `[${metodoPago}] ${refIngresada}`;
+        }
+
+        const saldo = Math.max(0, total - anticipo);
+        const tecnicoLider = document.getElementById('input-tecnico-asignado').value.trim() || 'Por Asignar';
+        const fechaInicio = document.getElementById('input-fecha-inicio').value;
+        const observacionesOT = document.getElementById('input-observaciones-ot').value.trim();
+
+        // 1. Actualizar estado de la proforma en Supabase
+        const { error: errorProf } = await supabaseClient
+          .from('proformas')
+          .update({
+            estado: 'aprobada',
+            tipo_aprobacion: tipoAprobacionActual,
+            monto_anticipo: anticipo,
+            saldo_pendiente: saldo,
+            comprobante_pago: comprobanteFinal,
+            aprobado_por: 'Administración ProTech',
+            fecha_aprobacion: new Date().toISOString()
+          })
+          .eq('id', proformaSeleccionada.id);
+
+        if (errorProf) throw errorProf;
+
+        // 2. Extraer ítems correctamente (manejando tanto string JSON como array)
+        let rawItems = [];
+        const itemsFuente = proformaSeleccionada.items || (proformaSeleccionada.datos_proforma && proformaSeleccionada.datos_proforma.items);
+        
+        if (itemsFuente) {
+          rawItems = typeof itemsFuente === 'string' ? JSON.parse(itemsFuente) : itemsFuente;
+        }
+
+        const itemsOT = rawItems.map(i => ({
+          cantidad: Number(i.cantidad || i.cant || 1),
+          descripcion: String(i.descripcion || i.nombre || 'Ítem sin descripción'),
+          codigo: String(i.codigo || i.sku || '-')
+        }));
+
+        const anio = new Date().getFullYear();
+        const { count: totalOTs } = await supabaseClient
+          .from('ordenes_trabajo')
+          .select('*', { count: 'exact', head: true });
+
+        const numeroOT = `OT-${anio}-${String((totalOTs || 0) + 1).padStart(4, '0')}`;
+        const inspeccionIdParaOT = proformaSeleccionada.inspeccion_id ? String(proformaSeleccionada.inspeccion_id) : null;
+
+        // 3. Insertar Orden de Trabajo
+        const { data: dataOT, error: errorOT } = await supabaseClient
+          .from('ordenes_trabajo')
+          .insert([{
+            numero_ot: numeroOT,
+            proforma_id: proformaSeleccionada.id,
+            inspeccion_id: inspeccionIdParaOT,
+            cliente: proformaSeleccionada.cliente || 'Consumidor Final',
+            ubicacion: proformaSeleccionada.ubicacion || 'Quito',
+            tecnico_asignado: tecnicoLider,
+            fecha_inicio: fechaInicio,
+            estado: 'pendiente',
+            items: itemsOT,
+            subtotal: total,
+            anticipo: anticipo,
+            saldo: saldo,
+            observaciones: observacionesOT
+          }])
+          .select('id')
+          .single();
+
+        if (errorOT) {
+          console.warn("Aviso en ordenes_trabajo:", errorOT.message);
+        } else if (anticipo > 0 && dataOT) {
+          // Registrar el abono en pagos_abonos si hubo anticipo
+          await supabaseClient.from('pagos_abonos').insert([{
+            ot_id: dataOT.id,
+            proforma_id: proformaSeleccionada.id,
+            referencia_ot: numeroOT,
+            cliente: proformaSeleccionada.cliente,
+            monto: anticipo,
+            metodo: metodoPago || 'Transferencia Bancaria'
+          }]);
+        }
+
+        // 4. Actualizar estado del Ticket vinculado si existe
+        if (inspeccionIdParaOT) {
+          await supabaseClient.from('tickets').update({ estado: 'en_ejecucion' }).eq('id', inspeccionIdParaOT);
+        }
+
+        mostrarToast(`✓ Proforma aprobada. OT generada: ${numeroOT}`, "success");
+        cerrarModalAprobacion();
+        await cargarProformas();
+
+      } catch (err) {
+        console.error(err);
+        mostrarToast("Error al aprobar: " + err.message, "error");
+      } finally {
+        btn.innerHTML = textoOriginal;
+        btn.disabled = false;
+      }
+    }
+
+    async function marcarComoRechazada() {
+      if (!proformaSeleccionada) return;
+      const numDocRef = proformaSeleccionada.numero_documento || proformaSeleccionada.numero_proforma || `PRF-${proformaSeleccionada.id}`;
+      if (!confirm(`¿Estás seguro de marcar como RECHAZADA la proforma ${numDocRef}?`)) return;
+
+      try {
+        const { error } = await supabaseClient
+          .from('proformas')
+          .update({ estado: 'rechazada' })
+          .eq('id', proformaSeleccionada.id);
+
+        if (error) throw error;
+
+        if (proformaSeleccionada.inspeccion_id) {
+          await supabaseClient.from('tickets').update({ estado: 'rechazado' }).eq('id', proformaSeleccionada.inspeccion_id);
+        }
+
+        mostrarToast("Proforma marcada como rechazada", "info");
+        cerrarModalAprobacion();
+        await cargarProformas();
+      } catch (err) {
+        mostrarToast("Error: " + err.message, "error");
+      }
+    }
+  </script>
+</body>
+</html>

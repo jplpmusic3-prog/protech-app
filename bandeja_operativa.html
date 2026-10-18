@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>ProTech Security — Monitor General de OTs & Kanban</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Técnica Homologada -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Motor Offline-First -->
+  <script src="protech-offline.js"></script>
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO Y MICRO-RETÍCULA CAD (GPU SAFE)
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.14), transparent 60%),
+        linear-gradient(rgba(2, 6, 23, 0.65), rgba(2, 6, 23, 0.8));
+    }
+    .tech-grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+    }
+
+    .app-window {
+      height: 100dvh;
+      width: 100vw;
+    }
+
+    /* ========================================================
+       2. SIDEBAR RESPONSIVO Y COLAPSABLE
+       ======================================================== */
+    #sidebar_menu {
+      transform: translate3d(-100%, 0, 0);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #sidebar_menu.sidebar-abierto {
+      transform: translate3d(0, 0, 0) !important;
+    }
+    @media (min-width: 1024px) {
+      #sidebar_menu {
+        position: relative !important;
+        transform: translate3d(0, 0, 0) !important;
+        z-index: 30 !important;
+      }
+      #sidebar_menu.desktop-collapsed {
+        margin-left: -18rem;
+      }
+    }
+
+    /* ========================================================
+       3. TARJETAS CYBER-GLASS Y KANBAN (GPU SAFE)
+       ======================================================== */
+    .cyber-glass-card, .glass-card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.82) 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.08),
+        inset -1px -1px 3px rgba(0, 0, 0, 0.5),
+        0 12px 28px -6px rgba(0, 0, 0, 0.55) !important;
+      border-radius: 1.25rem !important;
+      position: relative !important;
+      color: #ffffff !important;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease;
+    }
+
+    .kanban-card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.94) 0%, rgba(30, 41, 59, 0.88) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+        0 10px 24px -6px rgba(0, 0, 0, 0.5);
+      border-radius: 1.15rem;
+      transition: transform 0.18s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      cursor: grab;
+      position: relative;
+      overflow: hidden;
+    }
+    .kanban-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 15%;
+      right: 15%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.5), transparent);
+      pointer-events: none;
+    }
+    .kanban-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(59, 130, 246, 0.6);
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
+        0 14px 30px -6px rgba(0, 0, 0, 0.65);
+    }
+    .kanban-card:active {
+      cursor: grabbing;
+      transform: scale(0.98);
+    }
+    .kanban-card.is-dragging {
+      opacity: 0.4;
+      border-color: #3b82f6;
+    }
+
+    .kanban-column-wrapper {
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.25rem;
+    }
+
+    .kanban-column-dropzone {
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+      border: 2px dashed transparent;
+      min-height: 220px;
+    }
+    .kanban-column-dropzone.drag-over {
+      background-color: rgba(37, 99, 235, 0.12);
+      border-color: rgba(59, 130, 246, 0.55);
+      border-radius: 1rem;
+    }
+
+    .btn-neumorphic {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      border: 1px solid rgba(147, 197, 253, 0.4);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 16px rgba(37, 99, 235, 0.4);
+      border-radius: 0.875rem;
+      transition: all 0.18s ease;
+      color: #ffffff;
+    }
+    .btn-neumorphic:hover {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      transform: translateY(-1px);
+    }
+
+    .btn-neumorphic-purple {
+      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      border: 1px solid rgba(196, 181, 253, 0.4);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 16px rgba(124, 58, 237, 0.4);
+      border-radius: 0.875rem;
+      transition: all 0.18s ease;
+      color: #ffffff;
+    }
+    .btn-neumorphic-purple:hover {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      transform: translateY(-1px);
+    }
+
+    .btn-neumorphic-indigo {
+      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+      border: 1px solid rgba(165, 180, 252, 0.4);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 16px rgba(79, 70, 229, 0.4);
+      border-radius: 0.875rem;
+      transition: all 0.18s ease;
+      color: #ffffff;
+    }
+    .btn-neumorphic-indigo:hover {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      transform: translateY(-1px);
+    }
+
+    .btn-neumorphic-slate {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(51, 65, 85, 0.9) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 4px 12px rgba(0, 0, 0, 0.35);
+      border-radius: 0.875rem;
+      transition: all 0.18s ease;
+      color: #ffffff;
+    }
+    .btn-neumorphic-slate:hover {
+      background: linear-gradient(135deg, rgba(51, 65, 85, 0.98) 0%, rgba(71, 85, 105, 0.95) 100%);
+      border-color: rgba(59, 130, 246, 0.55);
+    }
+
+    .glass-input {
+      background: rgba(15, 23, 42, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #ffffff !important;
+      box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.45) !important;
+      transition: all 0.2s;
+    }
+    .glass-input::placeholder { color: rgba(255, 255, 255, 0.45); }
+    .glass-input:focus {
+      background: rgba(30, 41, 59, 0.98) !important;
+      border-color: rgba(59, 130, 246, 0.85) !important;
+      outline: none;
+    }
+    .glass-input option { background: #0f172a; color: #ffffff; }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 0.75rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.3rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.1); color: #ffffff; }
+    .menu-link.active { 
+      background: linear-gradient(90deg, rgba(37, 99, 235, 0.45) 0%, rgba(37, 99, 235, 0.2) 100%); 
+      color: #ffffff; 
+      border: 1px solid rgba(59, 130, 246, 0.6);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+
+    .collapse-content {
+      max-height: 420px;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out;
+      opacity: 1;
+    }
+    .collapse-content.collapsed { max-height: 0; opacity: 0; }
+    .collapse-icon { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapsed-btn .collapse-icon { transform: rotate(-90deg); }
+  </style>
+</head>
+<body class="flex items-center justify-center overflow-hidden text-white">
+
+  <!-- PANTALLA DE CARGA / TRANSICIÓN -->
+  <div id="loader_inicial" class="fixed inset-0 z-[99999] bg-slate-950 flex flex-col items-center justify-center opacity-100 transition-opacity duration-300">
+    <div class="glass-card p-8 sm:p-10 flex flex-col items-center gap-5 min-w-[270px]">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute -inset-3 rounded-full border border-blue-500/30 animate-ping opacity-30"></div>
+        <img src="logo.png" alt="ProTech" class="h-28 sm:h-36 w-auto object-contain drop-shadow-lg relative z-10" onerror="this.style.display='none';">
+      </div>
+      <div class="text-center">
+        <p class="font-extrabold text-sm sm:text-base text-white tracking-wide">ProTech Cyber-OS</p>
+        <p class="font-tech-mono text-[10px] sm:text-xs uppercase tracking-widest text-blue-400 font-bold mt-1.5">Sincronizando Tablero Kanban...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIDEO DE FONDO Y RETÍCULA TÉCNICA -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline preload="auto">
+      <source src="fondo-tech.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+  <div class="tech-grid-overlay"></div>
+
+  <!-- OVERLAY MÓVIL -->
+  <div id="mobile_menu_overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-950/80 z-[9990] hidden transition-opacity"></div>
+
+  <!-- 1. SIDEBAR LATERAL COMPLETO -->
+  <aside id="sidebar_menu" class="fixed lg:relative top-0 left-0 z-[9999] h-full w-72 flex flex-col justify-between border-r border-white/15 p-4 sm:p-5 bg-slate-950/95 lg:bg-slate-950/55 shadow-2xl lg:shadow-none flex-shrink-0">
+    <div class="space-y-4 overflow-y-auto max-h-[calc(100vh-115px)] pr-1 hide-scrollbar">
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-9 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_nextgen').style.display='flex';">
+            <div id="logo_nextgen" style="display:none;" class="h-9 w-9 rounded-xl bg-blue-600 text-white font-bold text-sm items-center justify-center">PS</div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="font-extrabold text-[15px] text-white leading-tight">ProTech</h1>
+              <span id="protech_net_status_badge" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-[8px] font-tech-mono text-emerald-300 font-bold">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>ONLINE
+              </span>
+            </div>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-0.5">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+        <button type="button" onclick="toggleSidebar()" class="lg:hidden text-white/80 hover:text-rose-400 p-1.5 rounded-xl bg-white/10 border border-white/20 transition">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <nav class="space-y-3 text-xs font-semibold">
+        <div>
+          <a href="index.html" class="menu-link w-full text-left">
+            <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-layer-group"></i></div>
+            <span>Centro de Operaciones</span>
+          </a>
+        </div>
+
+        <!-- ÁREA OPERATIVA -->
+        <div class="glass-card p-2.5">
+          <div onclick="toggleArea('sec_operativa', this)" class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-blue-300 tracking-wider p-1 mb-1.5 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_operativa" class="collapse-content space-y-1">
+            <a href="agenda_tickets.html" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
+              <span>Agenda & Tickets</span>
+            </a>
+            <a href="inspecciones_index.html" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-list"></i></div>
+              <span>Inspección Multipunto</span>
+            </a>
+            <a href="orden_trabajo.html" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+              <span>Órdenes de Trabajo</span>
+            </a>
+            <a href="bandeja_operativa.html" class="menu-link active w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-list-check"></i></div>
+              <span class="font-bold text-white">Monitor General OTs</span>
+            </a>
+            <a href="topologia_general.html" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-purple-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-sitemap"></i></div>
+              <span>Topología As-Built</span>
+            </a>
+            <a href="acta_entrega.html" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-signature"></i></div>
+              <span>Acta de Entrega</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ÁREA COMERCIAL -->
+        <div id="menu_area_comercial" class="glass-card p-2.5">
+          <div onclick="toggleArea('sec_comercial', this)" class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-purple-300 tracking-wider p-1 mb-1.5 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-store"></i> Área Comercial</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_comercial" class="collapse-content space-y-1">
+            <a href="proforma.html" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-purple-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+              <span>Generador de Proformas</span>
+            </a>
+            <a href="catalogo.html" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <span>Catálogo de Precios</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ÁREA FINANCIERA -->
+        <div id="menu_area_financiera" class="glass-card p-2.5">
+          <div onclick="toggleArea('sec_financiera', this)" class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-emerald-300 tracking-wider p-1 mb-1.5 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-vault"></i> Área Financiera</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_financiera" class="collapse-content space-y-1">
+            <a href="finanzas.html" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-cash-register"></i></div>
+              <span>Caja & Cartera</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ADMINISTRACIÓN -->
+        <div id="menu_item_usuarios" class="glass-card p-2.5">
+          <div onclick="toggleArea('sec_admin', this)" class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-rose-300 tracking-wider p-1 mb-1.5 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-users-gear"></i> Administración</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_admin" class="collapse-content space-y-1">
+            <a href="usuarios.html" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-rose-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-users-gear"></i></div>
+              <span>Personal & Roles</span>
+            </a>
+          </div>
+        </div>
+
+      </nav>
+    </div>
+
+    <!-- Perfil Táctico -->
+    <div class="glass-card p-3 flex items-center justify-between mt-3">
+      <div class="flex items-center gap-2.5 overflow-hidden">
+        <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shadow-md flex-shrink-0">JP</div>
+        <div class="truncate">
+          <p id="user_display_name" class="text-[11px] font-bold text-white truncate">Juan Pablo Luna</p>
+          <p id="user_role_badge" class="font-tech-mono text-[8px] text-blue-300 uppercase font-bold">Ing. Proyectos • Admin</p>
+        </div>
+      </div>
+      <button onclick="cerrarSesion()" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition flex-shrink-0" title="Cerrar Sesión">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- VISTA DASHBOARD (APP WINDOW) -->
+  <div id="seccion_dashboard" class="app-window flex w-full relative z-10 overflow-hidden">
+
+    <!-- 2. CONTENIDO PRINCIPAL: KANBAN -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+
+      <!-- CABECERA STICKY CON BUSCADOR FUNCIONAL EN MÓVIL Y PC -->
+      <header class="border-b border-white/15 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 bg-slate-950/90 z-20 flex-shrink-0">
+        <div class="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0">
+          <button type="button" onclick="toggleSidebar()" class="text-white p-2 sm:p-2.5 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 active:scale-95 transition focus:outline-none flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-bars text-xs sm:text-sm text-blue-400"></i>
+          </button>
+          
+          <div class="relative flex-1 max-w-xs sm:max-w-sm">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 text-xs"></i>
+            <input type="text" id="input_buscador_global" oninput="filtrarTarjetasKanban()" placeholder="Buscar OT, cliente, código..." class="glass-input w-full text-xs pl-8 pr-7 py-2 rounded-xl font-medium">
+            <button id="btn_clear_search" onclick="limpiarBusquedaKanban()" class="hidden absolute right-2.5 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white text-xs">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button onclick="sincronizarTableroSupabase(true)" class="btn-neumorphic-slate px-3 py-2 text-white text-[11px] font-bold flex items-center gap-1.5 transition" title="Actualizar Tablero">
+            <i class="fa-solid fa-arrows-rotate text-blue-400"></i><span class="hidden sm:inline">Sincronizar</span>
+          </button>
+          <a href="agenda_tickets.html" class="btn-neumorphic-slate px-3 py-2 text-white text-[11px] font-bold hidden md:flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-calendar-plus text-emerald-400"></i><span>Nuevo Ticket</span>
+          </a>
+          <a href="orden_trabajo.html" class="px-3.5 py-2 rounded-xl btn-neumorphic text-white text-[11px] font-bold flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-plus text-amber-300"></i><span>Nueva OT</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- TABLERO KANBAN -->
+      <main class="flex-1 overflow-y-auto hide-scrollbar p-3.5 sm:p-6 relative z-10 flex flex-col gap-4">
+        
+        <!-- ENCABEZADO + RESUMEN EJECUTIVO Y FILTROS RÁPIDOS -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 flex-shrink-0">
+          <div>
+            <div class="inline-flex items-center gap-2 text-[10px] font-tech-mono uppercase tracking-widest text-blue-400 font-bold mb-0.5">
+              <i class="fa-solid fa-diagram-project animate-pulse"></i> CONTROL OPERATIVO 360° • ARRASTRAR EN PC O TOCAR EN MÓVIL
+            </div>
+            <h2 class="font-extrabold text-xl sm:text-2xl text-white tracking-tight">
+              Monitor General de OTs, Cotizaciones & Obras
+            </h2>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Píldoras de filtro por origen -->
+            <div class="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-white/15 text-[10px] font-tech-mono">
+              <button onclick="cambiarFiltroTipo('todos', this)" class="filtro-tipo-btn px-2.5 py-1 rounded-lg font-bold bg-blue-600 text-white transition">Todos</button>
+              <button onclick="cambiarFiltroTipo('ticket', this)" class="filtro-tipo-btn px-2.5 py-1 rounded-lg font-bold text-white/70 hover:text-white transition">Inspección</button>
+              <button onclick="cambiarFiltroTipo('proforma', this)" class="filtro-tipo-btn px-2.5 py-1 rounded-lg font-bold text-white/70 hover:text-white transition">Cotización</button>
+              <button onclick="cambiarFiltroTipo('ot', this)" class="filtro-tipo-btn px-2.5 py-1 rounded-lg font-bold text-white/70 hover:text-white transition">OT Campo</button>
+            </div>
+
+            <!-- Badge de Cartera en Cotización -->
+            <div class="glass-card px-3 py-1.5 flex items-center gap-2 text-xs">
+              <span class="text-[9px] font-tech-mono uppercase text-purple-300 font-bold">En Cotización:</span>
+              <span id="kpi_monto_cotizado" class="font-tech-mono font-extrabold text-emerald-300">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTENEDOR HORIZONTAL DE LAS 5 COLUMNAS -->
+        <div class="flex-1 flex gap-4 overflow-x-auto overflow-y-hidden pb-3 hide-scrollbar">
+          
+          <!-- COLUMNA 1: Relevamiento -->
+          <div class="kanban-column-wrapper flex flex-col flex-shrink-0 w-[285px] sm:w-[300px] max-h-full p-2.5 relative">
+            <div class="flex items-center justify-between mb-2.5 px-1.5 pt-0.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
+                <h3 class="font-extrabold text-xs text-white uppercase tracking-tight">1. Relevamiento</h3>
+              </div>
+              <span id="count_col1" class="font-tech-mono text-[10px] font-bold bg-white/10 text-white px-2 py-0.5 rounded-md border border-white/20">0</span>
+            </div>
+            <div id="col_relevamiento" class="kanban-column-dropzone flex-1 overflow-y-auto space-y-2.5 hide-scrollbar pb-8 px-0.5 rounded-xl" data-col="relevamiento"></div>
+          </div>
+
+          <!-- COLUMNA 2: En Cotización -->
+          <div class="kanban-column-wrapper flex flex-col flex-shrink-0 w-[285px] sm:w-[300px] max-h-full p-2.5 relative">
+            <div class="flex items-center justify-between mb-2.5 px-1.5 pt-0.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+                <h3 class="font-extrabold text-xs text-purple-200 uppercase tracking-tight">2. En Cotización</h3>
+              </div>
+              <span id="count_col2" class="font-tech-mono text-[10px] font-bold bg-purple-500/20 text-purple-200 px-2 py-0.5 rounded-md border border-purple-400/30">0</span>
+            </div>
+            <div id="col_cotizacion" class="kanban-column-dropzone flex-1 overflow-y-auto space-y-2.5 hide-scrollbar pb-8 px-0.5 rounded-xl" data-col="cotizacion"></div>
+          </div>
+
+          <!-- COLUMNA 3: Por Programar -->
+          <div class="kanban-column-wrapper flex flex-col flex-shrink-0 w-[285px] sm:w-[300px] max-h-full p-2.5 relative">
+            <div class="flex items-center justify-between mb-2.5 px-1.5 pt-0.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                <h3 class="font-extrabold text-xs text-amber-200 uppercase tracking-tight">3. Por Programar</h3>
+              </div>
+              <span id="count_col3" class="font-tech-mono text-[10px] font-bold bg-amber-500/20 text-amber-200 px-2 py-0.5 rounded-md border border-amber-400/30">0</span>
+            </div>
+            <div id="col_programar" class="kanban-column-dropzone flex-1 overflow-y-auto space-y-2.5 hide-scrollbar pb-8 px-0.5 rounded-xl" data-col="programar"></div>
+          </div>
+
+          <!-- COLUMNA 4: En Ejecución -->
+          <div class="kanban-column-wrapper flex flex-col flex-shrink-0 w-[285px] sm:w-[300px] max-h-full p-2.5 relative">
+            <div class="flex items-center justify-between mb-2.5 px-1.5 pt-0.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse"></span>
+                <h3 class="font-extrabold text-xs text-blue-200 uppercase tracking-tight">4. En Ejecución</h3>
+              </div>
+              <span id="count_col4" class="font-tech-mono text-[10px] font-bold bg-blue-500/20 text-blue-200 px-2 py-0.5 rounded-md border border-blue-400/30">0</span>
+            </div>
+            <div id="col_ejecucion" class="kanban-column-dropzone flex-1 overflow-y-auto space-y-2.5 hide-scrollbar pb-8 px-0.5 rounded-xl" data-col="ejecucion"></div>
+          </div>
+
+          <!-- COLUMNA 5: Entregado -->
+          <div class="kanban-column-wrapper flex flex-col flex-shrink-0 w-[285px] sm:w-[300px] max-h-full p-2.5 relative">
+            <div class="flex items-center justify-between mb-2.5 px-1.5 pt-0.5">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                <h3 class="font-extrabold text-xs text-emerald-200 uppercase tracking-tight">5. Entregado</h3>
+              </div>
+              <span id="count_col5" class="font-tech-mono text-[10px] font-bold bg-emerald-500/20 text-emerald-200 px-2 py-0.5 rounded-md border border-emerald-400/30">0</span>
+            </div>
+            <div id="col_entregado" class="kanban-column-dropzone flex-1 overflow-y-auto space-y-2.5 hide-scrollbar pb-8 px-0.5 rounded-xl" data-col="entregado"></div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- PANEL DESLIZABLE DE DETALLES (SLIDE-OVER CON CAMBIO DE COLUMNA TÁCTIL) -->
+  <div id="slideover_detalle" class="fixed inset-y-0 right-0 z-[9995] w-full sm:w-[430px] bg-slate-950/95 shadow-[-15px_0_40px_rgba(0,0,0,0.75)] border-l border-white/15 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="px-5 py-4 border-b border-white/15 flex items-center justify-between bg-slate-900/90">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+          <i class="fa-solid fa-file-contract"></i>
+        </div>
+        <div>
+          <h3 id="slide_ref" class="font-tech-mono font-bold text-xs text-blue-400">OT-000</h3>
+          <p id="slide_estado" class="text-[9px] uppercase font-bold text-white/60">Expediente Operativo</p>
+        </div>
+      </div>
+      <button onclick="cerrarSlideOver()" class="text-white/80 hover:text-rose-400 p-2 rounded-lg hover:bg-white/10 transition">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto p-5 space-y-4 hide-scrollbar">
+      <div>
+        <label class="font-tech-mono text-[9px] text-white/60 uppercase font-bold tracking-wider">Cliente / Razón Social</label>
+        <p id="slide_cliente" class="font-extrabold text-base text-white mt-0.5">Cargando...</p>
+      </div>
+
+      <!-- SELECTOR RÁPIDO DE ETAPA KANBAN (IDEAL PARA MÓVIL Y TABLET) -->
+      <div class="glass-card p-3.5 border-l-4 border-l-blue-500">
+        <label class="font-tech-mono text-[9px] text-blue-300 uppercase font-bold block mb-1.5">
+          <i class="fa-solid fa-arrows-left-right mr-1"></i>Mover a Etapa del Tablero (Táctil / Rápido):
+        </label>
+        <select id="slide_select_columna" onchange="moverTarjetaDesdeSlideOver(this.value)" class="glass-input w-full text-xs rounded-xl p-2.5 font-bold text-white">
+          <option value="relevamiento">1. Relevamiento en Sitio</option>
+          <option value="cotizacion">2. En Cotización (Proforma)</option>
+          <option value="programar">3. Por Programar Obra</option>
+          <option value="ejecucion">4. En Ejecución (Campo)</option>
+          <option value="entregado">5. Entregado / Finalizado</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="glass-card p-3">
+          <label class="font-tech-mono text-[9px] text-white/60 uppercase font-bold">Módulo Origen</label>
+          <div id="slide_sistema" class="font-bold text-xs text-white mt-1">N/A</div>
+        </div>
+        <div class="glass-card p-3">
+          <label class="font-tech-mono text-[9px] text-white/60 uppercase font-bold">Prioridad Operativa</label>
+          <div id="slide_prioridad" class="font-bold text-xs mt-1">N/A</div>
+        </div>
+      </div>
+
+      <div>
+        <label class="font-tech-mono text-[9px] text-white/60 uppercase font-bold tracking-wider mb-1.5 block">Resumen / Detalles del Proyecto</label>
+        <div id="slide_descripcion" class="glass-card p-3.5 text-xs text-white/90 leading-relaxed font-medium">
+          Sin descripción detallada.
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between glass-card p-3.5">
+        <div>
+          <label class="font-tech-mono text-[9px] text-white/60 uppercase font-bold">Responsable Asignado</label>
+          <p id="slide_tecnico" class="font-bold text-xs text-white mt-0.5">Juan Pablo Luna</p>
+        </div>
+        <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-xs shadow-md">
+          <span id="slide_tecnico_init">JP</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTONES DINÁMICOS DE NAVEGACIÓN 360° AL PIE DEL SLIDE-OVER -->
+    <div class="p-4 border-t border-white/15 bg-slate-900/90 space-y-2">
+      <a id="btn_abrir_ot_completa" href="#" class="w-full px-4 py-2.5 rounded-xl btn-neumorphic text-white font-bold text-xs transition flex items-center justify-center gap-2">
+        <i class="fa-solid fa-clipboard-list text-amber-300"></i> <span id="label_btn_abrir_ot">Abrir Documento Principal</span>
+      </a>
+
+      <div class="grid grid-cols-2 gap-2">
+        <a id="btn_abrir_topologia" href="#" class="px-3 py-2.5 rounded-xl btn-neumorphic-indigo text-white font-bold text-[11px] transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-sitemap text-indigo-200"></i> <span>Topología As-Built</span>
+        </a>
+        <a id="btn_abrir_proforma" href="#" class="px-3 py-2.5 rounded-xl btn-neumorphic-purple text-white font-bold text-[11px] transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-file-invoice-dollar text-purple-200"></i> <span>Proforma Comercial</span>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <a id="btn_ver_inspeccion_secundaria" href="#" class="px-3 py-2 rounded-xl btn-neumorphic-slate text-white/90 font-bold text-[11px] transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-boxes-stacked text-blue-300"></i> <span>Equipos & Mat.</span>
+        </a>
+        <a id="btn_abrir_acta_entrega" href="#" class="px-3 py-2 rounded-xl btn-neumorphic-slate text-white/90 font-bold text-[11px] transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-file-signature text-emerald-300"></i> <span>Acta de Entrega</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <!-- OVERLAY FONDO SLIDE-OVER -->
+  <div id="slideover_overlay" onclick="cerrarSlideOver()" class="fixed inset-0 bg-slate-950/75 z-[9991] hidden transition-opacity"></div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toast_container" class="fixed top-4 right-4 z-[99999] flex flex-col gap-2 max-w-xs sm:max-w-sm w-full pointer-events-none px-2 sm:px-0"></div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+    window.supabaseClient = supabaseClient;
+
+    let perfilUsuarioActual = null;
+    let tarjetaActivaSlideOver = null;
+    let filtroTipoActual = 'todos';
+
+    // ========================================================
+    // 1. CYBER-TOAST (DURACIÓN CORREGIDA A 3.5 SEGUNDOS)
+    // ========================================================
+    function mostrarToast(mensaje, tipo = 'success') {
+      const container = document.getElementById('toast_container');
+      if (!container) return;
+
+      const colores = {
+        success: 'border-emerald-400/50 text-emerald-300 bg-slate-900/95',
+        error: 'border-rose-400/50 text-rose-300 bg-slate-900/95',
+        info: 'border-blue-400/50 text-blue-300 bg-slate-900/95'
+      };
+      const iconos = {
+        success: 'fa-circle-check text-emerald-400',
+        error: 'fa-triangle-exclamation text-rose-400',
+        info: 'fa-circle-info text-blue-400'
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl text-xs font-semibold text-white transform transition-all duration-300 translate-y-2 opacity-0 ${colores[tipo] || colores.success}`;
+      toast.innerHTML = `<i class="fa-solid ${iconos[tipo] || iconos.success} text-sm flex-shrink-0"></i> <span>${mensaje}</span>`;
+      container.appendChild(toast);
+      
+      requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-4');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      if (!sidebar) return;
+
+      if (window.innerWidth >= 1024) {
+        sidebar.classList.toggle('desktop-collapsed');
+      } else {
+        const estaAbierto = sidebar.classList.contains('sidebar-abierto');
+        if (estaAbierto) {
+          sidebar.classList.remove('sidebar-abierto');
+          if (overlay) overlay.classList.add('hidden');
+        } else {
+          sidebar.classList.add('sidebar-abierto');
+          if (overlay) overlay.classList.remove('hidden');
+        }
+      }
+    }
+
+    function toggleArea(idContent, headerElement) {
+      const content = document.getElementById(idContent);
+      if (content) {
+        content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed-btn');
+      }
+    }
+
+    function calcularTiempoRelativo(fechaIso) {
+      if (!fechaIso) return 'Reciente';
+      const d = new Date(fechaIso);
+      const hoy = new Date();
+      const dif = Math.floor((hoy - d) / (1000 * 60 * 60 * 24));
+      
+      if (dif <= 0) return 'Hoy';
+      if (dif === 1) return 'Ayer';
+      return `hace ${dif} días`;
+    }
+
+    // ========================================================
+    // 2. INICIALIZACIÓN A PRUEBA DE FALLOS (CON O SIN AUTH)
+    // ========================================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      inicializarDragAndDrop();
+      await verificarSesionActiva();
+    });
+
+    async function verificarSesionActiva() {
+      try {
+        if (supabaseClient) {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (session && session.user) {
+            await cargarPerfil(session.user);
+          }
+        }
+      } catch (err) {
+        console.warn("Modo directo / sin sesión Auth:", err);
+      } finally {
+        await sincronizarTableroSupabase(false);
+        const loader = document.getElementById('loader_inicial');
+        if (loader) {
+          loader.style.opacity = '0';
+          setTimeout(() => loader.remove(), 320);
+        }
+        document.body.classList.add('session-checked');
+      }
+    }
+
+    async function cargarPerfil(user) {
+      try {
+        let { data: perfil } = await supabaseClient.from('perfiles').select('*').eq('id', user.id).maybeSingle();
+        if (!perfil) return;
+        perfilUsuarioActual = perfil;
+
+        document.getElementById('user_display_name').textContent = perfil.nombre || perfil.email.split('@')[0];
+        const rolLimpio = (perfil.rol || '').trim().toLowerCase();
+        const esAdmin = rolLimpio === 'admin' || rolLimpio === 'administrador';
+        document.getElementById('user_role_badge').textContent = esAdmin ? 'Administrador' : 'Técnico Campo';
+      } catch (err) {
+        console.warn("Aviso perfil:", err);
+      }
+    }
+
+    async function cerrarSesion() {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+      window.location.href = 'index.html';
+    }
+
+    // ========================================================
+    // 3. MOTOR KANBAN: SINCRONIZACIÓN INTELIGENTE + CACHÉ OFFLINE
+    // ========================================================
+    async function sincronizarTableroSupabase(mostrarAviso = false) {
+      try {
+        ['col_relevamiento', 'col_cotizacion', 'col_programar', 'col_ejecucion', 'col_entregado']
+          .forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '';
+          });
+
+        let tickets = [];
+        let proformas = [];
+        let ots = [];
+
+        if (navigator.onLine && supabaseClient) {
+          const [resTickets, resPrf, resOt] = await Promise.all([
+            supabaseClient.from('tickets').select('*').order('created_at', { ascending: false }),
+            supabaseClient.from('proformas').select('*').order('created_at', { ascending: false }),
+            supabaseClient.from('ordenes_trabajo').select('*').order('created_at', { ascending: false })
+          ]);
+
+          tickets = resTickets.data || [];
+          proformas = resPrf.data || [];
+          ots = resOt.data || [];
+
+          // Guardar respaldo en IndexedDB para lectura Offline
+          if (typeof ProTechOffline !== 'undefined') {
+            await ProTechOffline.guardarCacheLocal('kanban_snapshot', 'global', { tickets, proformas, ots });
+          }
+        } else if (typeof ProTechOffline !== 'undefined') {
+          const cached = await ProTechOffline.leerCacheLocal('kanban_snapshot', 'global');
+          if (cached) {
+            tickets = cached.tickets || [];
+            proformas = cached.proformas || [];
+            ots = cached.ots || [];
+          }
+        }
+
+        const ticketsConOT = new Set();
+        const proformasConOT = new Set();
+        const ticketsConProforma = new Set();
+        let sumaMontoCotizado = 0;
+
+        // 1. RENDER DE ÓRDENES DE TRABAJO (Máxima jerarquía)
+        ots.forEach(item => {
+          const est = (item.estado || '').toLowerCase().trim();
+          let colDestino = 'col_programar';
+          
+          if (est.includes('terminad') || est.includes('entreg') || est.includes('finaliz') || est.includes('complet') || est.includes('cerrad')) {
+            colDestino = 'col_entregado';
+          } else if (est.includes('ejecuc') || est.includes('proceso') || est.includes('curso') || est.includes('activ')) {
+            colDestino = 'col_ejecucion';
+          } else if (est.includes('cotiz')) {
+            colDestino = 'col_cotizacion';
+          } else if (est.includes('relev') || est.includes('inspecc')) {
+            colDestino = 'col_relevamiento';
+          } else {
+            colDestino = 'col_programar';
+          }
+
+          const tIdOT = item.ticket_id || item.inspeccion_id || '';
+          if (tIdOT) ticketsConOT.add(tIdOT.toString());
+          if (item.proforma_id) proformasConOT.add(item.proforma_id.toString());
+
+          document.getElementById(colDestino)?.appendChild(crearTarjetaHTML({
+            id: item.numero_ot || 'OT-???',
+            raw_id: item.id,
+            ticket_id_real: tIdOT || item.id,
+            cliente: item.cliente || 'Sin Cliente',
+            tipo: 'Instalación OT',
+            tecnico: item.tecnico_asignado || item.tecnicos || 'Juan Pablo Luna',
+            prio: item.prioridad || 'normal',
+            fecha: calcularTiempoRelativo(item.created_at),
+            col: colDestino.replace('col_', ''),
+            desc: item.descripcion || item.trabajo_realizar || `Estado operativo: ${item.estado || 'Programada'}`,
+            link: `orden_trabajo.html?id=${item.id}`,
+            proforma_link: `proforma.html?id=${tIdOT || item.id}`,
+            topologia_link: `topologia_general.html?id=${tIdOT || item.id}`,
+            origen: 'ot'
+          }));
+        });
+
+        // 2. RENDER DE PROFORMAS (Con ID real de la proforma preservado en raw_id)
+        proformas.forEach(item => {
+          const estadoPrf = (item.estado || '').toLowerCase().trim();
+          const tId = item.inspeccion_id || item.ticket_id || '';
+
+          if (tId) ticketsConProforma.add(tId.toString());
+
+          const yaTieneOT = proformasConOT.has(item.id.toString()) || (tId && ticketsConOT.has(tId.toString()));
+          if (yaTieneOT) {
+            if (tId) ticketsConOT.add(tId.toString());
+            return;
+          }
+
+          let colPrf = 'col_cotizacion';
+          if (estadoPrf.includes('programar') || estadoPrf.includes('aprob')) colPrf = 'col_programar';
+          else if (estadoPrf.includes('ejecuc')) colPrf = 'col_ejecucion';
+          else if (estadoPrf.includes('entreg') || estadoPrf.includes('finaliz')) colPrf = 'col_entregado';
+          else if (estadoPrf.includes('inspecc') || estadoPrf.includes('relev')) colPrf = 'col_relevamiento';
+
+          const montoPrf = parseFloat(item.total_contado || item.total || 0) || 0;
+          if (colPrf === 'col_cotizacion') sumaMontoCotizado += montoPrf;
+
+          document.getElementById(colPrf)?.appendChild(crearTarjetaHTML({
+            id: item.numero_proforma || 'PRF-???',
+            raw_id: item.id, // ID real de la tabla proformas
+            ticket_id_real: tId || item.id,
+            cliente: item.cliente || 'Sin Cliente',
+            tipo: `Cotización ($${montoPrf.toFixed(2)})`,
+            tecnico: item.vendedor || 'Juan Pablo Luna',
+            prio: 'normal',
+            fecha: calcularTiempoRelativo(item.created_at),
+            col: colPrf.replace('col_', ''),
+            desc: `Proforma Comercial N° ${item.numero_proforma || ''}. Total Inversión: $${montoPrf.toFixed(2)} (IVA incl.). Ubicación: ${item.ubicacion || 'Quito'}.`,
+            link: `proforma.html?proforma_id=${item.id}`,
+            proforma_link: `proforma.html?proforma_id=${item.id}`,
+            topologia_link: `topologia_general.html?id=${tId || item.id}`,
+            origen: 'proforma'
+          }));
+        });
+
+        // 3. RENDER DE TICKETS / RELEVAMIENTOS (Sin duplicar si ya tiene Proforma u OT)
+        tickets.forEach(item => {
+          const ticketIdStr = item.id.toString();
+          if (ticketsConOT.has(ticketIdStr) || ticketsConProforma.has(ticketIdStr)) {
+            return;
+          }
+
+          const estadoTicket = (item.estado || '').toLowerCase().trim();
+          let colDestino = 'col_relevamiento';
+          
+          if (estadoTicket.includes('cotiza')) colDestino = 'col_cotizacion';
+          else if (estadoTicket.includes('programar')) colDestino = 'col_programar';
+          else if (estadoTicket.includes('ejecuc') || estadoTicket.includes('proceso')) colDestino = 'col_ejecucion';
+          else if (estadoTicket.includes('complet') || estadoTicket.includes('entreg') || estadoTicket.includes('finaliz')) colDestino = 'col_entregado';
+
+          document.getElementById(colDestino)?.appendChild(crearTarjetaHTML({
+            id: 'INS-' + (item.id ? item.id.toString().substring(0, 6).toUpperCase() : '0000'),
+            raw_id: item.id,
+            ticket_id_real: item.id,
+            cliente: item.cliente || 'Sin Cliente',
+            tipo: 'Relevamiento',
+            tecnico: item.tecnico_responsable || 'Juan Pablo Luna',
+            prio: item.prioridad || 'normal',
+            fecha: calcularTiempoRelativo(item.created_at),
+            col: colDestino.replace('col_', ''),
+            desc: item.motivo || `Inspección en sitio (${item.direccion || 'Quito'}).`,
+            link: `inspecciones_index.html?id=${item.id}`,
+            proforma_link: `proforma.html?id=${item.id}`,
+            topologia_link: `topologia_general.html?id=${item.id}`,
+            origen: 'ticket'
+          }));
+        });
+
+        const kpiCot = document.getElementById('kpi_monto_cotizado');
+        if (kpiCot) {
+          kpiCot.textContent = `$${sumaMontoCotizado.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        filtrarTarjetasKanban();
+        if (mostrarAviso) mostrarToast("Tablero sincronizado con éxito", "info");
+
+      } catch (error) {
+        console.error("Error sincronizando Kanban:", error);
+        mostrarToast("Error sincronizando tablero.", "error");
+      }
+    }
+
+    function crearTarjetaHTML(p) {
+      const card = document.createElement('div');
+      
+      let iconColor = 'text-blue-400';
+      let iconClass = 'fa-clipboard-check';
+      if (p.origen === 'proforma') { iconColor = 'text-purple-400'; iconClass = 'fa-file-invoice-dollar'; }
+      else if (p.origen === 'ot') { iconColor = 'text-amber-400'; iconClass = 'fa-screwdriver-wrench'; }
+
+      if (p.prio === 'urgente' || p.prio === 'alta') iconColor = 'text-rose-400';
+
+      let fechaClass = 'text-white/65';
+      if (p.fecha.includes('hace') && parseInt(p.fecha.replace(/[^0-9]/g, '')) > 5) {
+        fechaClass = 'text-amber-300 font-bold';
+      }
+
+      let init = (p.tecnico || 'JP').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      if (init === 'SI' || init === 'SA' || init === 'PO' || !init) init = 'JP';
+
+      card.className = `kanban-card p-4 flex flex-col gap-3.5`;
+      card.draggable = true;
+      card.dataset.id = p.id;
+      card.dataset.rawId = p.raw_id || '';
+      card.dataset.ticketIdReal = p.ticket_id_real || '';
+      card.dataset.cliente = p.cliente;
+      card.dataset.tipo = p.tipo;
+      card.dataset.tecnico = p.tecnico;
+      card.dataset.prio = p.prio;
+      card.dataset.desc = p.desc;
+      card.dataset.fecha = p.fecha;
+      card.dataset.link = p.link;
+      card.dataset.proformaLink = p.proforma_link;
+      card.dataset.topologiaLink = p.topologia_link;
+      card.dataset.col = p.col;
+      card.dataset.origen = p.origen || 'ticket';
+
+      card.innerHTML = `
+        <div class="flex items-start justify-between gap-2 pointer-events-none">
+          <div class="min-w-0">
+            <span class="font-tech-mono text-[10px] font-bold uppercase text-blue-300/90 tracking-wider block">${p.id}</span>
+            <h4 class="font-extrabold text-sm text-white leading-snug mt-0.5 break-words">${p.cliente}</h4>
+          </div>
+          <div class="h-8 w-8 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center font-bold text-[11px] text-white shadow-sm shrink-0">
+            ${init}
+          </div>
+        </div>
+
+        <p class="text-[11px] text-white/65 line-clamp-2 pointer-events-none leading-relaxed">${p.desc}</p>
+        
+        <div class="flex items-center justify-between pointer-events-none pt-2 border-t border-white/10 text-[10px]">
+          <span class="bg-white/10 text-white/90 px-2 py-0.5 rounded-lg font-bold border border-white/15 flex items-center gap-1.5">
+            <i class="fa-solid ${iconClass} ${iconColor}"></i> ${p.tipo}
+          </span>
+          <span class="font-tech-mono ${fechaClass} flex items-center gap-1">
+            <i class="fa-regular fa-clock"></i> ${p.fecha}
+          </span>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        if (!card.classList.contains('is-dragging')) {
+          abrirSlideOver(card);
+        }
+      });
+
+      return card;
+    }
+
+    // ========================================================
+    // 4. BUSCADOR EN TIEMPO REAL Y FILTRO POR TIPO
+    // ========================================================
+    function cambiarFiltroTipo(tipo, btnEl) {
+      filtroTipoActual = tipo;
+      document.querySelectorAll('.filtro-tipo-btn').forEach(b => {
+        b.className = "filtro-tipo-btn px-2.5 py-1 rounded-lg font-bold text-white/70 hover:text-white transition";
+      });
+      if (btnEl) {
+        btnEl.className = "filtro-tipo-btn px-2.5 py-1 rounded-lg font-bold bg-blue-600 text-white transition";
+      }
+      filtrarTarjetasKanban();
+    }
+
+    function limpiarBusquedaKanban() {
+      const input = document.getElementById('input_buscador_global');
+      if (input) {
+        input.value = '';
+        filtrarTarjetasKanban();
+        input.focus();
+      }
+    }
+
+    function filtrarTarjetasKanban() {
+      const q = (document.getElementById('input_buscador_global')?.value || '').trim().toLowerCase();
+      const btnClear = document.getElementById('btn_clear_search');
+      if (btnClear) btnClear.classList.toggle('hidden', !q);
+
+      document.querySelectorAll('.kanban-card').forEach(card => {
+        const matchTipo = (filtroTipoActual === 'todos') || (card.dataset.origen === filtroTipoActual);
+        const textoCard = `${card.dataset.id} ${card.dataset.cliente} ${card.dataset.desc} ${card.dataset.tecnico} ${card.dataset.tipo}`.toLowerCase();
+        const matchTexto = !q || textoCard.includes(q);
+
+        card.classList.toggle('hidden', !(matchTipo && matchTexto));
+      });
+
+      actualizarContadores();
+    }
+
+    function actualizarContadores() {
+      const cols = ['relevamiento', 'cotizacion', 'programar', 'ejecucion', 'entregado'];
+      cols.forEach((colId, index) => {
+        const columna = document.getElementById(`col_${colId}`);
+        if (columna) {
+          const visibles = Array.from(columna.children).filter(el => !el.classList.contains('hidden')).length;
+          document.getElementById(`count_col${index + 1}`).textContent = visibles;
+        }
+      });
+    }
+
+    // ========================================================
+    // 5. MOTOR DRAG & DROP (PC) + CAMBIO TÁCTIL (MÓVIL/TABLET)
+    // ========================================================
+    let tarjetaArrastrada = null;
+
+    function inicializarDragAndDrop() {
+      const columnas = document.querySelectorAll('.kanban-column-dropzone');
+      
+      document.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('kanban-card')) {
+          tarjetaArrastrada = e.target;
+          setTimeout(() => e.target.classList.add('is-dragging'), 0);
+        }
+      });
+
+      document.addEventListener('dragend', (e) => {
+        if (e.target.classList.contains('kanban-card')) {
+          e.target.classList.remove('is-dragging');
+          tarjetaArrastrada = null;
+          actualizarContadores();
+        }
+      });
+
+      columnas.forEach(columna => {
+        columna.addEventListener('dragover', (e) => {
+          e.preventDefault(); 
+          columna.classList.add('drag-over');
+        });
+
+        columna.addEventListener('dragleave', () => {
+          columna.classList.remove('drag-over');
+        });
+
+        columna.addEventListener('drop', async (e) => {
+          e.preventDefault();
+          columna.classList.remove('drag-over');
+          if (tarjetaArrastrada) {
+            columna.appendChild(tarjetaArrastrada);
+            const nuevaCol = columna.dataset.col;
+            tarjetaArrastrada.dataset.col = nuevaCol;
+            
+            await actualizarEstadoEnSupabase(
+              tarjetaArrastrada.dataset.rawId,
+              tarjetaArrastrada.dataset.ticketIdReal,
+              tarjetaArrastrada.dataset.origen,
+              nuevaCol
+            );
+            actualizarContadores();
+            mostrarToast('Etapa actualizada en la base de datos', 'success');
+          }
+        });
+      });
+    }
+
+    async function moverTarjetaDesdeSlideOver(nuevaCol) {
+      if (!tarjetaActivaSlideOver) return;
+      const contenedorDestino = document.getElementById(`col_${nuevaCol}`);
+      if (!contenedorDestino) return;
+
+      contenedorDestino.prepend(tarjetaActivaSlideOver);
+      tarjetaActivaSlideOver.dataset.col = nuevaCol;
+
+      await actualizarEstadoEnSupabase(
+        tarjetaActivaSlideOver.dataset.rawId,
+        tarjetaActivaSlideOver.dataset.ticketIdReal,
+        tarjetaActivaSlideOver.dataset.origen,
+        nuevaCol
+      );
+      actualizarContadores();
+      mostrarToast(`Proyecto movido a: ${nuevaCol.toUpperCase()}`, 'success');
+    }
+
+    async function actualizarEstadoEnSupabase(idRegistro, ticketIdReal, origen, columnaDestino) {
+      if (!supabaseClient || !idRegistro) return;
+
+      let nuevoEstado = 'inspeccion';
+      if (columnaDestino === 'relevamiento') nuevoEstado = 'inspeccion';
+      else if (columnaDestino === 'cotizacion') nuevoEstado = 'cotizacion';
+      else if (columnaDestino === 'programar') nuevoEstado = 'programar';
+      else if (columnaDestino === 'ejecucion') nuevoEstado = 'en_ejecucion';
+      else if (columnaDestino === 'entregado') nuevoEstado = 'entregado';
+
+      try {
+        if (origen === 'ot') {
+          await supabaseClient.from('ordenes_trabajo').update({ estado: nuevoEstado }).eq('id', idRegistro);
+          if (ticketIdReal && ticketIdReal !== idRegistro) {
+            await supabaseClient.from('tickets').update({ estado: nuevoEstado }).eq('id', ticketIdReal);
+          }
+        } else if (origen === 'proforma') {
+          await supabaseClient.from('proformas').update({ estado: nuevoEstado.toUpperCase() }).eq('id', idRegistro);
+          if (ticketIdReal && ticketIdReal !== idRegistro) {
+            await supabaseClient.from('tickets').update({ estado: nuevoEstado }).eq('id', ticketIdReal);
+          }
+        } else {
+          await supabaseClient.from('tickets').update({ estado: nuevoEstado }).eq('id', idRegistro);
+        }
+      } catch (err) {
+        console.error("Error actualizando estado en Supabase:", err);
+      }
+    }
+
+    // ========================================================
+    // 6. PANEL SLIDE-OVER CON ACCESO 360° A TODOS LOS MÓDULOS
+    // ========================================================
+    function abrirSlideOver(card) {
+      tarjetaActivaSlideOver = card;
+
+      const tId = card.dataset.ticketIdReal || card.dataset.rawId;
+      if (tId) {
+        localStorage.setItem('protech_current_ticket_id', tId);
+      }
+
+      document.getElementById('slide_ref').textContent = card.dataset.id;
+      document.getElementById('slide_cliente').textContent = card.dataset.cliente;
+      document.getElementById('slide_sistema').innerHTML = `<i class="fa-solid fa-folder-open text-blue-400 mr-1"></i> ${card.dataset.tipo}`;
+      document.getElementById('slide_descripcion').textContent = card.dataset.desc;
+      
+      const selCol = document.getElementById('slide_select_columna');
+      if (selCol) selCol.value = card.dataset.col || 'relevamiento';
+
+      const tec = card.dataset.tecnico || 'Juan Pablo Luna';
+      document.getElementById('slide_tecnico').textContent = tec;
+      document.getElementById('slide_tecnico_init').textContent = tec.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+      const pLabel = document.getElementById('slide_prioridad');
+      const p = card.dataset.prio;
+      if (p === 'urgente' || p === 'alta') pLabel.innerHTML = `<span class="bg-rose-500/20 text-rose-300 px-2.5 py-0.5 rounded text-[10px] uppercase font-bold border border-rose-400/40"><i class="fa-solid fa-fire text-rose-400"></i> Alta / Urgente</span>`;
+      else if (p === 'baja') pLabel.innerHTML = `<span class="bg-sky-500/20 text-sky-300 px-2.5 py-0.5 rounded text-[10px] uppercase font-bold border border-sky-400/40"><i class="fa-solid fa-snowflake text-sky-400"></i> Baja</span>`;
+      else pLabel.innerHTML = `<span class="bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded text-[10px] uppercase font-bold border border-amber-400/40"><i class="fa-solid fa-bolt text-amber-400"></i> Normal</span>`;
+
+      const btnOt = document.getElementById('btn_abrir_ot_completa');
+      const labelBtnOt = document.getElementById('label_btn_abrir_ot');
+      const btnTopologia = document.getElementById('btn_abrir_topologia');
+      const btnInspeccionSecundaria = document.getElementById('btn_ver_inspeccion_secundaria');
+      const btnProforma = document.getElementById('btn_abrir_proforma');
+      const btnActa = document.getElementById('btn_abrir_acta_entrega');
+
+      btnOt.href = card.dataset.link;
+      btnTopologia.href = card.dataset.topologiaLink || `topologia_general.html?id=${tId}`;
+      btnProforma.href = card.dataset.proformaLink || `proforma.html?id=${tId}`;
+      btnInspeccionSecundaria.href = `inspeccion_equipos.html?id=${tId}`;
+      btnActa.href = `acta_entrega.html?id=${tId}`;
+
+      const origen = card.dataset.origen;
+      if (origen === 'ot') {
+        labelBtnOt.textContent = 'Abrir Orden de Trabajo (OT)';
+      } else if (origen === 'proforma') {
+        labelBtnOt.textContent = 'Abrir / Editar Proforma Comercial';
+      } else {
+        labelBtnOt.textContent = 'Abrir Panel de Inspección en Sitio';
+      }
+
+      const panel = document.getElementById('slideover_detalle');
+      const overlay = document.getElementById('slideover_overlay');
+      
+      overlay.classList.remove('hidden');
+      panel.classList.remove('translate-x-full');
+    }
+
+    function cerrarSlideOver() {
+      const panel = document.getElementById('slideover_detalle');
+      const overlay = document.getElementById('slideover_overlay');
+      
+      panel.classList.add('translate-x-full');
+      setTimeout(() => { overlay.classList.add('hidden'); }, 300);
+    }
+  </script>
+</body>
+</html>

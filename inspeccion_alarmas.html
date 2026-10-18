@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Alarmas & Zonificación — ProTech Security</title>
+  
+  <meta name="theme-color" content="#020617">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Técnica Homologada -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        inset 5px 5px 12px rgba(0, 0, 0, 0.4), 
+        inset -5px -5px 12px rgba(255, 255, 255, 0.12),
+        0 25px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-glass-action {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 3px 3px 8px rgba(0, 0, 0, 0.25), 
+        inset -3px -3px 8px rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(0, 0, 0, 0.25);
+      border-radius: 1rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #ffffff;
+    }
+
+    .btn-glass-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.35), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.12),
+        0 15px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cyber-input, .glass-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+    .cyber-input option, .glass-input option, optgroup {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: rgba(255, 255, 255, 0.22); 
+      color: #ffffff; 
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+  </style>
+</head>
+<body class="flex items-center justify-center text-white session-checked">
+
+  <!-- VIDEO DE FONDO NÍDIDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL -->
+  <aside id="sidebar_menu" class="absolute md:relative top-0 left-0 z-50 h-full w-72 flex flex-col justify-between border-r border-white/15 p-5 transition-all duration-300 ease-in-out bg-slate-950/80 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none shadow-2xl md:shadow-none -translate-x-full md:translate-x-0 flex-shrink-0">
+    
+    <div class="space-y-4 overflow-y-auto pr-1 hide-scrollbar flex-1">
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+            <div id="logo_fallback" style="display:none;" class="h-10 w-10 rounded-xl bg-slate-900 text-white font-bold text-base items-center justify-center">PS</div>
+          </div>
+          <div>
+            <h1 class="font-bold text-[15px] text-white leading-tight">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-amber-400 font-bold">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="space-y-3">
+        <div class="cyber-glass-card p-2.5">
+          <div class="w-full flex items-center justify-center font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1.5 mb-2 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-clipboard-list"></i> Módulo Inspección</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="navegarA('inspecciones_index.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-gauge-high"></i></div>
+              Panel Principal
+            </button>
+            <button onclick="navegarA('inspeccion_cliente.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-white/80 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-address-card"></i></div>
+              1. Datos del Cliente
+            </button>
+            <button onclick="navegarA('inspeccion_cctv.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-video"></i></div>
+              2. CCTV & Audio
+            </button>
+            <button onclick="navegarA('inspeccion_alarmas.html')" class="menu-link active w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-amber-500 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-bell"></i></div>
+              3. Alarmas & Zonificación
+            </button>
+            <button onclick="navegarA('inspeccion_redes.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-network-wired"></i></div>
+              4. Redes, Fibra & Topología
+            </button>
+            <button onclick="navegarA('inspeccion_cercos.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-rose-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-bolt"></i></div>
+              5. Cercos Eléctricos
+            </button>
+            <button onclick="navegarA('inspeccion_acceso.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-fingerprint"></i></div>
+              6. Control Acceso
+            </button>
+          </div>
+        </div>
+
+        <div class="cyber-glass-card p-2.5">
+          <div class="w-full flex items-center justify-center font-tech-mono text-[10px] uppercase font-bold text-white/70 tracking-wider p-1.5 mb-2 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-file-invoice"></i> Resumen</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="navegarA('inspeccion_equipos.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-300 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+              Consolidado Equipos
+            </button>
+            <button onclick="navegarA('inspeccion_materiales.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-toolbox"></i></div>
+              Calculadora Materiales
+            </button>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="cyber-glass-card p-3.5 flex items-center justify-between shadow-sm relative z-10 flex-shrink-0 mt-3">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-bold text-xs shadow-md">JP</div>
+        <div class="truncate">
+          <p class="text-[11px] font-bold text-white truncate">Juan Pablo Luna Paredes</p>
+          <p class="font-tech-mono text-[9px] text-amber-400 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition" title="Cerrar Sesión">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden">
+    
+    <header class="border-b border-white/15 px-6 py-4 flex items-center justify-between flex-shrink-0 z-30 bg-slate-950/30 backdrop-blur-md">
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white p-2 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 transition">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="hidden md:flex relative w-72">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 text-xs"></i>
+          <input type="text" placeholder="Buscar sensor, central, sirena..." class="cyber-input w-full text-xs pl-8 pr-3 py-2.5 rounded-xl font-medium outline-none">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2.5">
+        <button onclick="window.location.href='index.html'" class="px-3 py-2 rounded-xl cyber-glass-card text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm hidden sm:flex" title="Salir al Portal">
+          <i class="fa-solid fa-arrow-right-from-bracket text-blue-400"></i>
+          <span class="hidden md:inline">Salir</span>
+        </button>
+
+        <button onclick="window.location.href='catalogo.html'" class="px-3 py-2 rounded-xl btn-glass-action text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm" title="Catálogo Oficial">
+          <i class="fa-solid fa-book-open text-indigo-400"></i>
+          <span class="hidden md:inline">Catálogo</span>
+        </button>
+
+        <button onclick="navegarA('inspecciones_index.html')" class="px-3 py-2 rounded-xl cyber-glass-card text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm" title="Panel Principal">
+          <i class="fa-solid fa-gauge-high text-blue-400"></i>
+          <span class="hidden sm:inline">Panel</span>
+        </button>
+
+        <button id="btn_guardar_cloud" onclick="guardarModuloAlarmas()" class="px-4 py-2 rounded-xl btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 shadow-md transition" title="Guardar Alarmas">
+          <i class="fa-solid fa-floppy-disk text-emerald-400"></i>
+          <span class="hidden sm:inline">Guardar</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ÁREA DE CONTENIDO -->
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-6 relative space-y-6 z-10">
+      <div class="max-w-6xl mx-auto space-y-6">
+
+        <!-- TÍTULO PRINCIPAL Y TICKET -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="font-tech-head font-extrabold text-[24px] text-white tracking-tight flex items-center gap-3">
+              <i class="fa-solid fa-shield-halved text-amber-400 drop-shadow-md"></i> Sistema de Alarmas & Zonificación
+            </h2>
+            <p class="font-tech-mono text-[10px] uppercase tracking-wider text-white/70 mt-1.5">
+              PASO 3 • PANEL CENTRAL, COMUNICADORES, SIRENAS Y MATRIZ DE ZONAS
+            </p>
+          </div>
+          <div class="inline-flex items-center gap-2 cyber-glass-card px-3 py-1.5 border-white/20">
+            <span class="text-[9px] font-tech-mono uppercase font-bold text-amber-300">Ticket Vinculado:</span>
+            <span id="label_id_ticket" class="text-xs font-tech-mono font-bold text-white"># INS-0000</span>
+          </div>
+        </div>
+
+        <!-- 1. CENTRAL DE ALARMA, INTERFAZ & EXPANSORES -->
+        <div class="cyber-glass-card p-6 space-y-5">
+          <div class="flex items-center justify-between border-b border-white/15 pb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+              <i class="fa-solid fa-shield-cat text-amber-400"></i> Central de Alarma, Interfaz & Expansores
+            </h3>
+            <span class="text-[10px] font-tech-mono text-amber-300 font-bold bg-amber-500/20 border border-amber-400/30 px-2.5 py-1 rounded">HARDWARE CORE</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- TARJETA 1: CENTRAL DE ALARMA -->
+            <div class="cyber-glass-card p-4 space-y-3 md:col-span-3 bg-white/5">
+              <span class="text-[10px] font-tech-mono font-bold text-amber-300 uppercase tracking-wider"><i class="fa-solid fa-server mr-1"></i> 1. Panel / Central Principal</span>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-white/80 mb-1">Acción Central</label>
+                  <select id="alm_accion_central" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                    <option value="Instalación Nueva">Instalación Nueva</option>
+                    <option value="Mantenimiento">Mantenimiento</option>
+                    <option value="Ampliación de Zonas">Ampliación de Zonas</option>
+                    <option value="Reubicación">Reubicación</option>
+                    <option value="No Requiere">No Requiere</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo de Central (Catálogo)</label>
+                  <select id="alm_central_catalogo" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                    <option value="">Cargando catálogo...</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación Física</label>
+                  <input type="text" id="alm_ubicacion_central" placeholder="Ej. Bajo gradas Piso 1" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium outline-none">
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-white/15">
+                <span class="text-[10px] text-white/70 font-medium">Evidencia Fotográfica de Ubicación:</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="abrirSelectorFotoCore('central')" class="px-3 py-1.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                    <i class="fa-solid fa-camera text-amber-400 mr-1"></i> Adjuntar Foto Central
+                  </button>
+                  <div id="preview_container_central" class="flex items-center">
+                    <span class="text-[10px] text-white/50 italic font-tech-mono">Sin foto</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TARJETA 2: TECLADO DE CONTROL -->
+            <div class="cyber-glass-card p-4 space-y-3 md:col-span-3 bg-white/5">
+              <span class="text-[10px] font-tech-mono font-bold text-indigo-300 uppercase tracking-wider"><i class="fa-solid fa-keyboard mr-1"></i> 2. Teclado de Control</span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo Teclado (Catálogo)</label>
+                  <select id="alm_teclado_catalogo" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                    <option value="No Requiere">No Requiere</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación Física Teclado</label>
+                  <input type="text" id="alm_ubicacion_teclado" placeholder="Ej. Acceso Principal / Garita" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium outline-none">
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-white/15">
+                <span class="text-[10px] text-white/70 font-medium">Evidencia Fotográfica de Ubicación:</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="abrirSelectorFotoCore('teclado')" class="px-3 py-1.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                    <i class="fa-solid fa-camera text-indigo-400 mr-1"></i> Adjuntar Foto Teclado
+                  </button>
+                  <div id="preview_container_teclado" class="flex items-center">
+                    <span class="text-[10px] text-white/50 italic font-tech-mono">Sin foto</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TARJETA 3: MÓDULO EXPANSOR -->
+            <div class="cyber-glass-card p-4 space-y-3 md:col-span-3 bg-white/5">
+              <span class="text-[10px] font-tech-mono font-bold text-emerald-300 uppercase tracking-wider"><i class="fa-solid fa-network-wired mr-1"></i> 3. Módulo Expansor de Zonas (Opcional)</span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo Expansor</label>
+                  <select id="alm_expansor_catalogo" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                    <option value="No Requiere">No Requiere</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación Física Expansor</label>
+                  <input type="text" id="alm_ubicacion_expansor" placeholder="Ej. Gabinete Auxiliar Bodega 2" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium outline-none">
+                </div>
+              </div>
+              <div class="flex items-center justify-between pt-2 border-t border-white/15">
+                <span class="text-[10px] text-white/70 font-medium">Evidencia Fotográfica de Ubicación:</span>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="abrirSelectorFotoCore('expansor')" class="px-3 py-1.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                    <i class="fa-solid fa-camera text-emerald-400 mr-1"></i> Adjuntar Foto Expansor
+                  </button>
+                  <div id="preview_container_expansor" class="flex items-center">
+                    <span class="text-[10px] text-white/50 italic font-tech-mono">Sin foto</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CAMPOS COMPLEMENTARIOS -->
+            <div class="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Comunicador Adicional</label>
+                <select id="alm_comunicador_catalogo" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                  <option value="Sin Comunicador Adicional">Sin Comunicador Adicional</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Receptor Inalámbrico RF</label>
+                <select id="alm_receptor_rf_catalogo" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                  <option value="No Requiere">No Requiere</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-amber-300 mb-1 flex items-center gap-1">
+                  <i class="fa-solid fa-plug-circle-bolt text-amber-400"></i> Condición Punto Eléctrico 110V
+                </label>
+                <select id="alm_condicion_electrica" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium bg-amber-500/25 border-amber-400/30">
+                  <option value="Toma 110V disponible con Tierra">Toma 110V disponible con Tierra</option>
+                  <option value="Toma 110V disponible sin Tierra">Toma 110V disponible sin Tierra</option>
+                  <option value="Requiere nueva extensión eléctrica">Requiere nueva extensión eléctrica</option>
+                  <option value="Conexión en Tablero Principal">Conexión en Tablero Principal</option>
+                </select>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- GABINETES, SIRENAS & RESPALDO -->
+          <div class="cyber-glass-card p-5 space-y-4 bg-white/5 mt-4">
+            <h4 class="text-xs font-bold text-blue-300 uppercase tracking-wide flex items-center gap-1.5">
+              <i class="fa-solid fa-volume-high"></i> Gabinetes, Sirenas & Respaldo de Energía
+            </h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              <!-- TARJETA SIRENA EXTERIOR -->
+              <div class="cyber-glass-card p-4 space-y-3 bg-white/5">
+                <span class="text-[10px] font-tech-mono font-bold text-rose-300 uppercase tracking-wider"><i class="fa-solid fa-bullhorn mr-1"></i> Sirena Exterior 30W</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo Sirena Ext.</label>
+                    <select id="alm_sirena_ext_catalogo" class="cyber-input w-full rounded-lg p-2.5 text-xs font-medium">
+                      <option value="No Requiere">No Requiere</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación Física</label>
+                    <input type="text" id="alm_ubicacion_sirena_ext" placeholder="Ej. Fachada Frontal Altura 4m" class="cyber-input w-full rounded-lg p-2.5 text-xs font-medium outline-none">
+                  </div>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-white/15">
+                  <span class="text-[10px] text-white/70 font-medium">Evidencia Fotográfica:</span>
+                  <div class="flex items-center gap-2">
+                    <button type="button" onclick="abrirSelectorFotoCore('sirena_ext')" class="px-3 py-1.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                      <i class="fa-solid fa-camera text-rose-400 mr-1"></i> Foto Ext.
+                    </button>
+                    <div id="preview_container_sirena_ext" class="flex items-center">
+                      <span class="text-[10px] text-white/50 italic font-tech-mono">Sin foto</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TARJETA SIRENA INTERIOR -->
+              <div class="cyber-glass-card p-4 space-y-3 bg-white/5">
+                <span class="text-[10px] font-tech-mono font-bold text-purple-300 uppercase tracking-wider"><i class="fa-solid fa-bell mr-1"></i> Sirena Interior Piezo</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo Sirena Int.</label>
+                    <select id="alm_sirena_int_catalogo" class="cyber-input w-full rounded-lg p-2.5 text-xs font-medium">
+                      <option value="No Requiere">No Requiere</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación Física</label>
+                    <input type="text" id="alm_ubicacion_sirena_int" placeholder="Ej. Pasillo Central Planta Baja" class="cyber-input w-full rounded-lg p-2.5 text-xs font-medium outline-none">
+                  </div>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-white/15">
+                  <span class="text-[10px] text-white/70 font-medium">Evidencia Fotográfica:</span>
+                  <div class="flex items-center gap-2">
+                    <button type="button" onclick="abrirSelectorFotoCore('sirena_int')" class="px-3 py-1.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                      <i class="fa-solid fa-camera text-purple-400 mr-1"></i> Foto Int.
+                    </button>
+                    <div id="preview_container_sirena_int" class="flex items-center">
+                      <span class="text-[10px] text-white/50 italic font-tech-mono">Sin foto</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 text-xs pt-2">
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Gabinete Central</label>
+                <select id="alm_gabinete_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="Existente / No Requiere">Existente / No Requiere</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Batería Respaldo 12V</label>
+                <select id="alm_bateria_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="Existente / No Requiere">Existente / No Requiere</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Transformador / Fuente</label>
+                <select id="alm_transformador_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="Incluido / Existente">Incluido / Existente</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Llaveros / Mandos</label>
+                <input type="number" id="alm_cant_llaveros" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Pulsadores Pánico</label>
+                <input type="number" id="alm_cant_panicos" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Módulo Relé PGM</label>
+                <select id="alm_pgm_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere">No Requiere</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- CABLEADO PARA SISTEMA DE ALARMA -->
+          <div class="cyber-glass-card p-5 space-y-3.5 bg-white/5">
+            <h4 class="text-[11px] font-bold text-white uppercase tracking-wide flex items-center gap-1.5">
+              <i class="fa-solid fa-lines-leaning text-blue-400"></i> Metrajes Totales de Cableado para Alarma (+10% Holgura)
+            </h4>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-white">
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cable Gemelo 2x22 para Sirena (Metros)</label>
+                <input type="number" id="alm_metros_gemelo" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cable de Alarma 4 Hilos (Metros Calculados)</label>
+                <input type="text" id="alm_metros_4hilos" readonly value="0 m" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold bg-white/10 text-blue-300">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cable UTP para Alarma / IP (Metros)</label>
+                <input type="number" id="alm_metros_utp" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. DISPOSITIVOS DE DETECCIÓN & ZONAS LEVANTADAS -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                <i class="fa-solid fa-person-walking-dashed-line-arrow-right text-blue-400"></i> Dispositivos de Detección & Zonas Levantadas
+              </h3>
+              <p class="text-[10px] text-white/70 mt-0.5">Define sensores PIR, contactos magnéticos, barreras, topología de conexión y fotografía de campo.</p>
+            </div>
+            <button type="button" onclick="agregarZonaAlarma()" class="px-4 py-2 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center justify-center gap-2 self-start sm:self-auto">
+              <i class="fa-solid fa-plus text-blue-400 text-xs"></i> <span>Añadir Dispositivo / Sensor</span>
+            </button>
+          </div>
+
+          <!-- Contenedor dinámico de Zonas -->
+          <div id="zonas_container" class="space-y-4">
+            <!-- Renderizado dinámico -->
+          </div>
+        </div>
+
+        <!-- BOTONERA INFERIOR HOMOLOGADA -->
+        <div class="cyber-glass-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <button onclick="navegarA('inspecciones_index.html')" class="w-full sm:w-auto px-5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-arrow-left text-blue-400"></i> Volver al Dashboard
+          </button>
+          <button onclick="guardarYSalir()" class="w-full sm:w-auto px-7 py-2.5 rounded-xl btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white text-xs font-bold transition shadow-md flex items-center justify-center gap-2">
+            <i class="fa-solid fa-floppy-disk text-emerald-400"></i> <span>Guardar & Volver al Panel</span>
+          </button>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticketId = urlParams.get('id');
+
+    let inventarioCatalogo = [];
+    let listaZonas = [];
+
+    let fotosCore = {
+      central: null,
+      teclado: null,
+      expansor: null,
+      sirena_ext: null,
+      sirena_int: null
+    };
+
+    function navegarA(pagina) {
+      let url = pagina;
+      if (ticketId) url += '?id=' + ticketId;
+      window.location.href = url;
+    }
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    async function cargarCatalogoPrecios() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('catalogo_precios')
+          .select('*')
+          .order('descripcion');
+
+        if (error) throw error;
+        inventarioCatalogo = data || [];
+        poblarSelectoresCatalogo();
+        renderizarZonas();
+      } catch (err) {
+        console.error("Error al cargar catalogo_precios:", err);
+      }
+    }
+
+    function poblarSelectoresCatalogo() {
+      const paneles = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const c = (i.categoria || '').toLowerCase();
+        return (d.includes('panel') || d.includes('central') || d.includes('kit alarma') || c.includes('alarma')) && !d.includes('patch panel') && !d.includes('solar') && !d.includes('sirena') && !d.includes('sensor');
+      });
+      llenarSelect('alm_central_catalogo', paneles, 'Seleccionar Panel de Alarma');
+
+      const teclados = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('teclado') || d.includes('keypad');
+      });
+      llenarSelect('alm_teclado_catalogo', teclados, 'No Requiere', true);
+
+      const comunicadores = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('comunicador') || d.includes('gprs') || d.includes('3g') || d.includes('4g') || d.includes('tl280') || d.includes('ip150');
+      });
+      llenarSelect('alm_comunicador_catalogo', comunicadores, 'Sin Comunicador Adicional', true);
+
+      const expansores = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('expansor') || d.includes('pc5108') || d.includes('modulo de zonas');
+      });
+      llenarSelect('alm_expansor_catalogo', expansores, 'No Requiere', true);
+
+      const receptores = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('receptor') || d.includes('inalambrico') || d.includes('rf');
+      });
+      llenarSelect('alm_receptor_rf_catalogo', receptores, 'No Requiere', true);
+
+      const gabinetes = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('gabinete') && (d.includes('alarma') || d.includes('metalico') || d.includes('dsc'));
+      });
+      llenarSelect('alm_gabinete_catalogo', gabinetes, 'Existente / No Requiere', true);
+
+      const sirenasExt = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('sirena') && (d.includes('30w') || d.includes('exterior') || d.includes('estrobo') || d.includes('corneta'));
+      });
+      llenarSelect('alm_sirena_ext_catalogo', sirenasExt, 'No Requiere', true);
+
+      const sirenasInt = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('sirena') && (d.includes('interior') || d.includes('piezo') || d.includes('15w') || d.includes('20w'));
+      });
+      llenarSelect('alm_sirena_int_catalogo', sirenasInt, 'No Requiere', true);
+
+      const baterias = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('bateria') || d.includes('batería') || d.includes('12v 4ah') || d.includes('12v 7ah');
+      });
+      llenarSelect('alm_bateria_catalogo', baterias, 'Existente / No Requiere', true);
+
+      const trafos = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('transformador') || d.includes('16.5v') || d.includes('fuente 12v');
+      });
+      llenarSelect('alm_transformador_catalogo', trafos, 'Incluido / Existente', true);
+
+      const pgms = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('rele') || d.includes('relé') || d.includes('pgm');
+      });
+      llenarSelect('alm_pgm_catalogo', pgms, 'No Requiere', true);
+    }
+
+    function llenarSelect(elementId, items, placeholder, incluirNoRequiere = false) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.innerHTML = '';
+
+      if (incluirNoRequiere) {
+        el.innerHTML += `<option value="No Requiere">${placeholder}</option>`;
+      } else {
+        el.innerHTML += `<option value="">${placeholder}</option>`;
+      }
+
+      items.forEach(item => {
+        const precio = item.pvp_sugerido ? ` ($${Number(item.pvp_sugerido).toFixed(2)})` : '';
+        el.innerHTML += `<option value="${item.id}" data-pvp="${item.pvp_sugerido || 0}" data-desc="${item.descripcion}">${item.descripcion}${precio}</option>`;
+      });
+    }
+
+    // DISCRIMINA SENSORES DE ZONAS SIN DEJAR DISPOSITIVOS FUERA
+    function esSensorOZona(item) {
+      const d = (item.descripcion || '').toLowerCase();
+      const c = (item.categoria || '').toLowerCase();
+      const sc = (item.subcategoria || '').toLowerCase();
+
+      // Descartar equipos que pertenecen al Core
+      if (d.includes('panel central') || d.includes('kit central') || d.includes('teclado') || d.includes('sirena') || 
+          d.includes('bateria') || d.includes('batería') || d.includes('transformador') || d.includes('gabinete') || 
+          d.includes('cargador') || d.includes('patch panel') || d.includes('switch')) {
+        return false;
+      }
+
+      // Inclusión por coincidencia de descripción o categoría
+      return d.includes('sensor') || d.includes('pir') || d.includes('infrarrojo') || 
+             d.includes('magnetico') || d.includes('magnético') || d.includes('contacto') || 
+             d.includes('barrera') || d.includes('fotoelectrica') || d.includes('fotoeléctrica') || 
+             d.includes('haz') || d.includes('humo') || d.includes('temperatura') || 
+             d.includes('panico') || d.includes('pánico') || d.includes('impacto') || 
+             d.includes('rotura') || d.includes('lanfor') || d.includes('anitmascota') || 
+             d.includes('antimascota') || d.includes('lc-') || d.includes('lc100') || 
+             d.includes('nv5') || d.includes('dg75') || d.includes('optex') || 
+             c.includes('sensor') || c.includes('deteccion') || c.includes('detección') || 
+             sc.includes('sensor') || sc.includes('zona');
+    }
+
+    function agregarZonaAlarma(datosPrevios = null) {
+      const idx = listaZonas.length + 1;
+      const zonaUid = 'zn_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+      const zonaData = datosPrevios || {
+        uid: zonaUid,
+        identificacion: `Zona #${idx}`,
+        item_catalogo_id: '',
+        descripcion: '',
+        ubicacion: `Sala Principal / Acceso #${idx}`,
+        tecnologia: 'Cableado',
+        tipo_disparo: 'Instantánea',
+        conectado_a: 'Panel Central de Alarma',
+        canalizacion: 'Tubería Metálica EMT 3/4"',
+        canalizacion_mixta: 'No Requiere Tramo Mixto',
+        distancia_m: 20,
+        pvp_sugerido: 0.00,
+        foto_base64: null
+      };
+
+      listaZonas.push(zonaData);
+      renderizarZonas();
+      calcularMetrajeAlarma();
+    }
+
+    function duplicarZonaAlarma(uid) {
+      const original = listaZonas.find(z => z.uid === uid);
+      if (!original) return;
+
+      const idx = listaZonas.length + 1;
+      const zonaUid = 'zn_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+      const copia = {
+        ...original,
+        uid: zonaUid,
+        identificacion: `Zona #${idx}`,
+        ubicacion: `${original.ubicacion} (Copia)`,
+        foto_base64: null
+      };
+
+      listaZonas.push(copia);
+      renderizarZonas();
+      calcularMetrajeAlarma();
+    }
+
+    function eliminarZonaAlarma(uid) {
+      listaZonas = listaZonas.filter(z => z.uid !== uid);
+      renderizarZonas();
+      calcularMetrajeAlarma();
+    }
+
+    function renderizarZonas() {
+      const container = document.getElementById('zonas_container');
+      if (listaZonas.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-white/50 font-medium cyber-glass-card border-dashed">
+            <i class="fa-solid fa-person-walking-dashed-line-arrow-right text-2xl mb-2 block text-blue-400"></i>
+            <span>No hay sensores añadidos. Haz clic en "+ Añadir Dispositivo / Sensor" para registrar zonas.</span>
+          </div>
+        `;
+        return;
+      }
+
+      // Clasificación robusta de sensores desde catalogo_precios
+      const todosLosSensores = inventarioCatalogo.filter(esSensorOZona);
+
+      // Si por alguna razón la BD tiene categorías genéricas, respaldar con los ítems de alarmas
+      const listaFinalSensores = todosLosSensores.length > 0 ? todosLosSensores : inventarioCatalogo.filter(i => {
+        const c = (i.categoria || '').toLowerCase();
+        return c.includes('alarma') || c.includes('seguridad');
+      });
+
+      // Agrupación visual por familia
+      const pirs = listaFinalSensores.filter(s => {
+        const d = (s.descripcion || '').toLowerCase();
+        return d.includes('pir') || d.includes('movimiento') || d.includes('infrarrojo') || d.includes('lc100') || d.includes('lc-') || d.includes('nv5');
+      });
+      const magneticos = listaFinalSensores.filter(s => {
+        const d = (s.descripcion || '').toLowerCase();
+        return d.includes('magnetico') || d.includes('magnético') || d.includes('contacto') || d.includes('lanfor');
+      });
+      const perimetrales = listaFinalSensores.filter(s => {
+        const d = (s.descripcion || '').toLowerCase();
+        return d.includes('barrera') || d.includes('fotoelectrica') || d.includes('fotoeléctrica') || d.includes('haz') || d.includes('beam');
+      });
+      const fuegoHumo = listaFinalSensores.filter(s => {
+        const d = (s.descripcion || '').toLowerCase();
+        return d.includes('humo') || d.includes('temperatura') || d.includes('gas');
+      });
+      const otrosSensores = listaFinalSensores.filter(s => !pirs.includes(s) && !magneticos.includes(s) && !perimetrales.includes(s) && !fuegoHumo.includes(s));
+
+      container.innerHTML = '';
+      listaZonas.forEach((zn, index) => {
+        const tarjeta = document.createElement('div');
+        tarjeta.className = 'cyber-glass-card p-5 space-y-4 border-l-4 border-l-blue-400 text-xs transition';
+
+        let opcionesHTML = `<option value="">Seleccionar Sensor del Catálogo Oficial...</option>`;
+
+        function renderGrupo(nombre, items) {
+          if (!items || items.length === 0) return '';
+          let g = `<optgroup label="── ${nombre} ──">`;
+          items.forEach(s => {
+            const sel = s.id === zn.item_catalogo_id ? 'selected' : '';
+            const p = s.pvp_sugerido ? ` ($${Number(s.pvp_sugerido).toFixed(2)})` : '';
+            g += `<option value="${s.id}" data-pvp="${s.pvp_sugerido||0}" data-desc="${s.descripcion}" ${sel}>${s.descripcion}${p}</option>`;
+          });
+          g += `</optgroup>`;
+          return g;
+        }
+
+        opcionesHTML += renderGrupo('DETECTORES DE MOVIMIENTO (PIR / MICROONDAS)', pirs);
+        opcionesHTML += renderGrupo('CONTACTOS MAGNÉTICOS (PUERTA / VENTANA / LANFOR)', magneticos);
+        opcionesHTML += renderGrupo('BARRERAS FOTOELÉCTRICAS & PERIMETRALES', perimetrales);
+        opcionesHTML += renderGrupo('DETECCIÓN DE HUMO & INCENDIO', fuegoHumo);
+        opcionesHTML += renderGrupo('OTROS DISPOSITIVOS / PULSADORES / IMPACTO', otrosSensores);
+
+        tarjeta.innerHTML = `
+          <div class="flex items-center justify-between gap-2 border-b border-white/15 pb-2.5 flex-wrap">
+            <div class="flex items-center gap-2">
+              <span class="font-tech-head font-extrabold text-xs text-white flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-person-running text-blue-400"></i>
+                ZONA #${index + 1}
+              </span>
+              <span class="text-[9px] font-tech-mono bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-400/30 font-bold">${zn.identificacion}</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+              <button type="button" onclick="duplicarZonaAlarma('${zn.uid}')" class="text-xs font-bold text-indigo-300 hover:text-indigo-200 flex items-center gap-1 transition bg-indigo-500/20 hover:bg-indigo-500/30 px-2.5 py-1.5 rounded-lg border border-indigo-400/30 shadow-sm" title="Clonar zona">
+                <i class="fa-regular fa-copy"></i> <span class="hidden sm:inline">Duplicar</span>
+              </button>
+              <button type="button" onclick="eliminarZonaAlarma('${zn.uid}')" class="text-xs font-bold text-rose-300 hover:text-rose-200 flex items-center gap-1 transition px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 shadow-sm" title="Eliminar zona">
+                <i class="fa-solid fa-xmark"></i> <span class="hidden sm:inline">Eliminar</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-white">
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Identificación / Zona</label>
+              <input type="text" value="${zn.identificacion}" oninput="actualizarCampoZona('${zn.uid}', 'identificacion', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white outline-none">
+            </div>
+
+            <div class="sm:col-span-2 lg:col-span-3">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Dispositivo del Catálogo Oficial</label>
+              <select onchange="seleccionarDispositivoZona('${zn.uid}', this)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                ${opcionesHTML}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación Física</label>
+              <input type="text" value="${zn.ubicacion}" oninput="actualizarCampoZona('${zn.uid}', 'ubicacion', this.value)" placeholder="Ej. Sala principal / Bodega" class="cyber-input w-full rounded-lg p-2 font-medium outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Tecnología del Sensor</label>
+              <select onchange="actualizarCampoZona('${zn.uid}', 'tecnologia', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="Cableado" ${zn.tecnologia === 'Cableado' ? 'selected' : ''}>Cableado (4 Hilos)</option>
+                <option value="Inalámbrico" ${zn.tecnologia === 'Inalámbrico' ? 'selected' : ''}>Inalámbrico RF</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-blue-300 mb-1">Tipo de Disparo (Lógica)</label>
+              <select onchange="actualizarCampoZona('${zn.uid}', 'tipo_disparo', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white bg-blue-500/20">
+                <option value="Instantánea" ${zn.tipo_disparo === 'Instantánea' ? 'selected' : ''}>Instantánea (Perímetro / Interior)</option>
+                <option value="Con Retardo" ${zn.tipo_disparo === 'Con Retardo' ? 'selected' : ''}>Con Retardo (Entrada / Salida)</option>
+                <option value="24 Horas Pánico" ${zn.tipo_disparo === '24 Horas Pánico' ? 'selected' : ''}>24 Horas Pánico Silencioso</option>
+                <option value="24 Horas Fuego" ${zn.tipo_disparo === '24 Horas Fuego' ? 'selected' : ''}>24 Horas Humo / Fuego</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-indigo-300 mb-1 flex items-center gap-1">
+                <i class="fa-solid fa-project-diagram text-indigo-400"></i> Conectado A (Topología)
+              </label>
+              <select onchange="actualizarCampoZona('${zn.uid}', 'conectado_a', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white bg-indigo-500/20">
+                <option value="Panel Central de Alarma" ${zn.conectado_a === 'Panel Central de Alarma' ? 'selected' : ''}>Panel Central de Alarma</option>
+                <option value="Módulo Expansor de Zonas" ${zn.conectado_a === 'Módulo Expansor de Zonas' ? 'selected' : ''}>Módulo Expansor de Zonas</option>
+                <option value="Bornes de Zona del Teclado" ${zn.conectado_a === 'Bornes de Zona del Teclado' ? 'selected' : ''}>Bornes de Zona del Teclado</option>
+                <option value="Receptor Inalámbrico RF" ${zn.conectado_a === 'Receptor Inalámbrico RF' ? 'selected' : ''}>Receptor Inalámbrico RF</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Distancia al Panel (m)</label>
+              <input type="number" min="0" value="${zn.distancia_m}" oninput="actualizarDistanciaZona('${zn.uid}', parseFloat(this.value)||0)" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Canalización Principal (Tramo 1)</label>
+              <select onchange="actualizarCampoZona('${zn.uid}', 'canalizacion', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="Tubería Metálica EMT 3/4&quot;" ${zn.canalizacion === 'Tubería Metálica EMT 3/4"' ? 'selected' : ''}>Tubería Metálica EMT 3/4"</option>
+                <option value="Canaleta Plástica Interior" ${zn.canalizacion === 'Canaleta Plástica Interior' ? 'selected' : ''}>Canaleta Plástica Interior</option>
+                <option value="Manguera Corrugada Plástica" ${zn.canalizacion === 'Manguera Corrugada Plástica' ? 'selected' : ''}>Manguera Corrugada Plástica</option>
+                <option value="Cielo Raso Libre / Vía de Falso Techo" ${zn.canalizacion === 'Cielo Raso Libre / Vía de Falso Techo' ? 'selected' : ''}>Cielo Raso Libre / Vía de Falso Techo</option>
+                <option value="PVC Conduit Embutido" ${zn.canalizacion === 'PVC Conduit Embutido' ? 'selected' : ''}>PVC Conduit Embutido</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Canalización Mixta (Tramo 2 Opcional)</label>
+              <select onchange="actualizarCampoZona('${zn.uid}', 'canalizacion_mixta', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="No Requiere Tramo Mixto" ${!zn.canalizacion_mixta || zn.canalizacion_mixta === 'No Requiere Tramo Mixto' ? 'selected' : ''}>No Requiere Tramo Mixto</option>
+                <option value="Canaleta Plástica Interior" ${zn.canalizacion_mixta === 'Canaleta Plástica Interior' ? 'selected' : ''}>↳ Transición a Canaleta</option>
+                <option value="Tubería Metálica EMT 3/4&quot;" ${zn.canalizacion_mixta === 'Tubería Metálica EMT 3/4"' ? 'selected' : ''}>↳ Transición a EMT 3/4"</option>
+                <option value="Manguera Corrugada Plástica" ${zn.canalizacion_mixta === 'Manguera Corrugada Plástica' ? 'selected' : ''}>↳ Transición a Manguera Corrugada</option>
+                <option value="Cielo Raso Libre / Vía de Falso Techo" ${zn.canalizacion_mixta === 'Cielo Raso Libre / Vía de Falso Techo' ? 'selected' : ''}>↳ Transición a Falso Techo</option>
+              </select>
+            </div>
+
+            <!-- FOTOGRAFÍA / EVIDENCIA VISUAL -->
+            <div class="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center gap-3 pt-3 border-t border-white/15">
+              <button type="button" onclick="abrirSelectorFotoZona('${zn.uid}')" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                <i class="fa-solid fa-camera text-blue-400"></i> <span>${zn.foto_base64 ? 'Cambiar Foto' : 'Adjuntar Foto'}</span>
+              </button>
+              
+              <div id="preview_container_zn_${zn.uid}" class="flex items-center gap-2.5">
+                ${zn.foto_base64 ? `
+                  <div class="relative group inline-flex items-center gap-1.5">
+                    <img src="${zn.foto_base64}" onclick="abrirLightboxZona('${zn.uid}')" class="h-14 w-14 rounded-xl object-cover border-2 border-blue-400 shadow-sm cursor-zoom-in hover:brightness-105 transition" title="Clic para ampliar vista">
+                    <span class="text-[10px] text-emerald-300 font-bold font-tech-mono flex items-center gap-1">
+                      <i class="fa-solid fa-circle-check"></i> Foto registrada (${Math.round(zn.foto_base64.length / 1024)} KB)
+                    </span>
+                    <button type="button" onclick="eliminarFotoZona('${zn.uid}')" class="bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow hover:bg-rose-700 transition" title="Eliminar fotografía">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                ` : `
+                  <span class="text-[10px] text-white/50 italic font-tech-mono flex items-center gap-1">
+                    <i class="fa-regular fa-image"></i> Sin fotografía adjunta
+                  </span>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(tarjeta);
+      });
+    }
+
+    function seleccionarDispositivoZona(uid, selectEl) {
+      const selectedOption = selectEl.options[selectEl.selectedIndex];
+      const pvp = parseFloat(selectedOption.getAttribute('data-pvp')) || 0;
+      const desc = selectedOption.getAttribute('data-desc') || '';
+
+      const z = listaZonas.find(item => item.uid === uid);
+      if (z) {
+        z.item_catalogo_id = selectEl.value;
+        z.descripcion = desc;
+        z.pvp_sugerido = pvp;
+      }
+    }
+
+    function actualizarCampoZona(uid, campo, valor) {
+      const z = listaZonas.find(item => item.uid === uid);
+      if (z) z[campo] = valor;
+    }
+
+    function actualizarDistanciaZona(uid, valor) {
+      const z = listaZonas.find(item => item.uid === uid);
+      if (z) {
+        z.distancia_m = valor;
+        calcularMetrajeAlarma();
+      }
+    }
+
+    function calcularMetrajeAlarma() {
+      const zonasCableadas = listaZonas.filter(z => z.tecnologia === 'Cableado');
+      const sumaMetros = zonasCableadas.reduce((acc, curr) => acc + (parseFloat(curr.distancia_m) || 0), 0);
+      const conHolgura = Math.ceil(sumaMetros * 1.10);
+      document.getElementById('alm_metros_4hilos').value = `${conHolgura} m`;
+    }
+
+    let objetivoFotoActual = null;
+
+    function abrirSelectorFotoCore(tipo) {
+      objetivoFotoActual = tipo;
+      document.getElementById('modal_origen_foto').classList.remove('hidden');
+    }
+
+    function abrirSelectorFotoZona(uid) {
+      objetivoFotoActual = uid;
+      document.getElementById('modal_origen_foto').classList.remove('hidden');
+    }
+
+    function cerrarSelectorFoto() {
+      document.getElementById('modal_origen_foto').classList.add('hidden');
+      document.getElementById('input_camara_directa').value = '';
+      document.getElementById('input_galeria_directa').value = '';
+      objetivoFotoActual = null;
+    }
+
+    function procesarFotoZonaDesdeModal(e) {
+      const file = e.target.files[0];
+      const target = objetivoFotoActual;
+      document.getElementById('modal_origen_foto').classList.add('hidden');
+
+      if (file && target) {
+        if (['central', 'teclado', 'expansor', 'sirena_ext', 'sirena_int'].includes(target)) {
+          comprimirYSubirArchivoCore(file, target);
+        } else {
+          comprimirYSubirArchivoZona(file, target);
+        }
+      }
+      document.getElementById('input_camara_directa').value = '';
+      document.getElementById('input_galeria_directa').value = '';
+    }
+
+    function comprimirYSubirArchivoCore(file, tipo) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const maxDimension = 1280;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > maxDimension) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
+          } else {
+            if (height > maxDimension) { width = Math.round((width * maxDimension) / height); height = maxDimension; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64 = canvas.toDataURL('image/jpeg', 0.75);
+
+          fotosCore[tipo] = base64;
+          actualizarVistaPreviaCoreUI(tipo);
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function actualizarVistaPreviaCoreUI(tipo) {
+      const cont = document.getElementById(`preview_container_${tipo}`);
+      if (!cont) return;
+      if (fotosCore[tipo]) {
+        cont.innerHTML = `
+          <div class="relative group inline-flex items-center gap-1.5">
+            <img src="${fotosCore[tipo]}" onclick="abrirLightboxBase64('${fotosCore[tipo]}')" class="h-8 w-8 rounded-lg object-cover border-2 border-blue-400 cursor-zoom-in shadow-sm">
+            <span class="text-[9px] text-emerald-300 font-bold">OK (${Math.round(fotosCore[tipo].length/1024)}KB)</span>
+            <button type="button" onclick="eliminarFotoCore('${tipo}')" class="bg-rose-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px] hover:bg-rose-700 transition" title="Eliminar foto"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+      } else {
+        cont.innerHTML = `<span class="text-[10px] text-white/50 italic font-tech-mono">Sin foto</span>`;
+      }
+    }
+
+    function eliminarFotoCore(tipo) {
+      fotosCore[tipo] = null;
+      actualizarVistaPreviaCoreUI(tipo);
+    }
+
+    function comprimirYSubirArchivoZona(file, uid) {
+      const containerPreview = document.getElementById(`preview_container_zn_${uid}`);
+      if (containerPreview) {
+        containerPreview.innerHTML = `<span class="text-[10px] text-blue-300 font-tech-mono"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Optimizando...</span>`;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const maxDimension = 1280;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > maxDimension) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
+          } else {
+            if (height > maxDimension) { width = Math.round((width * maxDimension) / height); height = maxDimension; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64Comprimido = canvas.toDataURL('image/jpeg', 0.75);
+
+          const z = listaZonas.find(item => item.uid === uid);
+          if (z) z.foto_base64 = base64Comprimido;
+          renderizarZonas();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function abrirLightboxBase64(base64) {
+      if (!base64) return;
+      document.getElementById('lightbox_img').src = base64;
+      document.getElementById('lightbox_titulo').innerText = `Evidencia Visual — Equipo Core`;
+      document.getElementById('modal_lightbox').classList.remove('hidden');
+    }
+
+    function abrirLightboxZona(uid) {
+      const z = listaZonas.find(item => item.uid === uid);
+      if (!z || !z.foto_base64) return;
+      document.getElementById('lightbox_img').src = z.foto_base64;
+      document.getElementById('lightbox_titulo').innerText = `${z.identificacion} (${z.ubicacion}) — Evidencia Visual`;
+      document.getElementById('modal_lightbox').classList.remove('hidden');
+    }
+
+    function cerrarLightbox() {
+      document.getElementById('modal_lightbox').classList.add('hidden');
+      document.getElementById('lightbox_img').src = '';
+    }
+
+    function eliminarFotoZona(uid) {
+      const z = listaZonas.find(item => item.uid === uid);
+      if (z) {
+        z.foto_base64 = null;
+        renderizarZonas();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.body.classList.add('session-checked');
+      if (ticketId) {
+        document.getElementById('label_id_ticket').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+      } else {
+        document.getElementById('label_id_ticket').innerText = "# NUEVO";
+      }
+
+      await cargarCatalogoPrecios();
+
+      if (supabaseClient && ticketId) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('inspeccion_alarmas')
+            .select('*')
+            .eq('ticket_id', ticketId)
+            .single();
+
+          if (data && !error) {
+            document.getElementById('alm_accion_central').value = data.accion_central || 'Instalación Nueva';
+            document.getElementById('alm_central_catalogo').value = data.central_catalogo_id || '';
+            document.getElementById('alm_ubicacion_central').value = data.ubicacion_central || '';
+            document.getElementById('alm_teclado_catalogo').value = data.teclado_catalogo_id || 'No Requiere';
+            document.getElementById('alm_ubicacion_teclado').value = data.ubicacion_teclado || '';
+            document.getElementById('alm_comunicador_catalogo').value = data.comunicador_catalogo_id || 'Sin Comunicador Adicional';
+            document.getElementById('alm_expansor_catalogo').value = data.expansor_catalogo_id || 'No Requiere';
+            document.getElementById('alm_ubicacion_expansor').value = data.ubicacion_expansor || '';
+            document.getElementById('alm_receptor_rf_catalogo').value = data.receptor_rf_catalogo_id || 'No Requiere';
+            document.getElementById('alm_condicion_electrica').value = data.condicion_electrica || 'Toma 110V disponible con Tierra';
+
+            document.getElementById('alm_gabinete_catalogo').value = data.gabinete_catalogo_id || 'Existente / No Requiere';
+            document.getElementById('alm_sirena_ext_catalogo').value = data.sirena_ext_catalogo_id || 'No Requiere';
+            document.getElementById('alm_ubicacion_sirena_ext').value = data.ubicacion_sirena_ext || '';
+            document.getElementById('alm_sirena_int_catalogo').value = data.sirena_int_catalogo_id || 'No Requiere';
+            document.getElementById('alm_ubicacion_sirena_int').value = data.ubicacion_sirena_int || '';
+            document.getElementById('alm_bateria_catalogo').value = data.bateria_catalogo_id || 'Existente / No Requiere';
+            document.getElementById('alm_transformador_catalogo').value = data.transformador_catalogo_id || 'Incluido / Existente';
+            document.getElementById('alm_cant_llaveros').value = data.cant_llaveros || 0;
+            document.getElementById('alm_cant_panicos').value = data.cant_panicos || 0;
+            document.getElementById('alm_pgm_catalogo').value = data.pgm_catalogo_id || 'No Requiere';
+
+            document.getElementById('alm_metros_gemelo').value = data.metros_gemelo || 0;
+            document.getElementById('alm_metros_utp').value = data.metros_utp || 0;
+
+            fotosCore.central = data.foto_central_base64 || null;
+            fotosCore.teclado = data.foto_teclado_base64 || null;
+            fotosCore.expansor = data.foto_expansor_base64 || null;
+            fotosCore.sirena_ext = data.foto_sirena_ext_base64 || null;
+            fotosCore.sirena_int = data.foto_sirena_int_base64 || null;
+
+            actualizarVistaPreviaCoreUI('central');
+            actualizarVistaPreviaCoreUI('teclado');
+            actualizarVistaPreviaCoreUI('expansor');
+            actualizarVistaPreviaCoreUI('sirena_ext');
+            actualizarVistaPreviaCoreUI('sirena_int');
+
+            if (data.zonas && Array.isArray(data.zonas)) {
+              listaZonas = data.zonas;
+              renderizarZonas();
+              calcularMetrajeAlarma();
+            } else {
+              renderizarZonas();
+            }
+          } else {
+            renderizarZonas();
+          }
+        } catch (err) {
+          console.error("Error restaurando inspeccion_alarmas:", err);
+          renderizarZonas();
+        }
+      } else {
+        renderizarZonas();
+      }
+    });
+
+    async function guardarModuloAlarmas() {
+      const btn = document.getElementById('btn_guardar_cloud');
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`;
+
+      const alarmasData = {
+        ticket_id: ticketId || null,
+        accion_central: document.getElementById('alm_accion_central').value,
+        central_catalogo_id: document.getElementById('alm_central_catalogo').value,
+        ubicacion_central: document.getElementById('alm_ubicacion_central').value,
+        teclado_catalogo_id: document.getElementById('alm_teclado_catalogo').value,
+        ubicacion_teclado: document.getElementById('alm_ubicacion_teclado').value,
+        comunicador_catalogo_id: document.getElementById('alm_comunicador_catalogo').value,
+        expansor_catalogo_id: document.getElementById('alm_expansor_catalogo').value,
+        ubicacion_expansor: document.getElementById('alm_ubicacion_expansor').value,
+        receptor_rf_catalogo_id: document.getElementById('alm_receptor_rf_catalogo').value,
+        condicion_electrica: document.getElementById('alm_condicion_electrica').value,
+
+        gabinete_catalogo_id: document.getElementById('alm_gabinete_catalogo').value,
+        sirena_ext_catalogo_id: document.getElementById('alm_sirena_ext_catalogo').value,
+        ubicacion_sirena_ext: document.getElementById('alm_ubicacion_sirena_ext').value,
+        sirena_int_catalogo_id: document.getElementById('alm_sirena_int_catalogo').value,
+        ubicacion_sirena_int: document.getElementById('alm_ubicacion_sirena_int').value,
+        bateria_catalogo_id: document.getElementById('alm_bateria_catalogo').value,
+        transformador_catalogo_id: document.getElementById('alm_transformador_catalogo').value,
+        cant_llaveros: parseInt(document.getElementById('alm_cant_llaveros').value) || 0,
+        cant_panicos: parseInt(document.getElementById('alm_cant_panicos').value) || 0,
+        pgm_catalogo_id: document.getElementById('alm_pgm_catalogo').value,
+
+        metros_gemelo: parseFloat(document.getElementById('alm_metros_gemelo').value) || 0,
+        metros_4hilos: document.getElementById('alm_metros_4hilos').value,
+        metros_utp: parseFloat(document.getElementById('alm_metros_utp').value) || 0,
+
+        foto_central_base64: fotosCore.central,
+        foto_teclado_base64: fotosCore.teclado,
+        foto_expansor_base64: fotosCore.expansor,
+        foto_sirena_ext_base64: fotosCore.sirena_ext,
+        foto_sirena_int_base64: fotosCore.sirena_int,
+
+        zonas: listaZonas,
+        total_zonas: listaZonas.length,
+        updated_at: new Date().toISOString()
+      };
+
+      if (supabaseClient && ticketId) {
+        try {
+          const { data: existing } = await supabaseClient
+            .from('inspeccion_alarmas')
+            .select('ticket_id')
+            .eq('ticket_id', ticketId)
+            .maybeSingle();
+
+          let errorSupabase = null;
+          if (existing && existing.ticket_id) {
+            const { error } = await supabaseClient
+              .from('inspeccion_alarmas')
+              .update(alarmasData)
+              .eq('ticket_id', ticketId);
+            errorSupabase = error;
+          } else {
+            const { error } = await supabaseClient
+              .from('inspeccion_alarmas')
+              .insert([alarmasData]);
+            errorSupabase = error;
+          }
+
+          if (errorSupabase) {
+            console.error("Error guardando en Supabase:", errorSupabase);
+            alert("Error al guardar en la base de datos: " + (errorSupabase.message || JSON.stringify(errorSupabase)));
+            btn.innerHTML = orig;
+            return false;
+          }
+        } catch (err) {
+          console.error("Excepción al guardar:", err);
+          alert("Excepción de red o conexión al guardar.");
+          btn.innerHTML = orig;
+          return false;
+        }
+      }
+
+      btn.innerHTML = `<i class="fa-solid fa-check"></i> Guardado`;
+      setTimeout(() => { btn.innerHTML = orig; }, 1200);
+      return true;
+    }
+
+    async function guardarYSalir() {
+      const success = await guardarModuloAlarmas();
+      if (success) {
+        setTimeout(() => {
+          navegarA('inspecciones_index.html');
+        }, 500);
+      }
+    }
+  </script>
+
+  <!-- MODAL LIGHTBOX -->
+  <div id="modal_lightbox" onclick="cerrarLightbox()" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100] hidden flex flex-col justify-center items-center p-4">
+    <div class="relative max-w-2xl w-full flex flex-col items-center" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center w-full pb-2 text-white text-xs font-tech-mono">
+        <span id="lightbox_titulo" class="font-bold">Vista de Inspección en Sitio</span>
+        <button onclick="cerrarLightbox()" class="p-1 text-white/70 hover:text-rose-400 transition text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <img id="lightbox_img" src="" class="max-h-[80vh] w-auto rounded-2xl border border-white/20 shadow-2xl object-contain">
+    </div>
+  </div>
+
+  <!-- ACTION SHEET PARA FOTOS -->
+  <div id="modal_origen_foto" onclick="cerrarSelectorFoto()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[110] hidden flex justify-center items-end sm:items-center p-3 sm:p-4">
+    <div class="cyber-glass-card bg-slate-900/95 w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-white/20 space-y-4 text-white" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center pb-2 border-b border-white/15">
+        <h4 class="font-tech-head font-bold text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-camera-rotate text-amber-400"></i> Seleccionar Fotografía
+        </h4>
+        <button type="button" onclick="cerrarSelectorFoto()" class="p-1 text-white/70 hover:text-rose-400 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <p class="text-xs text-white/70 leading-snug">¿Cómo deseas adjuntar la evidencia visual de este punto?</p>
+      
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <label class="cursor-pointer flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white transition text-center shadow-md">
+          <i class="fa-solid fa-camera text-2xl text-blue-300"></i>
+          <span class="text-xs font-bold leading-tight">Tomar Foto<br><span class="text-[10px] font-normal text-white/70">Cámara Directa</span></span>
+          <input type="file" id="input_camara_directa" accept="image/*" capture="environment" onchange="procesarFotoZonaDesdeModal(event)" class="hidden">
+        </label>
+
+        <label class="cursor-pointer flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl btn-glass-action bg-purple-600/60 hover:bg-purple-600/80 text-white transition text-center shadow-md">
+          <i class="fa-solid fa-images text-2xl text-purple-300"></i>
+          <span class="text-xs font-bold leading-tight">Ver Galería<br><span class="text-[10px] font-normal text-white/70">Fotos o Archivos</span></span>
+          <input type="file" id="input_galeria_directa" accept="image/*" onchange="procesarFotoZonaDesdeModal(event)" class="hidden">
+        </label>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

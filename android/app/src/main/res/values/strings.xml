@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">formulario</string>
+    <string name="title_activity_main">formulario</string>
+    <string name="package_name">com.protechsecurity.app</string>
+    <string name="custom_url_scheme">com.protechsecurity.app</string>
+</resources>

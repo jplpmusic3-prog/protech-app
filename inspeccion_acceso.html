@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Acceso & Biometría — ProTech Security</title>
+  
+  <meta name="theme-color" content="#020617">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Técnica Homologada -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO NÍDIDO
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    /* ========================================================
+       2. TARJETAS Y CRISTAL CÓNCAVO (Homologado)
+       ======================================================== */
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        inset 5px 5px 12px rgba(0, 0, 0, 0.4), 
+        inset -5px -5px 12px rgba(255, 255, 255, 0.12),
+        0 25px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-glass-action {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 3px 3px 8px rgba(0, 0, 0, 0.25), 
+        inset -3px -3px 8px rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(0, 0, 0, 0.25);
+      border-radius: 1rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #ffffff;
+    }
+
+    .btn-glass-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.35), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.12),
+        0 15px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cyber-input, .glass-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+    .cyber-input option, .glass-input option {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: rgba(255, 255, 255, 0.22); 
+      color: #ffffff; 
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+  </style>
+</head>
+<body class="flex items-center justify-center text-white session-checked">
+
+  <!-- VIDEO DE FONDO NÍDIDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL -->
+  <aside id="sidebar_menu" class="absolute md:relative top-0 left-0 z-50 h-full w-72 flex flex-col justify-between border-r border-white/15 p-5 transition-all duration-300 ease-in-out bg-slate-950/80 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none shadow-2xl md:shadow-none -translate-x-full md:translate-x-0 flex-shrink-0">
+    
+    <div class="space-y-4 overflow-y-auto pr-1 hide-scrollbar flex-1">
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+            <div id="logo_fallback" style="display:none;" class="h-10 w-10 rounded-xl bg-slate-900 text-white font-bold text-base items-center justify-center">PS</div>
+          </div>
+          <div>
+            <h1 class="font-bold text-[15px] text-white leading-tight">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-teal-400 font-bold">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="space-y-3">
+        <div class="cyber-glass-card p-2.5">
+          <div class="w-full flex items-center justify-center font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1.5 mb-2 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-clipboard-list"></i> Módulo Inspección</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="navegarA('inspecciones_index.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-gauge-high"></i></div>
+              Panel Principal
+            </button>
+            <button onclick="navegarA('inspeccion_cliente.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-white/80 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-address-card"></i></div>
+              1. Datos del Cliente
+            </button>
+            <button onclick="navegarA('inspeccion_cctv.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-video"></i></div>
+              2. CCTV & Audio
+            </button>
+            <button onclick="navegarA('inspeccion_alarmas.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-bell"></i></div>
+              3. Alarmas & Zonificación
+            </button>
+            <button onclick="navegarA('inspeccion_redes.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-network-wired"></i></div>
+              4. Redes, Fibra & Topología
+            </button>
+            <button onclick="navegarA('inspeccion_cercos.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-rose-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-bolt"></i></div>
+              5. Cercos Eléctricos
+            </button>
+            <button onclick="navegarA('inspeccion_acceso.html')" class="menu-link active w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-teal-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-fingerprint"></i></div>
+              6. Control Acceso
+            </button>
+          </div>
+        </div>
+
+        <div class="cyber-glass-card p-2.5">
+          <div class="w-full flex items-center justify-center font-tech-mono text-[10px] uppercase font-bold text-white/70 tracking-wider p-1.5 mb-2 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-file-invoice"></i> Resumen</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="navegarA('inspeccion_equipos.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-300 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+              Consolidado Equipos
+            </button>
+            <button onclick="navegarA('inspeccion_materiales.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-toolbox"></i></div>
+              Calculadora Materiales
+            </button>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="cyber-glass-card p-3.5 flex items-center justify-between shadow-sm relative z-10 flex-shrink-0 mt-3">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-bold text-xs shadow-md">JP</div>
+        <div class="truncate">
+          <p class="text-[11px] font-bold text-white truncate">Juan Pablo Luna Paredes</p>
+          <p class="font-tech-mono text-[9px] text-teal-400 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition" title="Cerrar Sesión">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden">
+    
+    <header class="border-b border-white/15 px-6 py-4 flex items-center justify-between flex-shrink-0 z-30 bg-slate-950/30 backdrop-blur-md">
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white p-2 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 transition">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="hidden md:flex relative w-72">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 text-xs"></i>
+          <input type="text" placeholder="Buscar lector, electroimán, botón..." class="cyber-input w-full text-xs pl-8 pr-3 py-2.5 rounded-xl font-medium outline-none">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2.5">
+        <button onclick="window.location.href='index.html'" class="px-3 py-2 rounded-xl cyber-glass-card text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm hidden sm:flex" title="Salir al Portal">
+          <i class="fa-solid fa-arrow-right-from-bracket text-blue-400"></i>
+          <span class="hidden md:inline">Salir</span>
+        </button>
+
+        <button onclick="window.location.href='catalogo.html'" class="px-3 py-2 rounded-xl btn-glass-action text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm" title="Catálogo Oficial">
+          <i class="fa-solid fa-book-open text-indigo-400"></i>
+          <span class="hidden md:inline">Catálogo</span>
+        </button>
+
+        <button onclick="navegarA('inspecciones_index.html')" class="px-3 py-2 rounded-xl cyber-glass-card text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm" title="Panel Principal">
+          <i class="fa-solid fa-gauge-high text-blue-400"></i>
+          <span class="hidden sm:inline">Panel</span>
+        </button>
+
+        <button id="btn_guardar_cloud" onclick="guardarModuloAcceso()" class="px-4 py-2 rounded-xl btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 shadow-md transition" title="Guardar Control de Acceso">
+          <i class="fa-solid fa-floppy-disk text-emerald-400"></i>
+          <span class="hidden sm:inline">Guardar</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ÁREA DE CONTENIDO -->
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-6 relative space-y-6 z-10">
+      <div class="max-w-6xl mx-auto space-y-6">
+
+        <!-- TÍTULO PRINCIPAL Y TICKET -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="font-tech-head font-extrabold text-[24px] text-white tracking-tight flex items-center gap-3">
+              <i class="fa-solid fa-fingerprint text-teal-400 drop-shadow-md"></i> Control de Acceso & Biometría
+            </h2>
+            <p class="font-tech-mono text-[10px] uppercase tracking-wider text-white/70 mt-1.5">
+              PASO 6 • PANELES CONTROLADORES, TERMINALES AUTÓNOMOS, ELECTROIMANES Y PUERTAS
+            </p>
+          </div>
+          <div class="inline-flex items-center gap-2 cyber-glass-card px-3 py-1.5 border-white/20">
+            <span class="text-[9px] font-tech-mono uppercase font-bold text-teal-300">Ticket Vinculado:</span>
+            <span id="label_id_ticket" class="text-xs font-tech-mono font-bold text-white"># INS-0000</span>
+          </div>
+        </div>
+
+        <!-- 1. ARQUITECTURA DEL SISTEMA & CONTROLADORA CENTRAL -->
+        <div class="cyber-glass-card p-6 space-y-5">
+          <div class="flex items-center justify-between border-b border-white/15 pb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+              <i class="fa-solid fa-diagram-project text-teal-400"></i> Arquitectura del Sistema & Controlador Central
+            </h3>
+            <span class="text-[10px] font-tech-mono text-teal-300 font-bold bg-teal-500/20 border border-teal-400/30 px-2.5 py-1 rounded">INFRAESTRUCTURA CORE</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs text-white">
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Arquitectura de Acceso</label>
+              <select id="acc_tipo_arquitectura" onchange="toggleControladora()" class="cyber-input w-full rounded-lg p-2.5 font-bold text-white">
+                <option value="Terminales Autónomos Standalone (IP / Wi-Fi)" style="background:#0f172a; color:#fff;">Terminales Autónomos Standalone (IP / Wi-Fi)</option>
+                <option value="Panel Controlador Centralizado (ZKTeco inBio / Hikvision)" style="background:#0f172a; color:#fff;">Panel Controlador Centralizado (Multi-Puerta)</option>
+                <option value="Mixta (Controlador + Standalone)" style="background:#0f172a; color:#fff;">Mixta (Controlador + Standalone)</option>
+              </select>
+            </div>
+
+            <!-- Panel Controlador Multi-puerta (si aplica) -->
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Panel Controlador (Catálogo)</label>
+              <select id="acc_controlador_catalogo" class="cyber-input w-full rounded-lg p-2.5 font-medium">
+                <option value="No Requiere (Autónomos)" style="background:#0f172a; color:#fff;">No Requiere (Autónomos)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación del Controlador / Gabinete</label>
+              <input type="text" id="acc_ubicacion_controlador" placeholder="Ej. Rack MDF / Cuarto Eléctrico" class="cyber-input w-full rounded-lg p-2.5 font-medium outline-none">
+            </div>
+
+            <!-- Fuente Centralizada de Poder para Cerraduras -->
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Fuente de Poder con Cargador 12V 5A</label>
+              <select id="acc_fuente_cerraduras_catalogo" class="cyber-input w-full rounded-lg p-2.5 font-medium">
+                <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+              </select>
+            </div>
+
+            <!-- Batería Respaldo 12V 7Ah -->
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Batería de Respaldo para Cerraduras</label>
+              <select id="acc_bateria_catalogo" class="cyber-input w-full rounded-lg p-2.5 font-medium">
+                <option value="Existente / No Requiere" style="background:#0f172a; color:#fff;">Existente / No Requiere</option>
+              </select>
+            </div>
+
+            <!-- Licencia o Software de Gestión -->
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Plataforma / Software de Gestión</label>
+              <select id="acc_software_gestion" class="cyber-input w-full rounded-lg p-2.5 font-medium">
+                <option value="Hik-PartnerPro / HikCentral Cloud" style="background:#0f172a; color:#fff;">Hik-PartnerPro / HikCentral Cloud</option>
+                <option value="ZKBio CVAccess / ZKBioSecurity" style="background:#0f172a; color:#fff;">ZKBio CVAccess / ZKBioSecurity</option>
+                <option value="ZKBio Time (Asistencia y Nómina)" style="background:#0f172a; color:#fff;">ZKBio Time (Asistencia / Nómina)</option>
+                <option value="App Móvil Standalone Directa" style="background:#0f172a; color:#fff;">App Móvil Standalone Directa</option>
+              </select>
+            </div>
+
+            <!-- Condición Eléctrica -->
+            <div class="sm:col-span-3">
+              <label class="block text-[10px] font-bold text-amber-300 mb-1 flex items-center gap-1">
+                <i class="fa-solid fa-plug-circle-bolt text-amber-400"></i> Condición Punto Eléctrico 110V
+              </label>
+              <select id="acc_condicion_electrica" class="cyber-input w-full rounded-lg p-2.5 font-medium bg-amber-500/25 border-amber-400/30">
+                <option value="Toma 110V disponible con Tierra" style="background:#0f172a; color:#fff;">Toma 110V disponible con Tierra</option>
+                <option value="Toma 110V disponible sin Tierra" style="background:#0f172a; color:#fff;">Toma 110V disponible sin Tierra</option>
+                <option value="Requiere nueva extensión eléctrica" style="background:#0f172a; color:#fff;">Requiere nueva extensión eléctrica</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. PUERTAS Y PUNTOS DE ACCESO LEVANTADOS (DINÁMICO) -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                <i class="fa-solid fa-door-open text-teal-400"></i> Puertas & Puntos de Acceso Levantados
+              </h3>
+              <p class="text-[10px] text-white/70 mt-0.5">Define terminales biométricos, lector esclavo, tipo de cerradura (electroimán/cantonera), botón de salida y metrajes.</p>
+            </div>
+            <button type="button" onclick="agregarPuertaAcceso()" class="px-4 py-2 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center justify-center gap-2 self-start sm:self-auto">
+              <i class="fa-solid fa-plus text-teal-400 text-xs"></i> <span>Añadir Puerta / Punto</span>
+            </button>
+          </div>
+
+          <!-- Contenedor dinámico de Puertas -->
+          <div id="puertas_container" class="space-y-4">
+            <!-- Renderizado dinámico -->
+          </div>
+        </div>
+
+        <!-- 3. ACCESORIOS GLOBALES & CONSUMIBLES DE IDENTIFICACIÓN -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="border-b border-white/15 pb-3 flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+              <i class="fa-solid fa-id-card text-teal-400"></i> Tarjetas, Tags RFID & Pulsadores de Emergencia
+            </h3>
+            <span class="text-[10px] font-tech-mono text-white/50">CREDENCIALES</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs text-white">
+            <!-- Tarjetas RFID -->
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Tarjetas RFID / Mifare / EM (Catálogo)</label>
+                <select id="acc_tarjetas_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="acc_cant_tarjetas" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+
+            <!-- Tags / Llaveros RFID -->
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Tags / Llaveros RFID (Catálogo)</label>
+                <select id="acc_tags_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="acc_cant_tags" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+
+            <!-- Botones de Rompimiento de Emergencia (Caja Verde) -->
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Pulsador de Emergencia Rompe-Vidrio (Catálogo)</label>
+                <select id="acc_emergencia_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="acc_cant_emergencia" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+
+            <!-- Enrolador USB -->
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Enrolador USB de Escritorio (Huella / Tarjeta)</label>
+              <select id="acc_enrolador_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTONERA INFERIOR HOMOLOGADA -->
+        <div class="cyber-glass-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <button onclick="navegarA('inspecciones_index.html')" class="w-full sm:w-auto px-5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-arrow-left text-blue-400"></i> Volver al Dashboard
+          </button>
+          <button onclick="guardarYSalir()" class="w-full sm:w-auto px-7 py-2.5 rounded-xl btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white text-xs font-bold transition shadow-md flex items-center justify-center gap-2">
+            <i class="fa-solid fa-floppy-disk text-emerald-400"></i> <span>Guardar & Volver al Panel</span>
+          </button>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticketId = urlParams.get('id');
+
+    let inventarioCatalogo = [];
+    let listaPuertas = [];
+
+    function navegarA(pagina) {
+      let url = pagina;
+      if (ticketId) url += '?id=' + ticketId;
+      window.location.href = url;
+    }
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    // ==========================================
+    // CARGA DE CATÁLOGO DESDE SUPABASE
+    // ==========================================
+    async function cargarCatalogoPrecios() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('catalogo_precios')
+          .select('*')
+          .order('descripcion');
+
+        if (error) throw error;
+        inventarioCatalogo = data || [];
+        poblarSelectoresCatalogo();
+      } catch (err) {
+        console.error("Error al cargar catalogo_precios:", err);
+      }
+    }
+
+    function poblarSelectoresCatalogo() {
+      const controladores = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return (d.includes('controlador') || d.includes('panel de acceso') || d.includes('inbio') || d.includes('c3-')) && !d.includes('tirafondo');
+      });
+      llenarSelect('acc_controlador_catalogo', controladores, 'No Requiere (Autónomos)', true);
+
+      const fuentes = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return (d.includes('fuente') || d.includes('cargador')) && (d.includes('12v') || d.includes('acceso') || d.includes('5a'));
+      });
+      llenarSelect('acc_fuente_cerraduras_catalogo', fuentes, 'No Requiere', true);
+
+      const baterias = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('bateria') || (i.descripcion || '').toLowerCase().includes('batería'));
+      llenarSelect('acc_bateria_catalogo', baterias, 'Existente / No Requiere', true);
+
+      const tarjetas = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return (d.includes('tarjeta') || d.includes('card')) && (d.includes('rfid') || d.includes('mifare') || d.includes('em') || d.includes('proximidad'));
+      });
+      llenarSelect('acc_tarjetas_catalogo', tarjetas, 'No Requiere', true);
+
+      const tags = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('tag') || (i.descripcion || '').toLowerCase().includes('llavero'));
+      llenarSelect('acc_tags_catalogo', tags, 'No Requiere', true);
+
+      const emergencias = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('emergencia') || (i.descripcion || '').toLowerCase().includes('rompe'));
+      llenarSelect('acc_emergencia_catalogo', emergencias, 'No Requiere', true);
+
+      const enroladores = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('enrolador') || (i.descripcion || '').toLowerCase().includes('lector usb'));
+      llenarSelect('acc_enrolador_catalogo', enroladores, 'No Requiere', true);
+
+      renderizarPuertas();
+    }
+
+    function llenarSelect(elementId, items, placeholder, incluirNoRequiere = false) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.innerHTML = '';
+
+      if (incluirNoRequiere) {
+        el.innerHTML += `<option value="No Requiere" style="background:#0f172a; color:#fff;">${placeholder}</option>`;
+      } else {
+        el.innerHTML += `<option value="" style="background:#0f172a; color:#fff;">${placeholder}</option>`;
+      }
+
+      items.forEach(item => {
+        const precio = item.pvp_sugerido ? ` ($${Number(item.pvp_sugerido).toFixed(2)})` : '';
+        el.innerHTML += `<option value="${item.id}" data-pvp="${item.pvp_sugerido || 0}" data-desc="${item.descripcion}" style="background:#0f172a; color:#fff;">${item.descripcion}${precio}</option>`;
+      });
+    }
+
+    // ==========================================
+    // GESTIÓN DINÁMICA DE PUERTAS DE ACCESO
+    // ==========================================
+    function agregarPuertaAcceso(datosPrevios = null) {
+      const idx = listaPuertas.length + 1;
+      const puertaUid = 'acc_p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+      const puertaData = datosPrevios || {
+        uid: puertaUid,
+        nombre: `Puerta #${idx} (Acceso Principal)`,
+        tipo_puerta: 'Puerta de Vidrio Templado (Blindex)',
+        terminal_catalogo_id: '',
+        terminal_desc: '',
+        tipo_autenticacion: 'Reconocimiento Facial + Palma + Tarjeta',
+        lector_salida_catalogo_id: '',
+        boton_salida_catalogo_id: '',
+        cerradura_catalogo_id: '',
+        soporte_bracket_catalogo_id: '',
+        distancia_m: 15,
+        canalizacion: 'Tubería Metálica EMT 3/4"',
+        foto_base64: null
+      };
+
+      listaPuertas.push(puertaData);
+      renderizarPuertas();
+    }
+
+    function duplicarPuertaAcceso(uid) {
+      const original = listaPuertas.find(p => p.uid === uid);
+      if (!original) return;
+
+      const idx = listaPuertas.length + 1;
+      const puertaUid = 'acc_p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+      const copia = {
+        ...original,
+        uid: puertaUid,
+        nombre: `Puerta #${idx} (Copia)`,
+        foto_base64: null
+      };
+
+      listaPuertas.push(copia);
+      renderizarPuertas();
+    }
+
+    function eliminarPuertaAcceso(uid) {
+      listaPuertas = listaPuertas.filter(p => p.uid !== uid);
+      renderizarPuertas();
+    }
+
+    function renderizarPuertas() {
+      const container = document.getElementById('puertas_container');
+      if (listaPuertas.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-white/50 font-medium cyber-glass-card border-dashed">
+            <i class="fa-solid fa-door-closed text-2xl mb-2 block text-teal-400"></i>
+            <span>No hay puertas añadidas. Haz clic en "+ Añadir Puerta / Punto" para registrar los accesos.</span>
+          </div>
+        `;
+        return;
+      }
+
+      const terminales = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return (d.includes('facial') || d.includes('biometrico') || d.includes('biométrico') || d.includes('k1t') || d.includes('speedface') || d.includes('senseface') || d.includes('mb') || d.includes('zk') || d.includes('lector huella')) && !d.includes('usb') && !d.includes('soporte');
+      });
+
+      const lectoresSalida = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('esclavo') || d.includes('fr1200') || d.includes('kr') || (d.includes('lector') && (d.includes('proximidad') || d.includes('rs485')));
+      });
+
+      const botonesSalida = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('boton') || d.includes('botón') || d.includes('pulsador') || d.includes('no touch') || d.includes('exit');
+      });
+
+      const cerraduras = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('electroiman') || d.includes('electroimán') || d.includes('cantonera') || d.includes('pestillo') || d.includes('perno') || d.includes('cerradura');
+      });
+
+      const soportes = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('soporte') || d.includes('bracket') || d.includes('zl') || d.includes('soporte u') || d.includes('soporte l');
+      });
+
+      container.innerHTML = '';
+      listaPuertas.forEach((p, index) => {
+        const tarjeta = document.createElement('div');
+        tarjeta.className = 'cyber-glass-card p-5 space-y-4 text-xs transition';
+
+        let opcionesTerminal = `<option value="" style="background:#0f172a; color:#fff;">Seleccionar Terminal del Catálogo...</option>`;
+        terminales.forEach(t => {
+          const sel = t.id === p.terminal_catalogo_id ? 'selected' : '';
+          opcionesTerminal += `<option value="${t.id}" data-desc="${t.descripcion}" ${sel} style="background:#0f172a; color:#fff;">${t.descripcion} ($${Number(t.pvp_sugerido||0).toFixed(2)})</option>`;
+        });
+
+        let opcionesLectores = `<option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere (Botón de Salida)</option>`;
+        lectoresSalida.forEach(l => {
+          const sel = l.id === p.lector_salida_catalogo_id ? 'selected' : '';
+          opcionesLectores += `<option value="${l.id}" ${sel} style="background:#0f172a; color:#fff;">${l.descripcion}</option>`;
+        });
+
+        let opcionesBotones = `<option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere (Salida por Lector)</option>`;
+        botonesSalida.forEach(b => {
+          const sel = b.id === p.boton_salida_catalogo_id ? 'selected' : '';
+          opcionesBotones += `<option value="${b.id}" ${sel} style="background:#0f172a; color:#fff;">${b.descripcion}</option>`;
+        });
+
+        let opcionesCerraduras = `<option value="" style="background:#0f172a; color:#fff;">Seleccionar Cerradura Eléctrica...</option>`;
+        cerraduras.forEach(c => {
+          const sel = c.id === p.cerradura_catalogo_id ? 'selected' : '';
+          opcionesCerraduras += `<option value="${c.id}" ${sel} style="background:#0f172a; color:#fff;">${c.descripcion} ($${Number(c.pvp_sugerido||0).toFixed(2)})</option>`;
+        });
+
+        let opcionesSoportes = `<option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>`;
+        soportes.forEach(s => {
+          const sel = s.id === p.soporte_bracket_catalogo_id ? 'selected' : '';
+          opcionesSoportes += `<option value="${s.id}" ${sel} style="background:#0f172a; color:#fff;">${s.descripcion}</option>`;
+        });
+
+        tarjeta.innerHTML = `
+          <div class="flex items-center justify-between gap-2 border-b border-white/15 pb-2.5 flex-wrap">
+            <div class="flex items-center gap-2">
+              <span class="font-tech-head font-extrabold text-xs text-white flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-door-open text-teal-400"></i>
+                PUERTA #${index + 1}
+              </span>
+              <span class="text-[9px] font-tech-mono bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded border border-teal-400/30 font-bold">${p.nombre}</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              <button type="button" onclick="duplicarPuertaAcceso('${p.uid}')" class="text-xs font-bold text-indigo-300 hover:text-indigo-200 flex items-center gap-1 transition bg-indigo-500/20 hover:bg-indigo-500/30 px-2.5 py-1.5 rounded-lg border border-indigo-400/30 shadow-sm" title="Clonar puerta">
+                <i class="fa-regular fa-copy"></i> <span class="hidden sm:inline">Duplicar</span>
+              </button>
+              <button type="button" onclick="eliminarPuertaAcceso('${p.uid}')" class="text-xs font-bold text-rose-300 hover:text-rose-200 flex items-center gap-1 transition p-1 sm:px-2.5 sm:py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 shadow-sm" title="Eliminar puerta">
+                <i class="fa-solid fa-xmark"></i> <span class="hidden sm:inline">Eliminar</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-white">
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Nombre / Identificador de Puerta</label>
+              <input type="text" value="${p.nombre}" oninput="actualizarCampoPuerta('${p.uid}', 'nombre', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white outline-none">
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-teal-300 mb-1 flex items-center gap-1">
+                <i class="fa-solid fa-door-closed text-teal-400"></i> Tipo de Puerta / Material
+              </label>
+              <select onchange="actualizarCampoPuerta('${p.uid}', 'tipo_puerta', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white bg-teal-500/20">
+                <option value="Puerta de Vidrio Templado (Blindex)" ${p.tipo_puerta === 'Puerta de Vidrio Templado (Blindex)' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Puerta de Vidrio Templado (Requiere Soporte U)</option>
+                <option value="Puerta de Madera / Marco Metálico" ${p.tipo_puerta === 'Puerta de Madera / Marco Metálico' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Puerta de Madera / Marco Metálico (Soporte ZL)</option>
+                <option value="Puerta Metálica Pesada / Exterior" ${p.tipo_puerta === 'Puerta Metálica Pesada / Exterior' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Puerta Metálica Pesada / Exterior</option>
+                <option value="Puerta de Emergencia Cortafuego" ${p.tipo_puerta === 'Puerta de Emergencia Cortafuego' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Puerta de Emergencia (Barra Antipánico)</option>
+                <option value="Torniquete / Molinete Peatonal" ${p.tipo_puerta === 'Torniquete / Molinete Peatonal' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Torniquete / Molinete Peatonal</option>
+                <option value="Talanquera / Barrera Vehicular" ${p.tipo_puerta === 'Talanquera / Barrera Vehicular' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Talanquera / Barrera Vehicular</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Terminal Biométrico Entrada (Catálogo)</label>
+              <select onchange="seleccionarTerminalPuerta('${p.uid}', this)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                ${opcionesTerminal}
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Modo de Validación</label>
+              <select onchange="actualizarCampoPuerta('${p.uid}', 'tipo_autenticacion', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="Reconocimiento Facial + Palma + Tarjeta" ${p.tipo_autenticacion === 'Reconocimiento Facial + Palma + Tarjeta' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Facial + Palma + Tarjeta</option>
+                <option value="Huella Dactilar + Tarjeta RFID" ${p.tipo_autenticacion === 'Huella Dactilar + Tarjeta RFID' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Huella Dactilar + Tarjeta RFID</option>
+                <option value="Solo Tarjeta RFID / PIN Teclado" ${p.tipo_autenticacion === 'Solo Tarjeta RFID / PIN Teclado' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Solo Tarjeta RFID / PIN Teclado</option>
+                <option value="Reconocimiento Facial con Detección de Mascarilla" ${p.tipo_autenticacion === 'Reconocimiento Facial con Detección de Mascarilla' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Facial con Mascarilla</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Cerradura Eléctrica (Catálogo)</label>
+              <select onchange="actualizarCampoPuerta('${p.uid}', 'cerradura_catalogo_id', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                ${opcionesCerraduras}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Soporte Bracket</label>
+              <select onchange="actualizarCampoPuerta('${p.uid}', 'soporte_bracket_catalogo_id', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                ${opcionesSoportes}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Botón de Salida</label>
+              <select onchange="actualizarCampoPuerta('${p.uid}', 'boton_salida_catalogo_id', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                ${opcionesBotones}
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Lector de Salida Esclavo (Huella / Tarjeta)</label>
+              <select onchange="actualizarCampoPuerta('${p.uid}', 'lector_salida_catalogo_id', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                ${opcionesLectores}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Distancia al Switch/Fuente (m)</label>
+              <input type="number" min="0" value="${p.distancia_m}" oninput="actualizarCampoPuerta('${p.uid}', 'distancia_m', parseFloat(this.value)||0)" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Canalización</label>
+              <select onchange="actualizarCampoPuerta('${p.uid}', 'canalizacion', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="Tubería Metálica EMT 3/4&quot;" ${p.canalizacion === 'Tubería Metálica EMT 3/4"' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Tubería Metálica EMT 3/4"</option>
+                <option value="Canaleta Plástica Interior con División" ${p.canalizacion === 'Canaleta Plástica Interior con División' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Canaleta Plástica con División</option>
+                <option value="Embutido en Pared / Drywall" ${p.canalizacion === 'Embutido en Pared / Drywall' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Embutido en Pared / Drywall</option>
+              </select>
+            </div>
+
+            <!-- FOTOGRAFÍA DE LA PUERTA -->
+            <div class="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center gap-3 pt-3 border-t border-white/15">
+              <button type="button" onclick="abrirSelectorFotoPuerta('${p.uid}')" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                <i class="fa-solid fa-camera text-teal-400"></i> <span>${p.foto_base64 ? 'Cambiar Foto' : 'Adjuntar Foto de Puerta'}</span>
+              </button>
+              
+              <div id="preview_p_${p.uid}" class="flex items-center gap-2">
+                ${p.foto_base64 ? `
+                  <div class="relative group">
+                    <img src="${p.foto_base64}" onclick="abrirLightboxPuerta('${p.foto_base64}', '${p.nombre}')" class="h-10 w-10 rounded-lg object-cover border-2 border-teal-400 shadow-sm cursor-zoom-in">
+                    <button type="button" onclick="eliminarFotoPuerta('${p.uid}')" class="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px]">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <span class="text-[10px] text-emerald-300 font-bold font-tech-mono">Foto de puerta adjunta</span>
+                ` : '<span class="text-[10px] text-white/50 italic">Sin fotografía</span>'}
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(tarjeta);
+      });
+    }
+
+    function seleccionarTerminalPuerta(uid, selectEl) {
+      const selectedOption = selectEl.options[selectEl.selectedIndex];
+      const desc = selectedOption.getAttribute('data-desc') || '';
+      const p = listaPuertas.find(item => item.uid === uid);
+      if (p) {
+        p.terminal_catalogo_id = selectEl.value;
+        p.terminal_desc = desc;
+      }
+    }
+
+    function actualizarCampoPuerta(uid, campo, valor) {
+      const p = listaPuertas.find(item => item.uid === uid);
+      if (p) p[campo] = valor;
+    }
+
+    function toggleControladora() {
+      const arq = document.getElementById('acc_tipo_arquitectura').value;
+      const ctrlSelect = document.getElementById('acc_controlador_catalogo');
+      if (arq.includes('Autónomos')) {
+        ctrlSelect.value = 'No Requiere (Autónomos)';
+      }
+    }
+
+    // ==========================================
+    // GESTIÓN FOTOGRÁFICA DUAL (CÁMARA / GALERÍA)
+    // ==========================================
+    let uidPuertaFotoActiva = null;
+
+    function abrirSelectorFotoPuerta(uid) {
+      uidPuertaFotoActiva = uid;
+      document.getElementById('modal_origen_foto').classList.remove('hidden');
+    }
+
+    function cerrarSelectorFotoPuerta() {
+      document.getElementById('modal_origen_foto').classList.add('hidden');
+      document.getElementById('input_camara_directa').value = '';
+      document.getElementById('input_galeria_directa').value = '';
+    }
+
+    function procesarFotoPuertaDesdeModal(e) {
+      if (!uidPuertaFotoActiva) return;
+      const uid = uidPuertaFotoActiva;
+      cerrarSelectorFotoPuerta();
+
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const maxDim = 1280;
+          let w = img.width;
+          let h = img.height;
+          if (w > h && w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+          else if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+
+          const base64 = canvas.toDataURL('image/jpeg', 0.75);
+          const p = listaPuertas.find(item => item.uid === uid);
+          if (p) p.foto_base64 = base64;
+          renderizarPuertas();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function eliminarFotoPuerta(uid) {
+      const p = listaPuertas.find(item => item.uid === uid);
+      if (p) {
+        p.foto_base64 = null;
+        renderizarPuertas();
+      }
+    }
+
+    function abrirLightboxPuerta(base64, titulo) {
+      document.getElementById('lightbox_img').src = base64;
+      document.getElementById('lightbox_titulo').innerText = titulo || 'Evidencia Puerta de Acceso';
+      document.getElementById('modal_lightbox').classList.remove('hidden');
+    }
+
+    function cerrarLightbox() {
+      document.getElementById('modal_lightbox').classList.add('hidden');
+      document.getElementById('lightbox_img').src = '';
+    }
+
+    // ==========================================
+    // PERSISTENCIA EN SUPABASE
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.body.classList.add('session-checked');
+      if (ticketId) {
+        document.getElementById('label_id_ticket').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+      } else {
+        document.getElementById('label_id_ticket').innerText = "# NUEVO";
+      }
+
+      await cargarCatalogoPrecios();
+
+      if (supabaseClient && ticketId) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('inspeccion_acceso')
+            .select('*')
+            .eq('ticket_id', ticketId)
+            .single();
+
+          if (data && !error) {
+            document.getElementById('acc_tipo_arquitectura').value = data.tipo_arquitectura || 'Terminales Autónomos Standalone (IP / Wi-Fi)';
+            document.getElementById('acc_controlador_catalogo').value = data.controlador_catalogo_id || 'No Requiere (Autónomos)';
+            document.getElementById('acc_ubicacion_controlador').value = data.ubicacion_controlador || '';
+            document.getElementById('acc_fuente_cerraduras_catalogo').value = data.fuente_cerraduras_catalogo_id || 'No Requiere';
+            document.getElementById('acc_bateria_catalogo').value = data.bateria_catalogo_id || 'Existente / No Requiere';
+            document.getElementById('acc_software_gestion').value = data.software_gestion || 'Hik-PartnerPro / HikCentral Cloud';
+            document.getElementById('acc_condicion_electrica').value = data.condicion_electrica || 'Toma 110V disponible con Tierra';
+
+            document.getElementById('acc_tarjetas_catalogo').value = data.tarjetas_catalogo_id || 'No Requiere';
+            document.getElementById('acc_cant_tarjetas').value = data.cant_tarjetas || 0;
+            document.getElementById('acc_tags_catalogo').value = data.tags_catalogo_id || 'No Requiere';
+            document.getElementById('acc_cant_tags').value = data.cant_tags || 0;
+            document.getElementById('acc_emergencia_catalogo').value = data.emergencia_catalogo_id || 'No Requiere';
+            document.getElementById('acc_cant_emergencia').value = data.cant_emergencia || 0;
+            document.getElementById('acc_enrolador_catalogo').value = data.enrolador_catalogo_id || 'No Requiere';
+
+            if (data.puertas && Array.isArray(data.puertas)) {
+              listaPuertas = data.puertas;
+              renderizarPuertas();
+            }
+          }
+        } catch (err) {
+          console.error("Error restaurando inspeccion_acceso:", err);
+        }
+      }
+    });
+
+    async function guardarModuloAcceso() {
+      const btn = document.getElementById('btn_guardar_cloud');
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`;
+
+      const accesoData = {
+        ticket_id: ticketId || null,
+
+        tipo_arquitectura: document.getElementById('acc_tipo_arquitectura').value,
+        controlador_catalogo_id: document.getElementById('acc_controlador_catalogo').value,
+        ubicacion_controlador: document.getElementById('acc_ubicacion_controlador').value,
+        fuente_cerraduras_catalogo_id: document.getElementById('acc_fuente_cerraduras_catalogo').value,
+        bateria_catalogo_id: document.getElementById('acc_bateria_catalogo').value,
+        software_gestion: document.getElementById('acc_software_gestion').value,
+        condicion_electrica: document.getElementById('acc_condicion_electrica').value,
+
+        // Credenciales y Consumibles
+        tarjetas_catalogo_id: document.getElementById('acc_tarjetas_catalogo').value,
+        cant_tarjetas: parseInt(document.getElementById('acc_cant_tarjetas').value) || 0,
+        tags_catalogo_id: document.getElementById('acc_tags_catalogo').value,
+        cant_tags: parseInt(document.getElementById('acc_cant_tags').value) || 0,
+        emergencia_catalogo_id: document.getElementById('acc_emergencia_catalogo').value,
+        cant_emergencia: parseInt(document.getElementById('acc_cant_emergencia').value) || 0,
+        enrolador_catalogo_id: document.getElementById('acc_enrolador_catalogo').value,
+
+        // Puertas
+        puertas: listaPuertas,
+        total_puertas: listaPuertas.length,
+
+        updated_at: new Date().toISOString()
+      };
+
+      if (supabaseClient && ticketId) {
+        try {
+          await supabaseClient
+            .from('inspeccion_acceso')
+            .upsert(accesoData, { onConflict: 'ticket_id' });
+        } catch (err) {
+          console.error("Error al guardar en inspeccion_acceso:", err);
+        }
+      }
+
+      btn.innerHTML = `<i class="fa-solid fa-check"></i> Guardado`;
+      setTimeout(() => { btn.innerHTML = orig; }, 1200);
+      return true;
+    }
+
+    async function guardarYSalir() {
+      await guardarModuloAcceso();
+      setTimeout(() => {
+        navegarA('inspecciones_index.html');
+      }, 500);
+    }
+  </script>
+
+  <!-- MODAL LIGHTBOX PARA FOTOS -->
+  <div id="modal_lightbox" onclick="cerrarLightbox()" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100] hidden flex flex-col justify-center items-center p-4">
+    <div class="relative max-w-2xl w-full flex flex-col items-center" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center w-full pb-2 text-white text-xs font-tech-mono">
+        <span id="lightbox_titulo" class="font-bold">Evidencia Puerta de Acceso</span>
+        <button onclick="cerrarLightbox()" class="p-1 text-white/70 hover:text-rose-400 transition text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <img id="lightbox_img" src="" class="max-h-[80vh] w-auto rounded-2xl border border-white/20 shadow-2xl object-contain">
+    </div>
+  </div>
+
+  <!-- MODAL / ACTION SHEET (CÁMARA O GALERÍA) -->
+  <div id="modal_origen_foto" onclick="cerrarSelectorFotoPuerta()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[110] hidden flex justify-center items-end sm:items-center p-3 sm:p-4">
+    <div class="cyber-glass-card bg-slate-900/95 w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-white/20 space-y-4 text-white" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center pb-2 border-b border-white/15">
+        <h4 class="font-tech-head font-bold text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-camera-rotate text-teal-400"></i> Seleccionar Fotografía
+        </h4>
+        <button type="button" onclick="cerrarSelectorFotoPuerta()" class="p-1 text-white/70 hover:text-rose-400 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <p class="text-xs text-white/70 leading-snug">¿Cómo deseas adjuntar la evidencia de la puerta?</p>
+      
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <label class="cursor-pointer flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white transition text-center shadow-md">
+          <i class="fa-solid fa-camera text-2xl text-teal-300"></i>
+          <span class="text-xs font-bold leading-tight">Tomar Foto<br><span class="text-[10px] font-normal text-white/70">Cámara Directa</span></span>
+          <input type="file" id="input_camara_directa" accept="image/*" capture="environment" onchange="procesarFotoPuertaDesdeModal(event)" class="hidden">
+        </label>
+
+        <label class="cursor-pointer flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl btn-glass-action bg-purple-600/60 hover:bg-purple-600/80 text-white transition text-center shadow-md">
+          <i class="fa-solid fa-images text-2xl text-purple-300"></i>
+          <span class="text-xs font-bold leading-tight">Ver Galería<br><span class="text-[10px] font-normal text-white/70">Fotos o Archivos</span></span>
+          <input type="file" id="input_galeria_directa" accept="image/*" onchange="procesarFotoPuertaDesdeModal(event)" class="hidden">
+        </label>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

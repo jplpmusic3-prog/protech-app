@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Analítico & Reportes - ProTech Security</title>
+  
+  <!-- Configuración PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Moderna, Limpia y Sobria -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO NÍDIDO
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    /* ========================================================
+       2. TARJETAS Y CRISTAL CÓNCAVO (Homologado)
+       ======================================================== */
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        inset 5px 5px 12px rgba(0, 0, 0, 0.4), 
+        inset -5px -5px 12px rgba(255, 255, 255, 0.12),
+        0 25px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-glass-action {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 3px 3px 8px rgba(0, 0, 0, 0.25), 
+        inset -3px -3px 8px rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(0, 0, 0, 0.25);
+      border-radius: 1rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #ffffff;
+    }
+
+    .btn-glass-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.35), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.12),
+        0 15px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cyber-input, .glass-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+    .cyber-input option, .glass-input option {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    /* Menú lateral colapsable */
+    .collapse-content {
+      max-height: 400px; overflow: hidden; transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out; opacity: 1;
+    }
+    .collapse-content.collapsed { max-height: 0; opacity: 0; }
+    .collapse-icon { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapsed-btn .collapse-icon { transform: rotate(-90deg); }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: rgba(255, 255, 255, 0.22); 
+      color: #ffffff; 
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+  </style>
+</head>
+<body class="min-h-screen relative flex flex-col md:flex-row pb-20 md:pb-0 text-white antialiased overflow-x-hidden session-checked">
+
+  <!-- VIDEO DE FONDO NÍDIDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL TÁCTICA -->
+  <aside id="sidebar_menu" class="fixed md:sticky top-0 left-0 z-50 h-[100dvh] w-72 flex-col justify-between cyber-glass-card bg-slate-950/80 md:bg-slate-950/40 border-y-0 border-l-0 rounded-none flex-shrink-0 p-5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out flex">
+    <div class="space-y-4 relative z-10 overflow-y-auto max-h-[calc(100vh-100px)] pr-1 hide-scrollbar">
+      
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain drop-shadow" onerror="this.style.display='none'; document.getElementById('logo_nextgen').style.display='flex';">
+            <div id="logo_nextgen" style="display:none;" class="h-10 w-10 rounded-2xl gradient-cyber-brand text-white font-tech-head text-base items-center justify-center shadow-lg shadow-blue-500/25 font-black">PS</div>
+            <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-950"></span>
+            </span>
+          </div>
+          <div>
+            <h1 class="font-tech-head font-extrabold text-base text-white leading-none">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-1">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white/70 hover:text-rose-400 transition p-2 bg-white/10 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <nav class="space-y-3 text-xs font-semibold">
+        <div>
+          <a href="index.html" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white shadow-sm relative overflow-hidden group transition">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"></div>
+            <i class="fa-solid fa-layer-group w-4 text-center text-sm text-white/80"></i>
+            <span class="font-bold">Centro de Operaciones</span>
+          </a>
+        </div>
+
+        <!-- ÁREA OPERATIVA -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_operativa', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_operativa" class="collapse-content space-y-1 mt-2">
+            <a href="agenda_tickets.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
+              <span>Agenda & Tickets</span>
+            </a>
+            <a href="inspecciones_index.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-list"></i></div>
+              <span>Inspección</span>
+            </a>
+            <a href="orden_trabajo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+              <span>Órdenes de Trabajo</span>
+            </a>
+            <a href="clientes_tech.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-cyan-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-address-book"></i></div>
+              <span>Ficha Técnica / Clientes</span>
+            </a>
+            <a href="acta_entrega.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-signature"></i></div>
+              <span>Acta de Entrega</span>
+            </a>
+            <a href="bandeja_operativa.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-orange-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-list-check"></i></div>
+              <span>Monitor General OTs</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ÁREA FINANCIERA & ANALÍTICA (Activa) -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_financiera', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-emerald-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-vault"></i> Área Financiera</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_financiera" class="collapse-content space-y-1 mt-2">
+            <a href="finanzas.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-cash-register"></i></div>
+              <span>Caja & Cartera</span>
+            </a>
+            <a href="bandeja.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-table-list"></i></div>
+              <span>Bandeja Financiera</span>
+            </a>
+            <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white bg-blue-600/40 font-bold transition group border border-blue-400/40 shadow-sm">
+              <div class="icon-box h-6 w-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-chart-pie"></i></div>
+              <span>Dashboard Analítico</span>
+            </a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="p-3.5 rounded-2xl cyber-glass-card border border-white/20 flex items-center justify-between shadow-sm relative z-10 mt-3">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-tech-head font-bold text-xs shadow-md">JP</div>
+        <div class="truncate">
+          <p class="text-xs font-bold text-white truncate">Juan Pablo Luna</p>
+          <p class="font-tech-mono text-[9px] text-blue-300 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-2 rounded-lg hover:bg-white/10 transition" title="Desconectar">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden">
+    
+    <!-- CABECERA HOMOLOGADA -->
+    <header class="cyber-glass-card border-x-0 border-t-0 rounded-none sticky top-0 z-40 px-4 md:px-8 py-3.5 flex items-center justify-between shadow-sm flex-shrink-0 bg-slate-950/30 backdrop-blur-md">
+      <div class="flex items-center space-x-3.5">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white p-2 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 transition">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <div class="flex items-center gap-3">
+          <img src="logo.png" alt="ProTech Security" class="h-8 w-auto object-contain drop-shadow" onerror="this.style.display='none';">
+          <div>
+            <h1 class="font-tech-head font-extrabold text-sm text-white leading-tight">ProTech Security</h1>
+            <p class="font-tech-mono text-[9px] text-white/70 uppercase tracking-wider">Dashboard Analítico & Reportes de Gestión</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex items-center space-x-2">
+        <a href="index.html" class="px-3.5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-semibold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-house text-blue-400 text-[11px]"></i> Portal Principal
+        </a>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto hide-scrollbar relative z-10 space-y-6">
+      <div class="max-w-7xl mx-auto space-y-6">
+
+        <!-- RESUMEN DE INDICADORES (KPIS) SIN FRANJAS DE COLORES -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="cyber-glass-card p-5 rounded-2xl shadow-sm space-y-1">
+            <span class="text-[10px] font-bold uppercase text-white/70 block font-tech-mono">Total Proformas</span>
+            <div class="flex items-baseline justify-between">
+              <span id="stat-proformas-total" class="text-xl font-black text-white">0</span>
+              <span id="stat-proformas-monto" class="text-xs font-mono font-bold text-blue-300">$0.00</span>
+            </div>
+          </div>
+          <div class="cyber-glass-card p-5 rounded-2xl shadow-sm space-y-1">
+            <span class="text-[10px] font-bold uppercase text-white/70 block font-tech-mono">Órdenes de Trabajo</span>
+            <div class="flex items-baseline justify-between">
+              <span id="stat-ots-total" class="text-xl font-black text-white">0</span>
+              <span class="text-[10px] text-indigo-300 font-bold uppercase font-tech-mono">Proyectos Activos</span>
+            </div>
+          </div>
+          <div class="cyber-glass-card p-5 rounded-2xl shadow-sm space-y-1">
+            <span class="text-[10px] font-bold uppercase text-white/70 block font-tech-mono">Inspecciones / Pendientes</span>
+            <div class="flex items-baseline justify-between">
+              <span id="stat-inspecciones-total" class="text-xl font-black text-amber-300">0</span>
+              <span class="text-[10px] text-amber-300 font-bold font-tech-mono">Por Revisar</span>
+            </div>
+          </div>
+          <div class="cyber-glass-card p-5 rounded-2xl shadow-sm space-y-1">
+            <span class="text-[10px] font-bold uppercase text-white/70 block font-tech-mono">Saldos por Cobrar</span>
+            <div class="flex items-baseline justify-between">
+              <span id="stat-saldos-total" class="text-xl font-black text-emerald-300 font-mono">$0.00</span>
+              <span class="text-[10px] text-white/60 font-tech-mono">Cartera</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN DE SEGUIMIENTO Y FILTROS -->
+        <div class="cyber-glass-card p-6 rounded-2xl shadow-sm space-y-4">
+          <div class="flex flex-wrap justify-between items-center gap-3 border-b border-white/15 pb-4">
+            <div>
+              <h2 class="text-sm font-bold text-white font-tech-head"><i class="fa-solid fa-list-check text-blue-400 mr-1.5"></i> Seguimiento Operativo & Estado de Proyectos</h2>
+              <p class="text-[11px] text-white/70">Monitoreo en tiempo real de las órdenes de trabajo y proformas registradas en Supabase.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <select id="filtro-estado-dashboard" onchange="filtrarTablaDashboard()" class="cyber-input rounded-xl px-3 py-2 text-xs font-semibold outline-none">
+                <option value="todos" style="background:#0f172a; color:#fff;">Todos los Estados</option>
+                <option value="pendiente" style="background:#0f172a; color:#fff;">Pendientes</option>
+                <option value="proceso" style="background:#0f172a; color:#fff;">En Proceso</option>
+                <option value="completado" style="background:#0f172a; color:#fff;">Completados / Terminados</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Tabla de Seguimiento -->
+          <div class="overflow-x-auto hide-scrollbar">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="text-white/60 font-semibold border-b border-white/15 bg-white/5 font-tech-mono text-[10px] uppercase">
+                  <th class="p-3">N° / Ref</th>
+                  <th class="p-3">Cliente / Proyecto</th>
+                  <th class="p-3">Módulo / Tipo</th>
+                  <th class="p-3 text-center">Estado</th>
+                  <th class="p-3 text-right">Valor / Saldo</th>
+                  <th class="p-3 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-dashboard-body" class="divide-y divide-white/10 text-white/90">
+                <tr><td colspan="6" class="p-6 text-center text-white/50 italic font-tech-mono">Cargando datos analíticos desde Supabase...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let registrosDashboard = [];
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    function toggleArea(idContent, headerElement) {
+      const content = document.getElementById(idContent);
+      if (content) {
+        content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed-btn');
+      }
+    }
+
+    window.addEventListener('load', async () => {
+      await cargarDatosDashboard();
+    });
+
+    async function cargarDatosDashboard() {
+      if (!supabaseClient) return;
+
+      try {
+        let consolidado = [];
+
+        // 1. Cargar Órdenes de Trabajo
+        const { data: ots, error: errOts } = await supabaseClient.from('ordenes_trabajo').select('*').order('created_at', { ascending: false });
+        if (!errOts && ots) {
+          ots.forEach(o => {
+            consolidado.push({
+              id: o.id,
+              ref: o.numero_ot || `OT-${o.id}`,
+              cliente: o.cliente || 'Sin cliente',
+              tipo: 'Orden de Trabajo',
+              estado: o.estado || 'pendiente',
+              monto: Number(o.saldo || o.subtotal || 0),
+              enlace: `orden_trabajo.html?ot=${o.id}`
+            });
+          });
+          document.getElementById('stat-ots-total').textContent = ots.length;
+          const totalSaldos = ots.reduce((acc, o) => acc + Number(o.saldo || 0), 0);
+          document.getElementById('stat-saldos-total').textContent = `$${totalSaldos.toFixed(2)}`;
+        }
+
+        // 2. Cargar Proformas
+        const { data: proformas, error: errProformas } = await supabaseClient.from('proformas').select('*').order('created_at', { ascending: false });
+        if (!errProformas && proformas) {
+          proformas.forEach(p => {
+            consolidado.push({
+              id: p.id,
+              ref: `PROF-${p.id}`,
+              cliente: p.cliente || 'Sin cliente',
+              tipo: 'Proforma',
+              estado: p.estado || 'emitida',
+              monto: Number(p.total || 0),
+              enlace: `proforma.html?id=${p.id}`
+            });
+          });
+          document.getElementById('stat-proformas-total').textContent = proformas.length;
+          const totalVal = proformas.reduce((acc, p) => acc + Number(p.total || 0), 0);
+          document.getElementById('stat-proformas-monto').textContent = `$${totalVal.toFixed(2)}`;
+        }
+
+        // 3. Cargar Inspecciones
+        const { data: inspecciones, error: errInspecciones } = await supabaseClient.from('inspecciones').select('*').order('created_at', { ascending: false });
+        if (!errInspecciones && inspecciones) {
+          inspecciones.forEach(i => {
+            consolidado.push({
+              id: i.id,
+              ref: `INSP-${i.id}`,
+              cliente: i.cliente || 'Sin cliente',
+              tipo: 'Inspección',
+              estado: i.estado || 'pendiente',
+              monto: 0,
+              enlace: `inspeccion.html?id=${i.id}`
+            });
+          });
+          document.getElementById('stat-inspecciones-total').textContent = inspecciones.length;
+        }
+
+        registrosDashboard = consolidado;
+        renderizarTablaDashboard(registrosDashboard);
+
+      } catch (err) {
+        console.error("Error al cargar dashboard:", err);
+        document.getElementById('tabla-dashboard-body').innerHTML = `<tr><td colspan="6" class="p-6 text-center text-rose-400 font-bold">Error al sincronizar con Supabase: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderizarTablaDashboard(items) {
+      const tbody = document.getElementById('tabla-dashboard-body');
+      if (!tbody) return;
+
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-white/50 italic">No hay registros analíticos disponibles.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(r => {
+        let badgeColor = 'bg-white/10 text-white/85 border-white/20';
+        const est = (r.estado || '').toLowerCase();
+        if (est.includes('completado') || est.includes('terminado') || est.includes('aprobado')) {
+          badgeColor = 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30';
+        } else if (est.includes('proceso')) {
+          badgeColor = 'bg-blue-500/20 text-blue-300 border-blue-400/30';
+        } else {
+          badgeColor = 'bg-amber-500/20 text-amber-300 border-amber-400/30';
+        }
+
+        return `
+          <tr class="hover:bg-white/5 transition">
+            <td class="p-3 font-mono font-bold text-white">${r.ref}</td>
+            <td class="p-3 font-semibold text-white/90">${r.cliente}</td>
+            <td class="p-3"><span class="bg-white/10 text-white/80 px-2.5 py-0.5 rounded text-[10px] font-bold border border-white/20">${r.tipo}</span></td>
+            <td class="p-3 text-center"><span class="${badgeColor} px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border">${r.estado}</span></td>
+            <td class="p-3 text-right font-mono font-bold text-white">$${r.monto.toFixed(2)}</td>
+            <td class="p-3 text-center">
+              <a href="${r.enlace}" class="px-3 py-1.5 btn-glass-action text-white font-bold rounded-xl text-[10px] transition shadow-sm inline-flex items-center gap-1">
+                Ver Módulo <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+              </a>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filtrarTablaDashboard() {
+      const filtro = document.getElementById('filtro-estado-dashboard').value;
+      if (filtro === 'todos') {
+        renderizarTablaDashboard(registrosDashboard);
+      } else {
+        const filtrados = registrosDashboard.filter(r => (r.estado || '').toLowerCase().includes(filtro));
+        renderizarTablaDashboard(filtrados);
+      }
+    }
+  </script>
+</body>
+</html>

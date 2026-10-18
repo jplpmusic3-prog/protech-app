@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Consolidado Global de Equipos — ProTech Security</title>
+  
+  <!-- Configuración PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Técnica Homologada -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO Y MICRO-RETÍCULA CAD (GPU SAFE)
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.14), transparent 60%),
+        linear-gradient(rgba(2, 6, 23, 0.65), rgba(2, 6, 23, 0.78));
+    }
+    .tech-grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+    }
+
+    /* ========================================================
+       2. TARJETAS CYBER-GLASS CON LUZ ESPECULAR Y TELEMETRÍA
+       ======================================================== */
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.82) 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.08),
+        inset -1px -1px 3px rgba(0, 0, 0, 0.5),
+        0 12px 28px -6px rgba(0, 0, 0, 0.55) !important;
+      border-radius: 1.25rem !important;
+      position: relative !important;
+      color: #ffffff !important;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.18s ease;
+    }
+    .cyber-glass-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 12%;
+      right: 12%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.55), transparent);
+      pointer-events: none;
+    }
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      border-color: rgba(59, 130, 246, 0.5) !important;
+    }
+
+    .corner-telemetry::after {
+      content: "";
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid rgba(59, 130, 246, 0.45);
+      border-bottom: 2px solid rgba(59, 130, 246, 0.45);
+      pointer-events: none;
+    }
+
+    .btn-glass-action {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.92) 0%, rgba(51, 65, 85, 0.88) 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+      border-radius: 0.875rem !important;
+      transition: all 0.18s ease;
+      color: #ffffff !important;
+    }
+    .btn-glass-action:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(51, 65, 85, 0.98) 0%, rgba(71, 85, 105, 0.92) 100%) !important;
+      border-color: rgba(59, 130, 246, 0.65) !important;
+    }
+    .btn-glass-action:active:not(:disabled) { transform: scale(0.97); }
+    .btn-glass-action:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-cyber-primary {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+      border: 1px solid rgba(147, 197, 253, 0.4) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 16px rgba(37, 99, 235, 0.4) !important;
+      border-radius: 0.875rem !important;
+      color: #ffffff !important;
+      transition: all 0.18s ease;
+    }
+    .btn-cyber-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 20px rgba(37, 99, 235, 0.55) !important;
+    }
+    .btn-cyber-primary:active:not(:disabled) { transform: scale(0.97); }
+
+    .cyber-input, .glass-input {
+      background: rgba(15, 23, 42, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #ffffff !important;
+      box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.45) !important;
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.45); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(30, 41, 59, 0.98) !important;
+      border-color: rgba(59, 130, 246, 0.85) !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+      outline: none;
+    }
+    .cyber-input option, .glass-input option { background: #0f172a; color: #ffffff; }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .font-tech-head { font-family: var(--tech-sans); }
+    .hide-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+
+    /* ========================================================
+       3. SIDEBAR RESPONSIVO Y COLAPSABLE EN DESKTOP
+       ======================================================== */
+    #sidebar_menu {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, opacity 0.25s ease;
+    }
+    @media (min-width: 768px) {
+      #sidebar_menu.collapsed {
+        width: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        border-right-width: 0 !important;
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+    }
+
+    .menu-link {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.55rem 0.75rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.82); transition: all 0.2s; margin-bottom: 0.3rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.1); color: #ffffff; }
+    .menu-link.active { 
+      background: linear-gradient(90deg, rgba(37, 99, 235, 0.45) 0%, rgba(37, 99, 235, 0.2) 100%); 
+      color: #ffffff; 
+      border: 1px solid rgba(59, 130, 246, 0.6);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+
+    #page_transition_overlay {
+      transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .pdf-avoid-break {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center text-white">
+
+  <!-- PANTALLA DE CARGA / TRANSICIÓN -->
+  <div id="page_transition_overlay" class="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center opacity-100">
+    <div class="cyber-glass-card p-8 sm:p-10 flex flex-col items-center gap-5 min-w-[260px] sm:min-w-[290px]">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute -inset-3 rounded-full border border-blue-500/30 animate-ping opacity-30"></div>
+        <img src="logo.png" alt="ProTech" class="h-28 sm:h-36 w-auto object-contain drop-shadow-lg relative z-10" onerror="this.style.display='none';">
+      </div>
+      <div class="text-center">
+        <p class="font-tech-head font-extrabold text-sm sm:text-base text-white tracking-wide">ProTech Cyber-OS</p>
+        <p class="font-tech-mono text-[10px] sm:text-xs uppercase tracking-widest text-blue-400 font-bold mt-1.5" id="transition_text">Consolidando Inventario...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR DE NOTIFICACIONES CYBER-TOAST -->
+  <div id="toast_container" class="fixed top-4 right-4 z-[9990] flex flex-col gap-2.5 max-w-xs sm:max-w-sm w-full pointer-events-none px-2 sm:px-0"></div>
+
+  <!-- VIDEO DE FONDO Y RETÍCULA TÉCNICA -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline preload="auto">
+      <source src="fondo-tech.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+  <div class="tech-grid-overlay"></div>
+
+  <div class="app-window flex w-full h-screen overflow-hidden relative z-10">
+
+    <!-- OVERLAY MÓVIL -->
+    <div id="mobile_menu_overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-950/80 z-40 hidden md:hidden transition-opacity"></div>
+
+    <!-- BARRA LATERAL COMPLETA -->
+    <aside id="sidebar_menu" class="fixed md:relative top-0 left-0 z-50 h-full w-72 flex flex-col justify-between border-r border-white/15 p-4 sm:p-5 bg-slate-950/95 md:bg-slate-950/55 shadow-2xl md:shadow-none -translate-x-full md:translate-x-0 flex-shrink-0">
+      
+      <div class="space-y-4 overflow-y-auto max-h-[calc(100vh-115px)] pr-1 hide-scrollbar flex-1">
+        <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <img src="logo.png" alt="ProTech" class="h-9 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+              <div id="logo_fallback" style="display:none;" class="h-9 w-9 rounded-xl bg-blue-600 text-white font-bold text-sm items-center justify-center shadow-md">PS</div>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="font-extrabold text-[15px] text-white leading-tight">ProTech</h1>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-[8px] font-tech-mono text-emerald-300 font-bold">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>ONLINE
+                </span>
+              </div>
+              <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-0.5">Cyber-OS • v4.2</p>
+            </div>
+          </div>
+          <button onclick="toggleSidebar()" class="md:hidden text-white/70 hover:text-white p-1.5 rounded-lg hover:bg-white/10">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+
+        <nav class="space-y-3.5">
+          <div class="cyber-glass-card p-2.5">
+            <div class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-blue-300 tracking-wider px-2 py-1 mb-1 select-none">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-clipboard-list"></i> Módulos de Campo</span>
+            </div>
+            <div class="space-y-1">
+              <button onclick="navegarA('inspecciones_index.html', 'Dashboard Principal')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-gauge-high"></i></div>
+                  <span class="truncate">Panel Principal</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_cliente.html', 'Datos del Cliente')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-white/80 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-address-card"></i></div>
+                  <span class="truncate">1. Datos del Cliente</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_cctv.html', 'CCTV & Audio')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-video"></i></div>
+                  <span class="truncate">2. CCTV & Audio</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_alarmas.html', 'Sistema de Alarmas')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-bell"></i></div>
+                  <span class="truncate">3. Alarmas</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_redes.html', 'Redes & Fibra')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-network-wired"></i></div>
+                  <span class="truncate">4. Redes & Fibra</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_cercos.html', 'Cercos Eléctricos')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-rose-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-bolt"></i></div>
+                  <span class="truncate">5. Cercos Eléctricos</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_acceso.html', 'Control de Acceso')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-fingerprint"></i></div>
+                  <span class="truncate">6. Control Acceso</span>
+                </div>
+              </button>
+              <button onclick="navegarA('topologia_general.html', 'Topología de Obra')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-purple-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-sitemap"></i></div>
+                  <span class="truncate">Topología Dinámica Obra</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card p-2.5">
+            <div class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-white/60 tracking-wider px-2 py-1 mb-1 select-none">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-file-invoice"></i> Consolidación</span>
+            </div>
+            <div class="space-y-1">
+              <button onclick="navegarA('inspeccion_equipos.html', 'Consolidado de Equipos')" class="menu-link active w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-boxes-stacked"></i></div>
+                  <span class="truncate">Consolidado Equipos</span>
+                </div>
+                <span id="side_badge_total_eq" class="font-tech-mono text-[9px] px-1.5 py-0.5 rounded bg-blue-500/30 text-white border border-blue-400/40 font-bold">0</span>
+              </button>
+              <button onclick="navegarA('inspeccion_materiales.html', 'Calculadora de Materiales')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-toolbox"></i></div>
+                  <span class="truncate">Calculadora Materiales</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </nav>
+      </div>
+
+      <div class="cyber-glass-card p-3 flex items-center justify-between mt-3">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shadow-md flex-shrink-0 border border-blue-400/30">JP</div>
+          <div class="truncate">
+            <p class="text-[11px] font-bold text-white truncate">Juan Pablo Luna</p>
+            <p class="font-tech-mono text-[8px] text-blue-300 uppercase font-bold">Ing. Proyectos • Admin</p>
+          </div>
+        </div>
+        <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition flex-shrink-0" title="Cerrar Sesión">
+          <i class="fa-solid fa-power-off text-xs"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="flex-1 flex flex-col h-screen overflow-y-auto hide-scrollbar relative z-10">
+      
+      <!-- HEADER STICKY -->
+      <header class="border-b border-white/15 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 bg-slate-950/90 z-30 sticky top-0">
+        <div class="flex items-center gap-2 sm:gap-3.5 flex-1 min-w-0">
+          <button onclick="toggleSidebar()" class="text-white p-2 sm:p-2.5 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 active:scale-95 transition flex-shrink-0" title="Alternar Menú">
+            <i class="fa-solid fa-bars text-xs sm:text-sm"></i>
+          </button>
+          
+          <div class="relative flex-1 max-w-xs">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-white/45 text-xs"></i>
+            <input type="text" id="filtro_buscador" oninput="filtrarEquipos()" placeholder="Filtrar por equipo, SKU o subsistema..." class="cyber-input w-full text-xs pl-8 pr-7 py-2 rounded-xl font-medium outline-none">
+            <button id="btn_limpiar_filtro" onclick="limpiarFiltroTexto()" class="hidden absolute right-2.5 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white text-xs">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button onclick="exportarOrdenBodegaPDF()" class="px-2.5 sm:px-3.5 py-2 rounded-xl btn-glass-action text-white text-[11px] font-bold flex items-center gap-1.5 transition" title="Descargar Requisición de Bodega PDF">
+            <i class="fa-solid fa-file-pdf text-amber-300"></i>
+            <span class="hidden md:inline">PDF Bodega</span>
+          </button>
+          <button onclick="navegarA('catalogo.html', 'Catálogo Oficial')" class="px-2.5 sm:px-3 py-2 rounded-xl cyber-glass-card text-white text-[11px] font-bold flex items-center gap-1.5 transition" title="Catálogo Oficial">
+            <i class="fa-solid fa-book-open text-indigo-400"></i>
+            <span class="hidden lg:inline">Catálogo</span>
+          </button>
+          <button onclick="navegarA('inspecciones_index.html', 'Dashboard Principal')" class="px-2.5 sm:px-3 py-2 rounded-xl cyber-glass-card text-white text-[11px] font-bold flex items-center gap-1.5 transition" title="Panel Principal">
+            <i class="fa-solid fa-gauge-high text-blue-400"></i>
+            <span class="hidden sm:inline">Panel</span>
+          </button>
+          <button id="btn_guardar_cloud" onclick="guardarConsolidadoEquipos()" class="hidden sm:flex px-4 py-2 rounded-xl btn-cyber-primary text-white text-[11px] font-bold items-center gap-1.5 transition" title="Guardar Ajustes">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Guardar Consolidado</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- MAIN BODY -->
+      <main class="flex-1 p-3.5 sm:p-6 lg:p-8 relative space-y-5 sm:space-y-6 z-10 pb-28 sm:pb-16">
+        <div class="max-w-6xl mx-auto space-y-5 sm:space-y-6" id="area_impresion_bodega">
+
+          <!-- ENCABEZADO -->
+          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div>
+              <div class="inline-flex items-center gap-2 text-[10px] font-tech-mono uppercase tracking-widest text-blue-400 font-bold mb-1">
+                <i class="fa-solid fa-boxes-stacked animate-pulse"></i> REQUISICIÓN DE BODEGA & PRESUPUESTO • 5 SUBSISTEMAS
+              </div>
+              <h2 class="font-tech-head font-extrabold text-xl sm:text-2xl text-white tracking-tight">
+                Consolidado Maestro de Equipamiento Activo
+              </h2>
+            </div>
+            <div class="inline-flex items-center gap-2 self-start sm:self-auto cyber-glass-card px-3 py-1.5 border-white/20">
+              <span class="text-[9px] font-tech-mono uppercase font-bold text-blue-300">Ticket:</span>
+              <span id="label_id_ticket" class="text-xs font-tech-mono font-bold text-white"># INS-0000</span>
+            </div>
+          </div>
+
+          <!-- 4 TARJETAS KPI CON TELEMETRÍA -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="cyber-glass-card corner-telemetry p-4 flex items-center gap-3.5">
+              <div class="h-11 w-11 rounded-2xl bg-blue-500/20 text-blue-300 flex items-center justify-center text-lg shadow-inner border border-blue-400/30 flex-shrink-0">
+                <i class="fa-solid fa-boxes-stacked"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[9px] sm:text-[10px] uppercase font-bold text-white/60 font-tech-mono truncate">Total Unidades</p>
+                <h3 id="kpi_total_unidades" class="text-xl sm:text-2xl font-black text-white leading-tight">0</h3>
+              </div>
+            </div>
+
+            <div class="cyber-glass-card corner-telemetry p-4 flex items-center gap-3.5">
+              <div class="h-11 w-11 rounded-2xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-lg shadow-inner border border-indigo-400/30 flex-shrink-0">
+                <i class="fa-solid fa-layer-group"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[9px] sm:text-[10px] uppercase font-bold text-white/60 font-tech-mono truncate">Referencias SKU</p>
+                <h3 id="kpi_items_unicos" class="text-xl sm:text-2xl font-black text-white leading-tight">0</h3>
+              </div>
+            </div>
+
+            <div class="cyber-glass-card corner-telemetry p-4 flex items-center gap-3.5">
+              <div class="h-11 w-11 rounded-2xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg shadow-inner border border-emerald-400/30 flex-shrink-0">
+                <i class="fa-solid fa-sack-dollar"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[9px] sm:text-[10px] uppercase font-bold text-white/60 font-tech-mono truncate">Subtotal PVP Est.</p>
+                <h3 id="kpi_total_pvp" class="text-lg sm:text-xl font-black text-emerald-300 leading-tight truncate">$0.00</h3>
+              </div>
+            </div>
+
+            <div class="cyber-glass-card corner-telemetry p-4 flex items-center gap-3.5">
+              <div class="h-11 w-11 rounded-2xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-lg shadow-inner border border-purple-400/30 flex-shrink-0">
+                <i class="fa-solid fa-diagram-project"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-[9px] sm:text-[10px] uppercase font-bold text-white/60 font-tech-mono truncate">Subsistemas</p>
+                <h3 id="kpi_subsistemas_activos" class="text-xl sm:text-2xl font-black text-white leading-tight">0 / 5</h3>
+              </div>
+            </div>
+          </div>
+
+          <!-- MATRIZ CONSOLIDADA DE EQUIPAMIENTO -->
+          <div class="cyber-glass-card p-4 sm:p-6 space-y-4 border-l-4 border-l-blue-500">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                  <i class="fa-solid fa-table-list text-blue-400"></i> Matriz Consolidada de Equipamiento Activo & Central
+                </h3>
+                <p class="text-[10px] text-white/70 mt-0.5">Agrupa y suma automáticamente los modelos idénticos de cada módulo. Usa <strong>[-] / [+]</strong> si deseas ajustar manualmente el despacho.</p>
+              </div>
+              <div class="flex items-center gap-2 self-start sm:self-auto">
+                <button type="button" onclick="recargarDesdeSupabase(true)" class="px-3 py-2 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center gap-1.5" title="Recalcular conteo exacto desde los módulos">
+                  <i class="fa-solid fa-arrows-rotate text-blue-400"></i> <span>Sincronizar</span>
+                </button>
+                <button type="button" onclick="abrirModalItemManual()" class="px-4 py-2 rounded-xl btn-cyber-primary text-white text-xs font-bold transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-plus"></i> <span>Añadir Ítem Extra</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- PÍLDORAS DE FILTRO POR SUBSISTEMA -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar text-[11px] font-tech-mono">
+              <button onclick="filtrarSubsistema('todos', this)" class="filtro-btn px-3.5 py-1.5 rounded-xl font-bold bg-blue-600/60 text-white shadow-sm transition border border-blue-400/50 whitespace-nowrap">Todos</button>
+              <button onclick="filtrarSubsistema('cctv', this)" class="filtro-btn px-3.5 py-1.5 rounded-xl font-bold bg-white/5 text-white/80 border border-white/15 hover:bg-white/10 transition whitespace-nowrap">CCTV & Audio</button>
+              <button onclick="filtrarSubsistema('alarmas', this)" class="filtro-btn px-3.5 py-1.5 rounded-xl font-bold bg-white/5 text-white/80 border border-white/15 hover:bg-white/10 transition whitespace-nowrap">Alarmas</button>
+              <button onclick="filtrarSubsistema('redes', this)" class="filtro-btn px-3.5 py-1.5 rounded-xl font-bold bg-white/5 text-white/80 border border-white/15 hover:bg-white/10 transition whitespace-nowrap">Redes & Fibra</button>
+              <button onclick="filtrarSubsistema('cercos', this)" class="filtro-btn px-3.5 py-1.5 rounded-xl font-bold bg-white/5 text-white/80 border border-white/15 hover:bg-white/10 transition whitespace-nowrap">Cercos Eléctricos</button>
+              <button onclick="filtrarSubsistema('acceso', this)" class="filtro-btn px-3.5 py-1.5 rounded-xl font-bold bg-white/5 text-white/80 border border-white/15 hover:bg-white/10 transition whitespace-nowrap">Control de Acceso</button>
+            </div>
+
+            <!-- TABLA RESPONSIVA -->
+            <div class="overflow-x-auto rounded-2xl border border-white/15 bg-slate-950/55 shadow-inner hide-scrollbar">
+              <table class="w-full text-left border-collapse text-xs min-w-[760px]">
+                <thead class="bg-white/10 font-tech-mono uppercase text-[10px] text-white/80 border-b border-white/15">
+                  <tr>
+                    <th class="p-3">Subsistema</th>
+                    <th class="p-3">Código SKU</th>
+                    <th class="p-3">Descripción Oficial del Catálogo</th>
+                    <th class="p-3 text-center">Cantidad</th>
+                    <th class="p-3 text-right">PVP Unit.</th>
+                    <th class="p-3 text-right">Subtotal PVP</th>
+                    <th class="p-3 text-center">Origen</th>
+                    <th class="p-3 text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla_equipos_body" class="divide-y divide-white/10 font-medium text-white/90">
+                  <!-- Inyección dinámica -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- NOTAS TÉCNICAS PARA BODEGA -->
+          <div class="cyber-glass-card p-4 sm:p-6 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                <i class="fa-solid fa-comment-dots text-blue-400"></i> Notas de Despacho para Bodega y Cotización
+              </h3>
+              <span class="font-tech-mono text-[9px] text-white/50">Guardado automático con el ticket</span>
+            </div>
+            <textarea id="consolidado_notas" rows="3" placeholder="Ingresa recomendaciones especiales para compras, números de serie requeridos, licencias o condiciones de despacho..." class="cyber-input w-full rounded-2xl p-3 text-xs outline-none resize-none"></textarea>
+          </div>
+
+          <!-- PIE DE NAVEGACIÓN -->
+          <div class="cyber-glass-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <button onclick="navegarA('inspecciones_index.html', 'Dashboard Principal')" class="w-full sm:w-auto px-5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-arrow-left text-blue-400"></i> Volver al Dashboard
+            </button>
+            <div class="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+              <button onclick="navegarA('inspeccion_materiales.html', 'Calculadora de Materiales')" class="w-full sm:w-auto px-5 py-2.5 rounded-xl btn-glass-action border-emerald-400/40 text-white text-xs font-bold transition flex items-center justify-center gap-2">
+                <span>Ir a Calculadora Materiales</span> <i class="fa-solid fa-toolbox text-emerald-400"></i>
+              </button>
+              <button onclick="guardarYSalir()" class="w-full sm:w-auto px-7 py-2.5 rounded-xl btn-cyber-primary text-white text-xs font-bold transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-floppy-disk"></i> <span>Guardar & Salir</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+      <!-- BARRA INFERIOR TÁCTIL EXCLUSIVA PARA MÓVIL -->
+      <div id="mobile_bottom_dock" class="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-slate-950/95 border-t border-white/15 px-3 py-2.5 flex items-center gap-2 shadow-2xl">
+        <button type="button" onclick="abrirModalItemManual()" class="flex-1 py-2.5 px-3 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-plus text-blue-400"></i>
+          <span>Ítem Extra</span>
+        </button>
+        <button id="btn_guardar_cloud_mobile" type="button" onclick="guardarConsolidadoEquipos()" class="flex-1 py-2.5 px-3 rounded-xl btn-cyber-primary text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Guardar</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL PARA AÑADIR ÍTEM EXTRA -->
+  <div id="modal_item_extra" onclick="cerrarModalItemManual()" class="fixed inset-0 bg-slate-950/85 z-[110] hidden flex justify-center items-center p-4">
+    <div class="cyber-glass-card bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl border border-white/20 space-y-4 text-white" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center pb-2.5 border-b border-white/15">
+        <h4 class="font-tech-head font-bold text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-cart-plus text-blue-400"></i> Añadir Equipo Adicional al Consolidado
+        </h4>
+        <button type="button" onclick="cerrarModalItemManual()" class="p-1 text-white/70 hover:text-rose-400 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <div>
+          <label class="block text-[10px] font-bold text-white/80 mb-1">Cargar desde Catálogo Oficial (Opcional)</label>
+          <select id="modal_catalogo_select" onchange="alSeleccionarCatalogoModal()" class="cyber-input w-full rounded-xl p-2.5 font-medium"></select>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-2">
+            <label class="block text-[10px] font-bold text-white/80 mb-1">Descripción del Equipo</label>
+            <input type="text" id="modal_manual_desc" placeholder="Ej. Switch PoE+ 8 Puertos" class="cyber-input w-full rounded-xl p-2.5 font-bold text-white outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-white/80 mb-1">Código SKU</label>
+            <input type="text" id="modal_manual_sku" placeholder="EQP-EXT-01" class="cyber-input w-full rounded-xl p-2.5 font-tech-mono text-blue-300 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-white/80 mb-1">Cantidad</label>
+            <input type="number" id="modal_manual_cant" min="1" value="1" class="cyber-input w-full rounded-xl p-2.5 font-tech-mono font-bold outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-white/80 mb-1">PVP Unitario ($)</label>
+            <input type="number" id="modal_manual_pvp" min="0" step="0.01" value="0.00" class="cyber-input w-full rounded-xl p-2.5 font-tech-mono font-bold text-emerald-300 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-bold text-white/80 mb-1">Asignar a Subsistema</label>
+          <select id="modal_manual_sub" class="cyber-input w-full rounded-xl p-2.5 font-medium">
+            <option value="CCTV">CCTV & Audio</option>
+            <option value="Alarmas">Alarmas</option>
+            <option value="Redes">Redes & Fibra</option>
+            <option value="Cercos">Cercos Eléctricos</option>
+            <option value="Acceso">Control de Acceso</option>
+            <option value="General">Equipamiento General</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-white/15">
+        <button type="button" onclick="cerrarModalItemManual()" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition">Cancelar</button>
+        <button type="button" onclick="agregarItemManualConfirmado()" class="px-5 py-2 rounded-xl btn-cyber-primary text-white text-xs font-bold transition shadow-sm">Agregar al Consolidado</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    // Persistencia segura del Ticket ID
+    const urlParams = new URLSearchParams(window.location.search);
+    let ticketId = urlParams.get('id');
+    if (!ticketId || ticketId === "null" || ticketId === "undefined") {
+      ticketId = localStorage.getItem('protech_current_ticket_id') || '885d363a-44f2-4c66-aff5-c6c7586831d1';
+    } else {
+      localStorage.setItem('protech_current_ticket_id', ticketId);
+    }
+
+    let inventarioCatalogo = [];
+    let catalogoObjetosDict = {};
+    let listaConsolidada = [];
+    let itemsManualesExtras = [];
+    let ajustesCantidades = {};
+    let ticketTopologiaCache = {};
+    let filtroActual = 'todos';
+
+    // Mapa exacto entre campos *_catalogo_id y sus campos de cantidad en los 5 módulos
+    const MAPA_CAMPOS_CANTIDAD = {
+      switch_desktop_catalogo_id: 'cant_switches',
+      microsd_catalogo_id: 'cant_microsd',
+      bocina_catalogo_id: 'cant_bocinas',
+      balun_catalogo_id: 'cant_baluns',
+      caja_catalogo_id: 'cant_cajas',
+      fuente_indiv_catalogo_id: 'cant_fuentes_indiv',
+      cortapicos_catalogo_id: 'cant_cortapicos',
+      patchcord_catalogo_id: 'cant_patchcords',
+      teclado_catalogo_id: 'cant_teclados',
+      expansor_catalogo_id: 'cant_expansores',
+      sirena_ext_catalogo_id: 'cant_sirenas_ext',
+      sirena_int_catalogo_id: 'cant_sirenas_int',
+      bateria_catalogo_id: 'cant_baterias'
+    };
+
+    // ==========================================
+    // 1. UTILIDADES UI, CYBER-TOAST & NAVEGACIÓN
+    // ==========================================
+    function mostrarToast(mensaje, tipo = 'info') {
+      const container = document.getElementById('toast_container');
+      if (!container) return;
+
+      const colores = {
+        success: 'border-emerald-400/50 text-emerald-300 bg-slate-900/95',
+        error: 'border-rose-400/50 text-rose-300 bg-slate-900/95',
+        info: 'border-blue-400/50 text-blue-300 bg-slate-900/95'
+      };
+      const iconos = {
+        success: 'fa-circle-check text-emerald-400',
+        error: 'fa-triangle-exclamation text-rose-400',
+        info: 'fa-circle-info text-blue-400'
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 ${colores[tipo] || colores.info}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${iconos[tipo] || iconos.info} text-sm flex-shrink-0"></i>
+        <span class="text-xs font-semibold text-white leading-snug">${mensaje}</span>
+      `;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-4');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function navegarA(pagina, moduloNombre = 'Módulo') {
+      const overlay = document.getElementById('page_transition_overlay');
+      const text = document.getElementById('transition_text');
+      let url = pagina;
+      if (ticketId && pagina !== 'index.html' && pagina !== 'catalogo.html') {
+        url += '?id=' + encodeURIComponent(ticketId);
+      }
+
+      if (overlay && text) {
+        overlay.classList.remove('hidden');
+        void overlay.offsetWidth;
+        overlay.classList.remove('opacity-0');
+        overlay.classList.add('opacity-100');
+        text.innerText = `Abriendo ${moduloNombre}...`;
+        setTimeout(() => { window.location.href = url; }, 350);
+      } else {
+        window.location.href = url;
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      if (window.innerWidth >= 768) {
+        sidebar.classList.toggle('collapsed');
+      } else {
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
+      }
+    }
+
+    function limpiarFiltroTexto() {
+      const input = document.getElementById('filtro_buscador');
+      if (input) {
+        input.value = '';
+        filtrarEquipos();
+        input.focus();
+      }
+    }
+
+    // ==========================================
+    // 2. CARGA DE CATÁLOGO Y PREFERENCIAS GUARDADAS
+    // ==========================================
+    async function cargarCatalogoPrecios() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('catalogo_precios')
+          .select('*')
+          .order('descripcion');
+
+        if (error) throw error;
+        inventarioCatalogo = data || [];
+        catalogoObjetosDict = {};
+        inventarioCatalogo.forEach(item => {
+          catalogoObjetosDict[item.id] = item;
+        });
+        poblarModalItems();
+      } catch (err) {
+        console.error("Error al cargar catalogo_precios:", err);
+        mostrarToast("Error cargando catálogo de precios", "error");
+      }
+    }
+
+    function restaurarEstadoLocalConsolidado(ticketData = {}, limpiarAjustes = false) {
+      const topologia = ticketData?.topologia_data || {};
+      ticketTopologiaCache = topologia;
+      const guardadoCloud = topologia.consolidado_equipos_extra || null;
+
+      let guardadoLocal = null;
+      try {
+        const raw = localStorage.getItem(`protech_equipos_extra_${ticketId}`);
+        if (raw) guardadoLocal = JSON.parse(raw);
+      } catch (e) {}
+
+      const fuente = guardadoCloud || guardadoLocal || {};
+      if (Array.isArray(fuente.items_manuales)) {
+        itemsManualesExtras = fuente.items_manuales;
+      }
+      if (limpiarAjustes) {
+        ajustesCantidades = {};
+        guardarEnLocalStorageRapido();
+      } else if (fuente.ajustes_cantidades && typeof fuente.ajustes_cantidades === 'object') {
+        ajustesCantidades = fuente.ajustes_cantidades;
+      }
+      const txtNotas = document.getElementById('consolidado_notas');
+      if (txtNotas && fuente.notas_bodega !== undefined && !txtNotas.value) {
+        txtNotas.value = fuente.notas_bodega;
+      }
+    }
+
+    // ==========================================
+    // 3. RECOLECCIÓN 360° DE LOS 5 SUBSISTEMAS (SUMA CORREGIDA)
+    // ==========================================
+    async function recargarDesdeSupabase(forzarSincronizacionPura = false) {
+      if (!ticketId || !supabaseClient) return;
+
+      try {
+        const [resTicket, resCCTV, resRedes, resAlarmas, resCercos, resAcceso] = await Promise.all([
+          supabaseClient.from('tickets').select('*').eq('id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_cctv').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_redes').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_alarmas').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_cercos').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_acceso').select('*').eq('ticket_id', ticketId).maybeSingle()
+        ]);
+
+        const tk = resTicket.data || {};
+        restaurarEstadoLocalConsolidado(tk, forzarSincronizacionPura);
+
+        const cctv = resCCTV.data || {};
+        const redes = resRedes.data || {};
+        const alm = resAlarmas.data || {};
+        const cco = resCercos.data || {};
+        const acc = resAcceso.data || {};
+
+        const mapaEquipos = new Map();
+
+        // Función centralizada con actualización exacta de cantidadBase, cantidad y subtotal
+        const registrarEquipoEnMapa = (keyMap, itemCat, descFallback, pvpFallback, skuFallback, cant, modName, esManual = false) => {
+          if (!cant || cant <= 0) return;
+          const desc = itemCat ? itemCat.descripcion : descFallback;
+          if (!desc) return;
+          const pvp = itemCat ? (parseFloat(itemCat.pvp_sugerido) || 0) : (parseFloat(pvpFallback) || 0);
+          const sku = itemCat ? (itemCat.codigo || 'EQP-CAT-01') : (skuFallback || 'EQP-GEN-01');
+
+          if (mapaEquipos.has(keyMap)) {
+            const ex = mapaEquipos.get(keyMap);
+            ex.cantidadBase += cant;
+            ex.cantidad = ex.cantidadBase;      // Sincroniza la cantidad acumulada real
+            ex.subtotal = ex.cantidad * ex.pvp; // Recalcula el subtotal acumulado
+            if (!ex.subsistemas.includes(modName)) ex.subsistemas.push(modName);
+          } else {
+            mapaEquipos.set(keyMap, {
+              keyMap: keyMap,
+              id: itemCat ? itemCat.id : keyMap,
+              codigo: sku,
+              descripcion: desc,
+              cantidadBase: cant,
+              cantidad: cant,
+              pvp: pvp,
+              subtotal: cant * pvp,
+              subsistema: modName,
+              subsistemas: [modName],
+              esManual: esManual
+            });
+          }
+        };
+
+        // A. Escanear campos *_catalogo_id de nivel raíz en los 5 módulos
+        [
+          { sub: 'CCTV', data: cctv },
+          { sub: 'Redes', data: redes },
+          { sub: 'Alarmas', data: alm },
+          { sub: 'Cercos', data: cco },
+          { sub: 'Acceso', data: acc }
+        ].forEach(modulo => {
+          const modName = modulo.sub;
+          const obj = modulo.data;
+          if (!obj) return;
+
+          Object.keys(obj).forEach(key => {
+            if (key.endsWith('_catalogo_id') && obj[key] && !String(obj[key]).includes('No Requiere') && !String(obj[key]).includes('Sin Disco') && obj[key] !== '') {
+              const catId = obj[key];
+              const itemCat = catalogoObjetosDict[catId];
+              
+              if (itemCat && itemCat.categoria === 'Equipo') {
+                let cant = 1;
+                const campoCantAsociado = MAPA_CAMPOS_CANTIDAD[key];
+                if (campoCantAsociado && obj[campoCantAsociado] !== undefined) {
+                  cant = parseInt(obj[campoCantAsociado], 10);
+                  if (isNaN(cant) || cant <= 0) return;
+                }
+                registrarEquipoEnMapa(String(itemCat.id), itemCat, itemCat.descripcion, itemCat.pvp_sugerido, itemCat.codigo, cant, modName, false);
+              }
+            }
+          });
+        });
+
+        // B. Switches PoE interactivos de CCTV (Con soporte de ID, descripción o fallback)
+        (cctv.switches_cctv || []).forEach(sw => {
+          if (sw.item_catalogo_id && catalogoObjetosDict[sw.item_catalogo_id]) {
+            const itemCat = catalogoObjetosDict[sw.item_catalogo_id];
+            registrarEquipoEnMapa(String(itemCat.id), itemCat, itemCat.descripcion, itemCat.pvp_sugerido, itemCat.codigo, 1, 'CCTV', false);
+          } else if (sw.descripcion_catalogo || sw.nombre) {
+            const descSw = (sw.descripcion_catalogo || 'Switch PoE de Video CCTV').trim();
+            const matchCat = Object.values(catalogoObjetosDict).find(
+              ci => ci.descripcion?.trim().toUpperCase() === descSw.toUpperCase() && ci.categoria === 'Equipo'
+            );
+            const keySw = matchCat ? String(matchCat.id) : `sw_din_${descSw.toUpperCase().replace(/\s+/g, '_')}`;
+            registrarEquipoEnMapa(keySw, matchCat, descSw, sw.pvp_sugerido, 'CCT-SW-POE', 1, 'CCTV', false);
+          }
+        });
+
+        // C. Cámaras levantadas en CCTV (Soporte por ID, Descripción o Fallback)
+        (cctv.camaras || []).forEach(cam => {
+          if (cam.item_catalogo_id && catalogoObjetosDict[cam.item_catalogo_id]) {
+            const itemCat = catalogoObjetosDict[cam.item_catalogo_id];
+            registrarEquipoEnMapa(String(itemCat.id), itemCat, itemCat.descripcion, itemCat.pvp_sugerido, itemCat.codigo, 1, 'CCTV', false);
+          } else {
+            const descCamara = (cam.descripcion_catalogo || cam.descripcion || 'Cámara de Seguridad CCTV').trim();
+            const matchCat = Object.values(catalogoObjetosDict).find(
+              ci => ci.descripcion?.trim().toUpperCase() === descCamara.toUpperCase() && ci.categoria === 'Equipo'
+            );
+            const keyCam = matchCat ? String(matchCat.id) : `cam_din_${descCamara.toUpperCase().replace(/\s+/g, '_')}`;
+            registrarEquipoEnMapa(keyCam, matchCat, descCamara, cam.pvp_sugerido, 'CCT-CAM-01', 1, 'CCTV', false);
+          }
+        });
+
+        // D. Zonas / Sensores en Alarmas
+        (alm.zonas || []).forEach(z => {
+          if (z.item_catalogo_id && catalogoObjetosDict[z.item_catalogo_id]) {
+            const itemCat = catalogoObjetosDict[z.item_catalogo_id];
+            if (itemCat.categoria === 'Equipo') {
+              registrarEquipoEnMapa(String(itemCat.id), itemCat, itemCat.descripcion, itemCat.pvp_sugerido, itemCat.codigo, 1, 'Alarmas', false);
+            }
+          } else if (z.descripcion || z.descripcion_catalogo) {
+            const descZona = (z.descripcion_catalogo || z.descripcion).trim();
+            const matchCat = Object.values(catalogoObjetosDict).find(
+              ci => ci.descripcion?.trim().toUpperCase() === descZona.toUpperCase() && ci.categoria === 'Equipo'
+            );
+            if (matchCat) {
+              registrarEquipoEnMapa(String(matchCat.id), matchCat, matchCat.descripcion, matchCat.pvp_sugerido, matchCat.codigo, 1, 'Alarmas', false);
+            }
+          }
+        });
+
+        // E. Subnodos IDF en Redes
+        (redes.subnodos_idf || []).forEach(idf => {
+          ['switch_catalogo_id', 'rack_catalogo_id', 'ups_catalogo_id', 'item_catalogo_id'].forEach(k => {
+            if (idf[k] && catalogoObjetosDict[idf[k]]) {
+              const itemCat = catalogoObjetosDict[idf[k]];
+              if (itemCat.categoria === 'Equipo') {
+                registrarEquipoEnMapa(String(itemCat.id), itemCat, itemCat.descripcion, itemCat.pvp_sugerido, itemCat.codigo, 1, 'Redes', false);
+              }
+            }
+          });
+        });
+
+        // F. Puertas / Accesos Biométricos en Control de Acceso
+        (acc.puertas || acc.accesos || []).forEach(p => {
+          ['biometrico_catalogo_id', 'cerradura_catalogo_id', 'fuente_catalogo_id', 'boton_catalogo_id', 'item_catalogo_id'].forEach(k => {
+            if (p[k] && catalogoObjetosDict[p[k]]) {
+              const itemCat = catalogoObjetosDict[p[k]];
+              if (itemCat.categoria === 'Equipo') {
+                registrarEquipoEnMapa(String(itemCat.id), itemCat, itemCat.descripcion, itemCat.pvp_sugerido, itemCat.codigo, 1, 'Acceso', false);
+              }
+            }
+          });
+        });
+
+        // G. Ítems Manuales Extras añadidos por el usuario
+        itemsManualesExtras.forEach(ext => {
+          const keyManual = 'manual_' + ext.id;
+          mapaEquipos.set(keyManual, {
+            keyMap: keyManual,
+            id: ext.id,
+            codigo: ext.codigo || 'EQP-EXT-01',
+            descripcion: ext.descripcion,
+            cantidadBase: ext.cantidad,
+            cantidad: ext.cantidad,
+            pvp: parseFloat(ext.pvp) || 0,
+            subtotal: ext.cantidad * (parseFloat(ext.pvp) || 0),
+            subsistema: ext.subsistema || 'General',
+            subsistemas: [ext.subsistema || 'General'],
+            esManual: true
+          });
+        });
+
+        // H. Aplicar overrides manuales solo si el usuario los ajustó explícitamente
+        mapaEquipos.forEach((item, key) => {
+          if (!item.esManual && ajustesCantidades[key] !== undefined) {
+            item.cantidad = Math.max(1, parseInt(ajustesCantidades[key], 10) || item.cantidadBase);
+            item.subtotal = item.cantidad * item.pvp;
+          }
+        });
+
+        listaConsolidada = Array.from(mapaEquipos.values());
+        renderizarTabla();
+
+        if (forzarSincronizacionPura) {
+          mostrarToast("Cantidades sincronizadas exactamente con los módulos de campo", "success");
+        }
+      } catch (err) {
+        console.error("Error al consolidar equipos:", err);
+        mostrarToast("Error al consolidar equipos de Supabase", "error");
+      }
+    }
+
+    // ==========================================
+    // 4. RENDERIZADO DE TABLA Y AJUSTE EN VIVO
+    // ==========================================
+    function ajustarCantidadItem(keyMap, delta) {
+      const item = listaConsolidada.find(i => i.keyMap === keyMap);
+      if (!item) return;
+
+      const nuevaCant = Math.max(1, item.cantidad + delta);
+      item.cantidad = nuevaCant;
+      item.subtotal = nuevaCant * item.pvp;
+
+      if (item.esManual) {
+        const ext = itemsManualesExtras.find(e => 'manual_' + e.id === keyMap);
+        if (ext) ext.cantidad = nuevaCant;
+      } else {
+        if (nuevaCant === item.cantidadBase) {
+          delete ajustesCantidades[keyMap];
+        } else {
+          ajustesCantidades[keyMap] = nuevaCant;
+        }
+      }
+
+      guardarEnLocalStorageRapido();
+      renderizarTabla();
+    }
+
+    function renderizarTabla() {
+      const tbody = document.getElementById('tabla_equipos_body');
+      const filtro = filtroActual.toLowerCase();
+      const txtBuscador = (document.getElementById('filtro_buscador')?.value || '').trim().toLowerCase();
+
+      const btnClear = document.getElementById('btn_limpiar_filtro');
+      if (btnClear) btnClear.classList.toggle('hidden', !txtBuscador);
+
+      const itemsFiltrados = listaConsolidada.filter(item => {
+        const matchSub = (filtro === 'todos') || item.subsistemas.some(s => s.toLowerCase().includes(filtro));
+        const matchTxt = !txtBuscador ||
+                         item.descripcion.toLowerCase().includes(txtBuscador) ||
+                         (item.codigo || '').toLowerCase().includes(txtBuscador) ||
+                         item.subsistemas.join(' ').toLowerCase().includes(txtBuscador);
+        return matchSub && matchTxt;
+      });
+
+      const totalUnidades = listaConsolidada.reduce((acc, curr) => acc + curr.cantidad, 0);
+      const itemsUnicos = listaConsolidada.length;
+      const totalPVP = listaConsolidada.reduce((acc, curr) => acc + curr.subtotal, 0);
+
+      const setSubsistemas = new Set();
+      listaConsolidada.forEach(i => i.subsistemas.forEach(s => {
+        if (['CCTV', 'Alarmas', 'Redes', 'Cercos', 'Acceso'].includes(s)) setSubsistemas.add(s);
+      }));
+
+      document.getElementById('kpi_total_unidades').innerText = totalUnidades;
+      document.getElementById('kpi_items_unicos').innerText = itemsUnicos;
+      document.getElementById('kpi_total_pvp').innerText = `$${totalPVP.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('kpi_subsistemas_activos').innerText = `${setSubsistemas.size} / 5`;
+
+      const sideBadge = document.getElementById('side_badge_total_eq');
+      if (sideBadge) sideBadge.innerText = totalUnidades;
+
+      if (itemsFiltrados.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="p-10 text-center text-white/50 font-medium italic">
+              <i class="fa-solid fa-boxes-stacked text-2xl mb-2 block text-blue-400/40"></i>
+              No se han encontrado equipos bajo los filtros seleccionados.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      itemsFiltrados.forEach((item) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-white/5 transition pdf-avoid-break';
+
+        const badgesHTML = item.subsistemas.map(sub => {
+          if (sub.includes('CCTV')) return '<span class="px-2 py-0.5 rounded-lg bg-blue-500/20 text-blue-300 font-bold border border-blue-400/30 text-[10px]">CCTV</span>';
+          if (sub.includes('Alarmas')) return '<span class="px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 font-bold border border-amber-400/30 text-[10px]">Alarma</span>';
+          if (sub.includes('Redes')) return '<span class="px-2 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-400/30 text-[10px]">Redes</span>';
+          if (sub.includes('Cercos')) return '<span class="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-300 font-bold border border-rose-400/30 text-[10px]">Cerco</span>';
+          if (sub.includes('Acceso')) return '<span class="px-2 py-0.5 rounded-lg bg-teal-500/20 text-teal-300 font-bold border border-teal-400/30 text-[10px]">Acceso</span>';
+          return '<span class="px-2 py-0.5 rounded-lg bg-white/10 text-white/80 font-bold border border-white/20 text-[10px]">Extra</span>';
+        }).join(' ');
+
+        const safeKey = String(item.keyMap).replace(/'/g, "\\'");
+        const fueAjustado = !item.esManual && item.cantidad !== item.cantidadBase;
+
+        tr.innerHTML = `
+          <td class="p-3 whitespace-nowrap">${badgesHTML}</td>
+          <td class="p-3 font-tech-mono text-[10px] text-white/60 font-bold whitespace-nowrap">${item.codigo || 'EQP-001'}</td>
+          <td class="p-3 font-semibold text-white">${item.descripcion}</td>
+          <td class="p-3 text-center whitespace-nowrap">
+            <div class="inline-flex items-center gap-1.5 bg-slate-900/90 border border-white/15 rounded-xl px-1.5 py-0.5">
+              <button type="button" onclick="ajustarCantidadItem('${safeKey}', -1)" class="w-5 h-5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white flex items-center justify-center text-[10px] transition">
+                <i class="fa-solid fa-minus"></i>
+              </button>
+              <span class="font-tech-mono font-extrabold text-xs px-1.5 ${fueAjustado ? 'text-amber-300' : 'text-blue-300'}">${item.cantidad}</span>
+              <button type="button" onclick="ajustarCantidadItem('${safeKey}', 1)" class="w-5 h-5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white flex items-center justify-center text-[10px] transition">
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+          </td>
+          <td class="p-3 text-right font-tech-mono text-white/80">$${item.pvp.toFixed(2)}</td>
+          <td class="p-3 text-right font-tech-mono font-bold text-emerald-300">$${item.subtotal.toFixed(2)}</td>
+          <td class="p-3 text-center text-[10px] font-tech-mono">
+            ${item.esManual
+              ? '<span class="text-amber-300 font-bold bg-amber-500/15 px-2 py-0.5 rounded border border-amber-400/30">Extra</span>'
+              : (fueAjustado ? '<span class="text-amber-300 font-bold">Ajustado</span>' : '<span class="text-white/60">Auto-Sync</span>')}
+          </td>
+          <td class="p-3 text-center">
+            ${item.esManual ? `
+              <button onclick="eliminarItemManual('${item.id}')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-rose-500/20 transition" title="Eliminar ítem extra">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            ` : (fueAjustado ? `
+              <button onclick="restaurarCantidadBase('${safeKey}')" class="text-amber-300 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition text-[10px]" title="Restaurar cantidad original (${item.cantidadBase})">
+                <i class="fa-solid fa-rotate-left"></i>
+              </button>
+            ` : '<span class="text-white/30"><i class="fa-solid fa-check text-emerald-400/60 text-[10px]"></i></span>')}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function restaurarCantidadBase(keyMap) {
+      delete ajustesCantidades[keyMap];
+      guardarEnLocalStorageRapido();
+      recargarDesdeSupabase(false);
+      mostrarToast("Cantidad restaurada al valor original de inspección", "info");
+    }
+
+    function filtrarSubsistema(sub, btnEl) {
+      filtroActual = sub;
+      document.querySelectorAll('.filtro-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600/60', 'text-white', 'border-blue-400/50');
+        btn.classList.add('bg-white/5', 'text-white/80', 'border-white/15');
+      });
+      if (btnEl) {
+        btnEl.classList.add('bg-blue-600/60', 'text-white', 'border-blue-400/50');
+        btnEl.classList.remove('bg-white/5', 'text-white/80', 'border-white/15');
+      }
+      renderizarTabla();
+    }
+
+    function filtrarEquipos() {
+      renderizarTabla();
+    }
+
+    // ==========================================
+    // 5. MODAL DE ÍTEMS ADICIONALES
+    // ==========================================
+    function poblarModalItems() {
+      const select = document.getElementById('modal_catalogo_select');
+      if (!select) return;
+      select.innerHTML = '<option value="">Seleccionar del Catálogo Oficial...</option>';
+      inventarioCatalogo.filter(item => item.categoria === 'Equipo').forEach(item => {
+        select.innerHTML += `<option value="${item.id}" data-desc="${item.descripcion}" data-sku="${item.codigo || 'EQP-CAT'}" data-pvp="${item.pvp_sugerido || 0}">${item.descripcion} ($${Number(item.pvp_sugerido || 0).toFixed(2)})</option>`;
+      });
+    }
+
+    function abrirModalItemManual() {
+      document.getElementById('modal_item_extra').classList.remove('hidden');
+    }
+
+    function cerrarModalItemManual() {
+      document.getElementById('modal_item_extra').classList.add('hidden');
+      document.getElementById('modal_manual_desc').value = '';
+      document.getElementById('modal_manual_sku').value = '';
+      document.getElementById('modal_manual_cant').value = 1;
+      document.getElementById('modal_manual_pvp').value = '0.00';
+      document.getElementById('modal_catalogo_select').value = '';
+    }
+
+    function alSeleccionarCatalogoModal() {
+      const sel = document.getElementById('modal_catalogo_select');
+      const opt = sel.options[sel.selectedIndex];
+      if (sel.value) {
+        document.getElementById('modal_manual_desc').value = opt.getAttribute('data-desc') || '';
+        document.getElementById('modal_manual_sku').value = opt.getAttribute('data-sku') || 'EQP-CAT';
+        document.getElementById('modal_manual_pvp').value = opt.getAttribute('data-pvp') || 0;
+      }
+    }
+
+    function agregarItemManualConfirmado() {
+      const desc = document.getElementById('modal_manual_desc').value.trim();
+      const sku = document.getElementById('modal_manual_sku').value.trim() || 'EQP-EXT-01';
+      const cant = parseInt(document.getElementById('modal_manual_cant').value, 10) || 1;
+      const pvp = parseFloat(document.getElementById('modal_manual_pvp').value) || 0;
+      const sub = document.getElementById('modal_manual_sub').value;
+
+      if (!desc) {
+        mostrarToast("Ingresa o selecciona la descripción del equipo", "error");
+        return;
+      }
+
+      const nuevo = {
+        id: 'ext_' + Date.now(),
+        codigo: sku,
+        descripcion: desc,
+        cantidad: cant,
+        pvp: pvp,
+        subsistema: sub
+      };
+
+      itemsManualesExtras.push(nuevo);
+      guardarEnLocalStorageRapido();
+      cerrarModalItemManual();
+      recargarDesdeSupabase(false);
+      mostrarToast("Equipo adicional agregado al consolidado", "success");
+    }
+
+    function eliminarItemManual(id) {
+      itemsManualesExtras = itemsManualesExtras.filter(i => i.id !== id);
+      guardarEnLocalStorageRapido();
+      recargarDesdeSupabase(false);
+      mostrarToast("Equipo extra eliminado", "info");
+    }
+
+    // ==========================================
+    // 6. PERSISTENCIA REAL (LOCALSTORAGE + SUPABASE) Y PDF BODEGA
+    // ==========================================
+    function construirObjetoPersistencia() {
+      return {
+        items_manuales: itemsManualesExtras,
+        ajustes_cantidades: ajustesCantidades,
+        notas_bodega: document.getElementById('consolidado_notas')?.value || '',
+        resumen_totales: {
+          total_unidades: listaConsolidada.reduce((a, c) => a + c.cantidad, 0),
+          items_unicos: listaConsolidada.length,
+          presupuesto_pvp: listaConsolidada.reduce((a, c) => a + c.subtotal, 0)
+        },
+        updated_at: new Date().toISOString()
+      };
+    }
+
+    function guardarEnLocalStorageRapido() {
+      try {
+        localStorage.setItem(`protech_equipos_extra_${ticketId}`, JSON.stringify(construirObjetoPersistencia()));
+      } catch (e) {}
+    }
+
+    async function guardarConsolidadoEquipos() {
+      const btn = document.getElementById('btn_guardar_cloud');
+      const btnMob = document.getElementById('btn_guardar_cloud_mobile');
+      const orig = btn ? btn.innerHTML : '';
+      const origMob = btnMob ? btnMob.innerHTML : '';
+
+      if (btn) { btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`; btn.disabled = true; }
+      if (btnMob) { btnMob.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`; btnMob.disabled = true; }
+
+      guardarEnLocalStorageRapido();
+
+      try {
+        if (supabaseClient && ticketId) {
+          const nuevaTopologiaData = {
+            ...ticketTopologiaCache,
+            consolidado_equipos_extra: construirObjetoPersistencia()
+          };
+          const { error } = await supabaseClient
+            .from('tickets')
+            .update({ topologia_data: nuevaTopologiaData })
+            .eq('id', ticketId);
+
+          if (error) throw error;
+          ticketTopologiaCache = nuevaTopologiaData;
+        }
+
+        mostrarToast("Consolidado y notas de bodega sincronizados en la nube", "success");
+        if (btn) btn.innerHTML = `<i class="fa-solid fa-check text-emerald-300"></i> Guardado`;
+        if (btnMob) btnMob.innerHTML = `<i class="fa-solid fa-check"></i> Guardado`;
+        return true;
+      } catch (err) {
+        console.error("Error guardando consolidado en Supabase:", err);
+        mostrarToast("Guardado localmente en el dispositivo", "info");
+        return true;
+      } finally {
+        setTimeout(() => {
+          if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+          if (btnMob) { btnMob.innerHTML = origMob; btnMob.disabled = false; }
+        }, 1300);
+      }
+    }
+
+    async function guardarYSalir() {
+      await guardarConsolidadoEquipos();
+      setTimeout(() => {
+        navegarA('inspecciones_index.html', 'Dashboard Principal');
+      }, 350);
+    }
+
+    async function exportarOrdenBodegaPDF() {
+      mostrarToast("Generando PDF de Requisición de Bodega...", "info");
+      const contenedorTemp = document.createElement('div');
+      const notas = document.getElementById('consolidado_notas')?.value || 'Sin observaciones adicionales.';
+      const totalUnidades = listaConsolidada.reduce((a, c) => a + c.cantidad, 0);
+      const totalPVP = listaConsolidada.reduce((a, c) => a + c.subtotal, 0);
+
+      const filasHTML = listaConsolidada.map(item => `
+        <tr style="border-bottom: 1px solid #cbd5e1; font-size: 11px;">
+          <td style="padding: 8px; font-weight: bold; color: #1e3a8a;">${item.subsistemas.join(', ')}</td>
+          <td style="padding: 8px; font-family: monospace; color: #475569;">${item.codigo || 'EQP-01'}</td>
+          <td style="padding: 8px; color: #0f172a; font-weight: 600;">${item.descripcion}</td>
+          <td style="padding: 8px; text-align: center; font-weight: bold; color: #0f172a;">${item.cantidad}</td>
+          <td style="padding: 8px; text-align: right; font-family: monospace;">$${item.pvp.toFixed(2)}</td>
+          <td style="padding: 8px; text-align: right; font-family: monospace; font-weight: bold; color: #047857;">$${item.subtotal.toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      contenedorTemp.innerHTML = `
+        <div style="padding: 24px; font-family: sans-serif; color: #0f172a; background: #ffffff;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px;">
+            <div>
+              <h1 style="margin: 0; font-size: 20px; font-weight: 900;">PROTECH SECURITY</h1>
+              <p style="margin: 2px 0 0; font-size: 11px; color: #1d4ed8; font-weight: bold;">ORDEN DE REQUISICIÓN DE EQUIPAMIENTO PARA BODEGA</p>
+            </div>
+            <div style="text-align: right; font-family: monospace; font-size: 11px;">
+              <strong>TICKET #${ticketId.substring(0,8).toUpperCase()}</strong><br>
+              <span>${new Date().toLocaleDateString('es-EC', { dateStyle: 'long' })}</span>
+            </div>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+              <tr style="background: #f1f5f9; border-bottom: 2px solid #94a3b8; font-size: 10px; text-transform: uppercase;">
+                <th style="padding: 8px; text-align: left;">Subsistema</th>
+                <th style="padding: 8px; text-align: left;">SKU</th>
+                <th style="padding: 8px; text-align: left;">Descripción del Equipo</th>
+                <th style="padding: 8px; text-align: center;">Cant.</th>
+                <th style="padding: 8px; text-align: right;">PVP Unit.</th>
+                <th style="padding: 8px; text-align: right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>${filasHTML}</tbody>
+            <tfoot>
+              <tr style="background: #f8fafc; font-weight: bold; font-size: 12px;">
+                <td colspan="3" style="padding: 10px; text-align: right;">TOTALES CONSOLIDADOS:</td>
+                <td style="padding: 10px; text-align: center;">${totalUnidades} u.</td>
+                <td></td>
+                <td style="padding: 10px; text-align: right; color: #047857;">$${totalPVP.toFixed(2)}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; font-size: 11px;">
+            <strong>Notas para Bodega / Despacho:</strong>
+            <p style="margin: 4px 0 0; color: #334155;">${notas}</p>
+          </div>
+        </div>
+      `;
+
+      await html2pdf().from(contenedorTemp).set({
+        margin: [10, 10, 10, 10],
+        filename: `Requisicion_Equipos_${ticketId.substring(0,8).toUpperCase()}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).save();
+
+      mostrarToast("PDF de Bodega descargado", "success");
+    }
+
+    document.addEventListener('input', (e) => {
+      if (e.target && e.target.id === 'consolidado_notas') {
+        guardarEnLocalStorageRapido();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.body.classList.add('session-checked');
+      const overlay = document.getElementById('page_transition_overlay');
+      if (overlay) {
+        setTimeout(() => {
+          overlay.classList.remove('opacity-100');
+          overlay.classList.add('opacity-0');
+          setTimeout(() => overlay.classList.add('hidden'), 380);
+        }, 350);
+      }
+
+      if (ticketId) {
+        document.getElementById('label_id_ticket').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+      } else {
+        document.getElementById('label_id_ticket').innerText = "# NUEVO";
+      }
+
+      await cargarCatalogoPrecios();
+      await recargarDesdeSupabase(false);
+    });
+  </script>
+
+</body>
+</html>

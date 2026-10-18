@@ -1,0 +1,13 @@
+{
+  "routes": [
+    {
+      "routePath": "/enviar-alerta",
+      "mountPath": "/",
+      "method": "POST",
+      "module": [
+        "enviar-alerta.js:onRequestPost"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}

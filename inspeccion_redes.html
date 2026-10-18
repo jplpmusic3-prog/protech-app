@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redes & Fibra — ProTech Security</title>
+  
+  <meta name="theme-color" content="#020617">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Técnica Homologada -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO NÍDIDO
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    /* ========================================================
+       2. TARJETAS Y CRISTAL CÓNCAVO (Homologado)
+       ======================================================== */
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        inset 5px 5px 12px rgba(0, 0, 0, 0.4), 
+        inset -5px -5px 12px rgba(255, 255, 255, 0.12),
+        0 25px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-glass-action {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 3px 3px 8px rgba(0, 0, 0, 0.25), 
+        inset -3px -3px 8px rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(0, 0, 0, 0.25);
+      border-radius: 1rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #ffffff;
+    }
+
+    .btn-glass-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.35), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.12),
+        0 15px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cyber-input, .glass-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+    .cyber-input option, .glass-input option {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: rgba(255, 255, 255, 0.22); 
+      color: #ffffff; 
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+  </style>
+</head>
+<body class="flex items-center justify-center text-white session-checked">
+
+  <!-- VIDEO DE FONDO NÍDIDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL -->
+  <aside id="sidebar_menu" class="absolute md:relative top-0 left-0 z-50 h-full w-72 flex flex-col justify-between border-r border-white/15 p-5 transition-all duration-300 ease-in-out bg-slate-950/80 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none shadow-2xl md:shadow-none -translate-x-full md:translate-x-0 flex-shrink-0">
+    
+    <div class="space-y-4 overflow-y-auto pr-1 hide-scrollbar flex-1">
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+            <div id="logo_fallback" style="display:none;" class="h-10 w-10 rounded-xl bg-slate-900 text-white font-bold text-base items-center justify-center">PS</div>
+          </div>
+          <div>
+            <h1 class="font-bold text-[15px] text-white leading-tight">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-indigo-400 font-bold">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="space-y-3">
+        <div class="cyber-glass-card p-2.5">
+          <div class="w-full flex items-center justify-center font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1.5 mb-2 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-clipboard-list"></i> Módulo Inspección</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="navegarA('inspecciones_index.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-gauge-high"></i></div>
+              Panel Principal
+            </button>
+            <button onclick="navegarA('inspeccion_cliente.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-white/80 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-address-card"></i></div>
+              1. Datos del Cliente
+            </button>
+            <button onclick="navegarA('inspeccion_cctv.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-video"></i></div>
+              2. CCTV & Audio
+            </button>
+            <button onclick="navegarA('inspeccion_alarmas.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-bell"></i></div>
+              3. Alarmas & Zonificación
+            </button>
+            <button onclick="navegarA('inspeccion_redes.html')" class="menu-link active w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-indigo-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-network-wired"></i></div>
+              4. Redes & Fibra
+            </button>
+            <button onclick="navegarA('inspeccion_cercos.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-rose-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-bolt"></i></div>
+              5. Cercos Eléctricos
+            </button>
+            <button onclick="navegarA('inspeccion_acceso.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-fingerprint"></i></div>
+              6. Control Acceso
+            </button>
+          </div>
+        </div>
+
+        <div class="cyber-glass-card p-2.5">
+          <div class="w-full flex items-center justify-center font-tech-mono text-[10px] uppercase font-bold text-white/70 tracking-wider p-1.5 mb-2 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-file-invoice"></i> Resumen</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="navegarA('inspeccion_equipos.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-300 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+              Consolidado Equipos
+            </button>
+            <button onclick="navegarA('inspeccion_materiales.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-toolbox"></i></div>
+              Calculadora Materiales
+            </button>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="cyber-glass-card p-3.5 flex items-center justify-between shadow-sm relative z-10 flex-shrink-0 mt-3">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-bold text-xs shadow-md">JP</div>
+        <div class="truncate">
+          <p class="text-[11px] font-bold text-white truncate">Juan Pablo Luna Paredes</p>
+          <p class="font-tech-mono text-[9px] text-indigo-400 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition" title="Cerrar Sesión">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden">
+    
+    <header class="border-b border-white/15 px-6 py-4 flex items-center justify-between flex-shrink-0 z-30 bg-slate-950/30 backdrop-blur-md">
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white p-2 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 transition">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="hidden md:flex relative w-72">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 text-xs"></i>
+          <input type="text" placeholder="Buscar switch, nodo, jack..." class="cyber-input w-full text-xs pl-8 pr-3 py-2.5 rounded-xl font-medium outline-none">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2.5">
+        <button onclick="window.location.href='index.html'" class="px-3 py-2 rounded-xl cyber-glass-card text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm hidden sm:flex" title="Salir al Portal">
+          <i class="fa-solid fa-arrow-right-from-bracket text-blue-400"></i>
+          <span class="hidden md:inline">Salir</span>
+        </button>
+
+        <button onclick="window.location.href='catalogo.html'" class="px-3 py-2 rounded-xl btn-glass-action text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm" title="Catálogo Oficial">
+          <i class="fa-solid fa-book-open text-indigo-400"></i>
+          <span class="hidden md:inline">Catálogo</span>
+        </button>
+
+        <button onclick="navegarA('inspecciones_index.html')" class="px-3 py-2 rounded-xl cyber-glass-card text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm" title="Panel Principal">
+          <i class="fa-solid fa-gauge-high text-blue-400"></i>
+          <span class="hidden sm:inline">Panel</span>
+        </button>
+
+        <button id="btn_guardar_cloud" onclick="guardarModuloRedes()" class="px-4 py-2 rounded-xl btn-glass-action bg-indigo-600/60 hover:bg-indigo-600/80 text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 shadow-md transition" title="Guardar Redes">
+          <i class="fa-solid fa-floppy-disk text-indigo-300"></i>
+          <span class="hidden sm:inline">Guardar</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-6 relative space-y-6 z-10">
+      <div class="max-w-6xl mx-auto space-y-6">
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="font-tech-head font-extrabold text-[24px] text-white tracking-tight flex items-center gap-3">
+              <i class="fa-solid fa-network-wired text-indigo-400 drop-shadow-md"></i> Redes & Fibra Óptica
+            </h2>
+            <p class="font-tech-mono text-[10px] uppercase tracking-wider text-white/70 mt-1.5">
+              PASO 4 • CORE ROUTER/FIREWALL, SWITCH PRINCIPAL MDF, RACK, IDFs Y PUNTOS DE RED
+            </p>
+          </div>
+          <div class="inline-flex items-center gap-2 cyber-glass-card px-3 py-1.5 border-white/20">
+            <span class="text-[9px] font-tech-mono uppercase font-bold text-indigo-300">Ticket Vinculado:</span>
+            <span id="label_id_ticket" class="text-xs font-tech-mono font-bold text-white"># INS-0000</span>
+          </div>
+        </div>
+
+        <!-- 0. ROUTER / FIREWALL CORE -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-white/15 pb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+              <i class="fa-solid fa-shield-halved text-indigo-400"></i> Router / Firewall Core (Borde de Red - Raíz Opcional)
+            </h3>
+            <span class="text-[10px] font-tech-mono text-indigo-300 font-bold bg-indigo-500/20 border border-indigo-400/30 px-2.5 py-1 rounded">GATEWAY PRINCIPAL</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs text-white">
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo del Router / Firewall (Catálogo Oficial)</label>
+              <select id="core_router_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-indigo-300 mb-1">IP de Gestión / Gateway LAN</label>
+              <input type="text" id="core_ip_gateway" value="192.168.1.1" placeholder="Ej. 192.168.1.1" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-indigo-300 bg-indigo-500/20 outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Proveedor de Internet (ISP)</label>
+              <input type="text" id="core_isp" placeholder="Ej. Netlife / CNT / Claro" class="cyber-input w-full rounded-lg p-2 font-medium outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Tipo de Servicio WAN</label>
+              <select id="core_tipo_wan" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="IP Estática (Fija)" style="background:#0f172a; color:#fff;">IP Estática (Fija)</option>
+                <option value="DHCP (Dinámica)" style="background:#0f172a; color:#fff;">DHCP (Dinámica)</option>
+                <option value="PPPoE (Credenciales ISP)" style="background:#0f172a; color:#fff;">PPPoE (Credenciales ISP)</option>
+                <option value="Modem Bridge / CGNAT" style="background:#0f172a; color:#fff;">Modem Bridge / CGNAT</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Modo de Operación</label>
+              <select id="core_modo_operacion" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="Router / Gateway Borde Principal" style="background:#0f172a; color:#fff;">Router / Gateway Borde Principal</option>
+                <option value="Firewall de Seguridad (Modo Transparente)" style="background:#0f172a; color:#fff;">Firewall de Seguridad (Modo Transparente)</option>
+                <option value="Balanceador de Cargas Multi-WAN" style="background:#0f172a; color:#fff;">Balanceador de Cargas Multi-WAN</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Segmentación de Red (VLANs Principales)</label>
+              <input type="text" id="core_vlans" placeholder="Ej. VLAN 10 (Datos), VLAN 20 (CCTV), VLAN 30 (Gestión)" class="cyber-input w-full rounded-lg p-2 font-medium outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Puerto de Uplink hacia Switch Core</label>
+              <input type="text" id="core_puerto_uplink" placeholder="Ej. Puerto LAN 1 / SFP+ 1" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- 0.1 SWITCH PRINCIPAL / CORE (MDF) -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-white/15 pb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+              <i class="fa-solid fa-network-wired text-indigo-400"></i> Switch Principal / Core (Distribución MDF)
+            </h3>
+            <span class="text-[10px] font-tech-mono text-indigo-300 font-bold bg-indigo-500/20 border border-indigo-400/30 px-2.5 py-1 rounded">NODO ACTIVO TRONCAL</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs text-white">
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo del Switch Principal (Catálogo Oficial)</label>
+              <select id="mdf_switch_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-indigo-300 mb-1">IP de Gestión del Switch</label>
+              <input type="text" id="mdf_switch_ip" value="192.168.1.2" placeholder="Ej. 192.168.1.2" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-indigo-300 bg-indigo-500/20 outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Capacidad de Puertos</label>
+              <input type="text" id="mdf_switch_puertos" placeholder="Ej. 24 Puertos Gigabit + 2 SFP" class="cyber-input w-full rounded-lg p-2 font-medium outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-indigo-300 mb-1">Puerto de Uplink hacia Router</label>
+              <input type="text" id="mdf_switch_puerto_uplink" placeholder="Ej. Puerto 24 / SFP 1" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-indigo-300 bg-indigo-500/20 outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Presupuesto PoE (Watts)</label>
+              <input type="text" id="mdf_switch_poe" placeholder="Ej. 370W PoE+" class="cyber-input w-full rounded-lg p-2 font-medium outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación en Rack MDF</label>
+              <input type="text" id="mdf_switch_ubicacion" value="Rack Principal (UR Superior)" class="cyber-input w-full rounded-lg p-2 font-medium outline-none">
+            </div>
+
+            <div class="sm:col-span-3 flex flex-wrap items-center gap-3 pt-2">
+              <button type="button" onclick="abrirSelectorFotoGlobal('mdf_switch', 'principal')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                <i class="fa-solid fa-camera text-indigo-400"></i> <span id="btn_txt_foto_mdf">Adjuntar Foto de Switch MDF</span>
+              </button>
+              
+              <div id="preview_mdf_switch_principal" class="flex items-center gap-2"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. INFRAESTRUCTURA DE RACK & TERMINACIONES PASIVAS -->
+        <div class="cyber-glass-card p-6 space-y-5">
+          <div class="flex items-center justify-between border-b border-white/15 pb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+              <i class="fa-solid fa-server text-indigo-400"></i> Gabinete / Rack Principal & Terminaciones Pasivas (MDF)
+            </h3>
+            <span class="text-[10px] font-tech-mono text-indigo-300 font-bold bg-indigo-500/20 border border-indigo-400/30 px-2.5 py-1 rounded">INFRAESTRUCTURA PASIVA</span>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-[11px] font-bold text-white/80 mb-1">Gabinete / Rack Principal de Comunicaciones</label>
+              <select id="mdf_rack_catalogo" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+              </select>
+            </div>
+
+            <div class="cyber-glass-card p-4 space-y-3 bg-white/5">
+              <h4 class="text-[11px] font-bold text-white uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-nodes text-blue-400"></i> Terminaciones Pasivas Globales (Rack)
+              </h4>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-white">
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="col-span-2">
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Chasis Patch Panel</label>
+                    <select id="pasivo_patchpanel_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                      <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                    <input type="number" id="pasivo_cant_patchpanel" min="0" value="1" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="col-span-2">
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Organizador (1UR/2UR)</label>
+                    <select id="pasivo_organizador_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                      <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                    <input type="number" id="pasivo_cant_organizador" min="0" value="1" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="col-span-2">
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Regleta Eléctrica PDU</label>
+                    <select id="pasivo_pdu_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                      <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                    <input type="number" id="pasivo_cant_pdu" min="0" value="1" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. FIBRA ÓPTICA, ENLACES & ACCESORIOS -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="border-b border-white/15 pb-3 flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+              <i class="fa-solid fa-bolt text-amber-400"></i> Fibra Óptica, Enlaces & Accesorios
+            </h3>
+            <span class="text-[10px] font-tech-mono text-amber-300 font-bold bg-amber-500/25 border border-amber-400/30 px-2.5 py-1 rounded">BACKBONE ÓPTICO</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs text-white">
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Tipo de Fibra Óptica (Catálogo)</label>
+                <select id="fibra_cable_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Metros</label>
+                <input type="number" id="fibra_metros_total" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Media Converter (Par / Catálogo)</label>
+                <select id="fibra_mediaconverter_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Pares</label>
+                <input type="number" id="fibra_cant_mediaconverter" min="0" value="1" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+              </div>
+            </div>
+
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Módulos SFP (Catálogo)</label>
+                <select id="fibra_sfp_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="fibra_cant_sfp" min="0" value="1" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+              </div>
+            </div>
+
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Conectores / Empalmes Mecánicos</label>
+                <select id="fibra_conectores_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="fibra_cant_conectores" min="0" value="1" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+              </div>
+            </div>
+
+            <div class="sm:col-span-4 grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <div class="sm:col-span-3">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Accesorios Ópticos (Roseta / Acoplador / Patch Cord)</label>
+                <select id="fibra_accesorios_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="fibra_cant_accesorios" min="0" value="1" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. GESTOR DE SUB-NODOS IDF Y ENLACES TRONCALES -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                <i class="fa-solid fa-sitemap text-indigo-400"></i> Sub-Nodos de Distribución (IDFs) & Troncales
+              </h3>
+              <p class="text-[10px] text-white/70 mt-0.5">Racks secundarios con IP de gestión, UPS, nodo de destino, puerto de uplink y fotografía.</p>
+            </div>
+            <button type="button" onclick="agregarSubnodoIDF()" class="px-4 py-2 rounded-xl btn-glass-action text-white text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 self-start sm:self-auto">
+              <i class="fa-solid fa-plus text-indigo-400 text-xs"></i> <span>Añadir Sub-Nodo IDF</span>
+            </button>
+          </div>
+
+          <div id="subnodos_container" class="space-y-4"></div>
+        </div>
+
+        <!-- 4. EQUIPOS ACTIVOS DE RED -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                <i class="fa-solid fa-microchip text-indigo-400"></i> Equipos Activos de Red Adicionales (APs, Extensores, etc.)
+              </h3>
+              <p class="text-[10px] text-white/70 mt-0.5">Registro avanzado con dirección IP, rol, puertos, presupuesto PoE y ubicación.</p>
+            </div>
+            <button type="button" onclick="agregarEquipoActivo()" class="px-4 py-2 rounded-xl btn-glass-action text-white text-xs font-bold transition shadow-sm flex items-center justify-center gap-2 self-start sm:self-auto">
+              <i class="fa-solid fa-plus text-indigo-400 text-xs"></i> <span>Añadir Equipo Activo</span>
+            </button>
+          </div>
+
+          <div id="equipos_activos_container" class="space-y-4"></div>
+        </div>
+
+        <!-- 5. PUNTOS DE RED DETALLADOS -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                <i class="fa-solid fa-ethernet text-indigo-400"></i> Puntos de Red Detallados (De Dónde a Dónde & Materiales)
+              </h3>
+              <p class="text-[10px] text-white/70 mt-0.5">Ruta de cada punto, metraje, puerto de switch, tipo de servicio y accesorios.</p>
+            </div>
+            <div class="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+              <span id="badge_total_utp_redes" class="text-[10px] font-tech-mono font-bold text-indigo-300 bg-indigo-500/20 border border-indigo-400/30 px-3 py-1.5 rounded-xl">
+                Total UTP: 0 m (+10%)
+              </span>
+              <button type="button" onclick="agregarPuntoRed()" class="px-4 py-2 rounded-xl btn-glass-action text-white text-xs font-bold transition shadow-sm flex items-center justify-center gap-2">
+                <i class="fa-solid fa-plus text-indigo-400 text-xs"></i> <span>Añadir Punto de Red</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="puntos_red_container" class="space-y-4"></div>
+        </div>
+
+        <div class="cyber-glass-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <button onclick="navegarA('inspecciones_index.html')" class="w-full sm:w-auto px-5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-arrow-left text-blue-400"></i> Volver al Dashboard
+          </button>
+          <button onclick="guardarYSalir()" class="w-full sm:w-auto px-7 py-2.5 rounded-xl btn-glass-action bg-indigo-600/60 hover:bg-indigo-600/80 text-white text-xs font-bold transition shadow-md flex items-center justify-center gap-2">
+            <i class="fa-solid fa-floppy-disk text-indigo-300"></i> <span>Guardar & Volver al Panel</span>
+          </button>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticketId = urlParams.get('id');
+
+    let inventarioCatalogo = [];
+    let listaSubnodosIDF = [];
+    let listaEquiposActivos = [];
+    let listaPuntosRed = [];
+    let fotoSwitchMdfBase64 = null;
+
+    function navegarA(pagina) {
+      let url = pagina;
+      if (ticketId) url += '?id=' + ticketId;
+      window.location.href = url;
+    }
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    async function cargarCatalogoPrecios() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('catalogo_precios')
+          .select('*')
+          .order('descripcion');
+
+        if (error) throw error;
+        inventarioCatalogo = data || [];
+        poblarSelectoresCatalogo();
+      } catch (err) {
+        console.error("Error al cargar catalogo_precios:", err);
+      }
+    }
+
+    function poblarSelectoresCatalogo() {
+      const routersFirewalls = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('router') || d.includes('firewall') || d.includes('gateway') || d.includes('edge') || d.includes('firewalla');
+      });
+      llenarSelect('core_router_catalogo', routersFirewalls, 'No Requiere', true);
+
+      const switchesCore = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('switch') || d.includes('omada') || d.includes('unifi');
+      });
+      llenarSelect('mdf_switch_catalogo', switchesCore, 'No Requiere', true);
+
+      const racks = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const esExcluido = d.includes('camara') || d.includes('cámara') || d.includes('switch') || d.includes('regleta') || d.includes('organizador') || d.includes('sirena') || d.includes('tracking');
+        return (d.includes('rack') || d.includes('gabinete')) && !esExcluido;
+      });
+      llenarSelect('mdf_rack_catalogo', racks, 'No Requiere', true);
+
+      const patchPanels = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('patch panel') || d.includes('chasis patch') || d.includes('patchpanel');
+      });
+      llenarSelect('pasivo_patchpanel_catalogo', patchPanels, 'No Requiere', true);
+
+      const organizadores = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('organizador') || d.includes('horizontal');
+      });
+      llenarSelect('pasivo_organizador_catalogo', organizadores, 'No Requiere', true);
+
+      const pdus = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('pdu') || (i.descripcion || '').toLowerCase().includes('regleta rack'));
+      llenarSelect('pasivo_pdu_catalogo', pdus, 'No Requiere', true);
+
+      const fibras = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('fibra') || d.includes('drop') || d.includes('monomodo') || d.includes('multimodo');
+      });
+      llenarSelect('fibra_cable_catalogo', fibras, 'No Requiere', true);
+
+      const mediaConverters = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('media converter') || (i.descripcion || '').toLowerCase().includes('transceptor optico'));
+      llenarSelect('fibra_mediaconverter_catalogo', mediaConverters, 'No Requiere', true);
+
+      const sfps = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('sfp') || (i.descripcion || '').toLowerCase().includes('bidi'));
+      llenarSelect('fibra_sfp_catalogo', sfps, 'No Requiere', true);
+
+      const conectoresOpticos = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('conector rapido') || d.includes('conector óptico') || d.includes('empalme') || d.includes('mecanico');
+      });
+      llenarSelect('fibra_conectores_catalogo', conectoresOpticos, 'No Requiere', true);
+
+      const accesoriosOpt = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('roseta') || d.includes('acoplador') || d.includes('patch cord optico') || d.includes('patch cord fibra') || d.includes('odf');
+      });
+      llenarSelect('fibra_accesorios_catalogo', accesoriosOpt, 'No Requiere', true);
+
+      renderizarSubnodos();
+      renderizarEquiposActivos();
+      renderizarPuntosRed();
+    }
+
+    function llenarSelect(elementId, items, placeholder, incluirNoRequiere = false) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.innerHTML = '';
+
+      if (incluirNoRequiere) {
+        el.innerHTML += `<option value="No Requiere" style="background:#0f172a; color:#fff;">${placeholder}</option>`;
+      } else {
+        el.innerHTML += `<option value="" style="background:#0f172a; color:#fff;">${placeholder}</option>`;
+      }
+
+      items.forEach(item => {
+        const precio = item.pvp_sugerido ? ` ($${Number(item.pvp_sugerido).toFixed(2)})` : '';
+        el.innerHTML += `<option value="${item.id}" data-pvp="${item.pvp_sugerido || 0}" data-desc="${item.descripcion}" style="background:#0f172a; color:#fff;">${item.descripcion}${precio}</option>`;
+      });
+    }
+
+    function agregarSubnodoIDF(datosPrevios = null) {
+      const idx = listaSubnodosIDF.length + 1;
+      const idfUid = 'idf_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+      const idfData = datosPrevios || {
+        uid: idfUid,
+        nombre: `IDF #${idx} (Sub-Rack)`,
+        ubicacion: `Piso ${idx} / Galpón`,
+        switch_catalogo_id: '',
+        switch_descripcion: '',
+        ip_gestion: '192.168.1.251',
+        respaldo_electrico: 'UPS Local 1000VA',
+        nodo_destino_uplink: 'MDF Core Principal',
+        puerto_uplink_destino: 'Puerto 24 / SFP 1',
+        medio_enlace: 'Fibra Óptica (SFP Monomodo)',
+        distancia_troncal_m: 50,
+        canalizacion_troncal: 'Tubería Metálica EMT 1"',
+        rack_catalogo_id: '',
+        foto_base64: null
+      };
+
+      listaSubnodosIDF.push(idfData);
+      renderizarSubnodos();
+      actualizarSelectoresNodosEnPuntos();
+    }
+
+    function eliminarSubnodoIDF(uid) {
+      listaSubnodosIDF = listaSubnodosIDF.filter(i => i.uid !== uid);
+      renderizarSubnodos();
+      actualizarSelectoresNodosEnPuntos();
+    }
+
+    function actualizarNombreIDF(uid, nuevoNombre) {
+      const idf = listaSubnodosIDF.find(i => i.uid === uid);
+      if (idf) {
+        idf.nombre = nuevoNombre;
+        const badge = document.getElementById(`badge_nombre_idf_${uid}`);
+        if (badge) badge.innerText = nuevoNombre;
+      }
+    }
+
+    function renderizarSubnodos() {
+      const container = document.getElementById('subnodos_container');
+      if (listaSubnodosIDF.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-6 text-white/50 font-medium cyber-glass-card border-dashed">
+            <i class="fa-solid fa-sitemap text-2xl mb-1.5 block text-indigo-400"></i>
+            <span>No hay sub-racks IDF configurados aún. La red opera en estrella simple directa al Switch MDF Principal.</span>
+          </div>
+        `;
+        return;
+      }
+
+      const switches = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('switch'));
+      const racks = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const esExcluido = d.includes('camara') || d.includes('cámara') || d.includes('switch') || d.includes('regleta') || d.includes('organizador') || d.includes('sirena') || d.includes('tracking');
+        return (d.includes('rack') || d.includes('gabinete')) && !esExcluido;
+      });
+
+      container.innerHTML = '';
+      listaSubnodosIDF.forEach((idf, index) => {
+        const tarjeta = document.createElement('div');
+        tarjeta.className = 'cyber-glass-card p-5 space-y-4 text-xs transition';
+
+        let opcionesSwitches = `<option value="" style="background:#0f172a; color:#fff;">Seleccionar Switch del Catálogo...</option>`;
+        switches.forEach(s => {
+          const sel = s.id === idf.switch_catalogo_id ? 'selected' : '';
+          opcionesSwitches += `<option value="${s.id}" data-desc="${s.descripcion}" ${sel} style="background:#0f172a; color:#fff;">${s.descripcion} ($${Number(s.pvp_sugerido||0).toFixed(2)})</option>`;
+        });
+
+        let opcionesRacks = `<option value="" style="background:#0f172a; color:#fff;">Gabinete de Pared 4U / 6U / 9U...</option>`;
+        racks.forEach(r => {
+          const sel = r.id === idf.rack_catalogo_id ? 'selected' : '';
+          opcionesRacks += `<option value="${r.id}" ${sel} style="background:#0f172a; color:#fff;">${r.descripcion}</option>`;
+        });
+
+        let opcionesDestinoUplink = `<option value="MDF Core Principal" ${idf.nodo_destino_uplink === 'MDF Core Principal' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Switch Principal (MDF)</option>`;
+        listaSubnodosIDF.forEach(otroIdf => {
+          if (otroIdf.uid !== idf.uid) {
+            const sel = idf.nodo_destino_uplink === otroIdf.uid ? 'selected' : '';
+            opcionesDestinoUplink += `<option value="${otroIdf.uid}" ${sel} style="background:#0f172a; color:#fff;">En Cascada a: ${otroIdf.nombre}</option>`;
+          }
+        });
+
+        tarjeta.innerHTML = `
+          <div class="flex items-center justify-between border-b border-white/15 pb-2.5 flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="font-tech-head font-extrabold text-xs text-white flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-server text-indigo-400"></i>
+                SUB-NODO IDF #${index + 1}
+              </span>
+              <span id="badge_nombre_idf_${idf.uid}" class="text-[9px] font-tech-mono bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-400/30 font-bold">${idf.nombre}</span>
+            </div>
+            <button type="button" onclick="eliminarSubnodoIDF('${idf.uid}')" class="text-xs font-bold text-rose-300 hover:text-rose-200 flex items-center gap-1 transition p-1 rounded hover:bg-white/10">
+              <i class="fa-solid fa-xmark"></i> <span class="hidden sm:inline">Eliminar IDF</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs text-white">
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Nombre / Identificador</label>
+              <input type="text" value="${idf.nombre}" oninput="actualizarNombreIDF('${idf.uid}', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación Física</label>
+              <input type="text" value="${idf.ubicacion}" oninput="actualizarCampoIDF('${idf.uid}', 'ubicacion', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Gabinete / Rack IDF</label>
+              <select onchange="actualizarCampoIDF('${idf.uid}', 'rack_catalogo_id', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                ${opcionesRacks}
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Switch Asignado en IDF</label>
+              <select onchange="seleccionarSwitchIDF('${idf.uid}', this)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                ${opcionesSwitches}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Dirección IP de Gestión</label>
+              <input type="text" value="${idf.ip_gestion || ''}" oninput="actualizarCampoIDF('${idf.uid}', 'ip_gestion', this.value)" placeholder="192.168.1.X" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-blue-300 outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-indigo-300 mb-1 flex items-center gap-1">
+                <i class="fa-solid fa-sitemap"></i> Conectado Hacia (Uplink Destino)
+              </label>
+              <select onchange="actualizarCampoIDF('${idf.uid}', 'nodo_destino_uplink', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white bg-indigo-500/20">
+                ${opcionesDestinoUplink}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-indigo-300 mb-1 flex items-center gap-1">
+                <i class="fa-solid fa-plug"></i> Puerto en Dispositivo Superior (Uplink)
+              </label>
+              <input type="text" value="${idf.puerto_uplink_destino || ''}" oninput="actualizarCampoIDF('${idf.uid}', 'puerto_uplink_destino', this.value)" placeholder="Ej. Puerto 24 / SFP 1" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-indigo-300 bg-indigo-500/20 outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-indigo-300 mb-1 flex items-center gap-1">
+                <i class="fa-solid fa-link"></i> Medio de Enlace Troncal
+              </label>
+              <select onchange="actualizarCampoIDF('${idf.uid}', 'medio_enlace', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white bg-indigo-500/20">
+                <option value="Fibra Óptica (SFP Monomodo)" ${idf.medio_enlace === 'Fibra Óptica (SFP Monomodo)' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Fibra Óptica (SFP Monomodo)</option>
+                <option value="Fibra Óptica (BiDi 1 Hilo)" ${idf.medio_enlace === 'Fibra Óptica (BiDi 1 Hilo)' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Fibra Óptica (BiDi 1 Hilo)</option>
+                <option value="Cable UTP Cat 6 Exterior" ${idf.medio_enlace === 'Cable UTP Cat 6 Exterior' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Cable UTP Cat 6 Exterior</option>
+                <option value="Radioenlace Punto a Punto (5 GHz)" ${idf.medio_enlace === 'Radioenlace Punto a Punto (5 GHz)' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Radioenlace PtP (5 GHz)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Distancia Troncal (m)</label>
+              <input type="number" min="0" value="${idf.distancia_troncal_m}" oninput="actualizarCampoIDF('${idf.uid}', 'distancia_troncal_m', parseFloat(this.value)||0)" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Respaldo Eléctrico (UPS / Regleta)</label>
+              <input type="text" value="${idf.respaldo_electrico || ''}" oninput="actualizarCampoIDF('${idf.uid}', 'respaldo_electrico', this.value)" placeholder="UPS Local 1000VA" class="cyber-input w-full rounded-lg p-2 font-medium outline-none">
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Canalización Troncal</label>
+              <select onchange="actualizarCampoIDF('${idf.uid}', 'canalizacion_troncal', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="Tubería Metálica EMT 1&quot;" ${idf.canalizacion_troncal === 'Tubería Metálica EMT 1"' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Tubería Metálica EMT 1"</option>
+                <option value="Tubería EMT 3/4&quot;" ${idf.canalizacion_troncal === 'Tubería EMT 3/4"' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Tubería EMT 3/4"</option>
+                <option value="Tubería PVC Conduit Subterránea" ${idf.canalizacion_troncal === 'Tubería PVC Conduit Subterránea' ? 'selected' : ''} style="background:#0f172a; color:#fff;">PVC Conduit Subterránea</option>
+                <option value="Aéreo con Guaya de Acero Tensora" ${idf.canalizacion_troncal === 'Aéreo con Guaya de Acero Tensora' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Aéreo con Guaya Tensora</option>
+                <option value="Escalerilla Portacables" ${idf.canalizacion_troncal === 'Escalerilla Portacables' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Escalerilla Portacables</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-3 flex flex-wrap items-center gap-3 pt-2 border-t border-white/15">
+              <button type="button" onclick="abrirSelectorFotoGlobal('idf', '${idf.uid}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                <i class="fa-solid fa-camera text-indigo-400"></i> <span>${idf.foto_base64 ? 'Cambiar Foto IDF' : 'Adjuntar Foto de Ubicación IDF'}</span>
+              </button>
+              
+              <div id="preview_idf_${idf.uid}" class="flex items-center gap-2">
+                ${idf.foto_base64 ? `
+                  <div class="relative group">
+                    <img src="${idf.foto_base64}" onclick="abrirLightboxGlobal('${idf.foto_base64}', '${idf.nombre}')" class="h-10 w-10 rounded-lg object-cover border-2 border-indigo-400 shadow-sm cursor-zoom-in">
+                    <button type="button" onclick="eliminarFotoGlobal('idf', '${idf.uid}')" class="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px]">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <span class="text-[10px] text-emerald-300 font-bold font-tech-mono">Foto IDF adjunta</span>
+                ` : '<span class="text-[10px] text-white/50 italic">Sin fotografía de espacio IDF</span>'}
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(tarjeta);
+      });
+    }
+
+    function seleccionarSwitchIDF(uid, selectEl) {
+      const selectedOption = selectEl.options[selectEl.selectedIndex];
+      const desc = selectedOption.getAttribute('data-desc') || '';
+      const idf = listaSubnodosIDF.find(i => i.uid === uid);
+      if (idf) {
+        idf.switch_catalogo_id = selectEl.value;
+        idf.switch_descripcion = desc;
+      }
+    }
+
+    function actualizarCampoIDF(uid, campo, valor) {
+      const idf = listaSubnodosIDF.find(i => i.uid === uid);
+      if (idf) {
+        idf[campo] = valor;
+        actualizarSelectoresNodosEnPuntos();
+      }
+    }
+
+    function actualizarSelectoresNodosEnPuntos() {
+      renderizarPuntosRed();
+    }
+
+    function agregarEquipoActivo(datosPrevios = null) {
+      const idx = listaEquiposActivos.length + 1;
+      const eqUid = 'eq_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+      const eqData = datosPrevios || {
+        uid: eqUid,
+        item_catalogo_id: '',
+        descripcion: '',
+        cantidad: 1,
+        rol_red: 'Access Point Wi-Fi',
+        ip_gestion: '192.168.1.250',
+        puertos: '1 Puerto Gigabit PoE',
+        poe_watts: 'IEEE 802.3af',
+        ubicacion: `Oficina #${idx}`,
+        foto_base64: null
+      };
+
+      listaEquiposActivos.push(eqData);
+      renderizarEquiposActivos();
+    }
+
+    function eliminarEquipoActivo(uid) {
+      listaEquiposActivos = listaEquiposActivos.filter(e => e.uid !== uid);
+      renderizarEquiposActivos();
+    }
+
+    function renderizarEquiposActivos() {
+      const container = document.getElementById('equipos_activos_container');
+      if (listaEquiposActivos.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-6 text-white/50 font-medium cyber-glass-card border-dashed">
+            <i class="fa-solid fa-microchip text-2xl mb-1.5 block text-indigo-400"></i>
+            <span>No hay equipos activos adicionales añadidos. Haz clic en "+ Añadir Equipo Activo" para registrar Access Points, extensores, etc.</span>
+          </div>
+        `;
+        return;
+      }
+
+      const equipos = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('access point') || d.includes('omada') || d.includes('unifi') || d.includes('repetidor') || d.includes('inyector') || d.includes('router');
+      });
+
+      container.innerHTML = '';
+      listaEquiposActivos.forEach((eq, index) => {
+        const tarjeta = document.createElement('div');
+        tarjeta.className = 'cyber-glass-card p-5 space-y-4 text-xs transition';
+
+        let opciones = `<option value="" style="background:#0f172a; color:#fff;">Seleccionar Equipo Activo del Catálogo...</option>`;
+        equipos.forEach(item => {
+          const sel = item.id === eq.item_catalogo_id ? 'selected' : '';
+          opciones += `<option value="${item.id}" data-desc="${item.descripcion}" ${sel} style="background:#0f172a; color:#fff;">${item.descripcion} ($${Number(item.pvp_sugerido||0).toFixed(2)})</option>`;
+        });
+
+        tarjeta.innerHTML = `
+          <div class="flex items-center justify-between border-b border-white/15 pb-2.5 flex-wrap gap-2">
+            <span class="font-tech-head font-bold text-xs text-white flex items-center gap-1.5">
+              <i class="fa-solid fa-microchip text-blue-400"></i> EQUIPO ACTIVO ADICIONAL #${index + 1}
+            </span>
+            <button type="button" onclick="eliminarEquipoActivo('${eq.uid}')" class="text-xs font-bold text-rose-300 hover:text-rose-200 flex items-center gap-1 transition p-1 rounded hover:bg-white/10">
+              <i class="fa-solid fa-xmark"></i> <span>Eliminar</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-white">
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo del Catálogo Oficial</label>
+              <select onchange="seleccionarModeloEquipoActivo('${eq.uid}', this)" class="cyber-input w-full rounded-lg p-2.5 font-medium">
+                ${opciones}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Cantidad</label>
+              <input type="number" min="1" value="${eq.cantidad}" oninput="actualizarCampoEquipo('${eq.uid}', 'cantidad', parseInt(this.value)||1)" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Rol / Jerarquía en Red</label>
+              <select onchange="actualizarCampoEquipo('${eq.uid}', 'rol_red', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white bg-blue-500/20">
+                <option value="Access Point Wi-Fi" ${eq.rol_red === 'Access Point Wi-Fi' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Access Point Wi-Fi</option>
+                <option value="Router / Extensor Inalámbrico" ${eq.rol_red === 'Router / Extensor Inalámbrico' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Router / Extensor Inalámbrico</option>
+                <option value="Inyector PoE Local" ${eq.rol_red === 'Inyector PoE Local' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Inyector PoE Local</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Dirección IP de Gestión</label>
+              <input type="text" value="${eq.ip_gestion}" oninput="actualizarCampoEquipo('${eq.uid}', 'ip_gestion', this.value)" placeholder="192.168.1.X" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-blue-300 outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Capacidad de Puertos</label>
+              <input type="text" value="${eq.puertos}" oninput="actualizarCampoEquipo('${eq.uid}', 'puertos', this.value)" placeholder="1 Puerto Gigabit" class="cyber-input w-full rounded-lg p-2 font-medium outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Presupuesto PoE (Watts)</label>
+              <input type="text" value="${eq.poe_watts}" oninput="actualizarCampoEquipo('${eq.uid}', 'poe_watts', this.value)" placeholder="802.3af" class="cyber-input w-full rounded-lg p-2 font-medium outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación Física</label>
+              <input type="text" value="${eq.ubicacion}" oninput="actualizarCampoEquipo('${eq.uid}', 'ubicacion', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium outline-none">
+            </div>
+
+            <div class="sm:col-span-4 flex flex-wrap items-center gap-3 pt-2 border-t border-white/15">
+              <button type="button" onclick="abrirSelectorFotoGlobal('eq', '${eq.uid}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                <i class="fa-solid fa-camera text-blue-400"></i> <span>${eq.foto_base64 ? 'Cambiar Foto' : 'Adjuntar Foto de Equipo'}</span>
+              </button>
+              
+              <div id="preview_eq_${eq.uid}" class="flex items-center gap-2">
+                ${eq.foto_base64 ? `
+                  <div class="relative group">
+                    <img src="${eq.foto_base64}" onclick="abrirLightboxGlobal('${eq.foto_base64}', '${eq.ubicacion}')" class="h-10 w-10 rounded-lg object-cover border-2 border-blue-400 shadow-sm cursor-zoom-in">
+                    <button type="button" onclick="eliminarFotoGlobal('eq', '${eq.uid}')" class="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px]">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <span class="text-[10px] text-emerald-300 font-bold font-tech-mono">Foto adjunta</span>
+                ` : '<span class="text-[10px] text-white/50 italic">Sin fotografía de equipo</span>'}
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(tarjeta);
+      });
+    }
+
+    function seleccionarModeloEquipoActivo(uid, selectEl) {
+      const selectedOption = selectEl.options[selectEl.selectedIndex];
+      const desc = selectedOption.getAttribute('data-desc') || '';
+      const eq = listaEquiposActivos.find(e => e.uid === uid);
+      if (eq) {
+        eq.item_catalogo_id = selectEl.value;
+        eq.descripcion = desc;
+      }
+    }
+
+    function actualizarCampoEquipo(uid, campo, valor) {
+      const eq = listaEquiposActivos.find(e => e.uid === uid);
+      if (eq) eq[campo] = valor;
+    }
+
+    function agregarPuntoRed(datosPrevios = null) {
+      const idx = listaPuntosRed.length + 1;
+      const ptUid = 'pt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+      const nodoDefault = 'MDF';
+      const puntosEnMDF = listaPuntosRed.filter(p => (p.nodo_origen || 'MDF') === nodoDefault).length;
+      const puertoSugerido = `Puerto #${puntosEnMDF + 1}`;
+
+      const ptData = datosPrevios || {
+        uid: ptUid,
+        ruta: `Rack a Oficina #${idx}`,
+        etiqueta_faceplate: `TO-P2-0${idx}`,
+        estado_obra: 'Propuesto',
+        nodo_origen: nodoDefault,
+        puerto_switch: puertoSugerido,
+        tipo_servicio: 'Datos LAN (PC / IP)',
+        cable_catalogo_id: '',
+        metros_10: 25,
+        jack_catalogo_id: '',
+        jack_rack: 'Sí (1 Jack)',
+        jack_usuario: 'Sí (1 Jack)',
+        caja_sobrepuesta: 'Sin Caja Sobrepuesta',
+        faceplate: 'Sí (1 Placa)',
+        foto_base64: null
+      };
+
+      listaPuntosRed.push(ptData);
+      renderizarPuntosRed();
+    }
+
+    function eliminarPuntoRed(uid) {
+      listaPuntosRed = listaPuntosRed.filter(p => p.uid !== uid);
+      renderizarPuntosRed();
+    }
+
+    function calcularMetrajeTotalUTPRedes() {
+      const sumaMetros = listaPuntosRed.reduce((acc, curr) => acc + (parseFloat(curr.metros_10) || 0), 0);
+      const conHolgura = Math.ceil(sumaMetros * 1.10);
+      const badge = document.getElementById('badge_total_utp_redes');
+      if (badge) badge.innerText = `Total UTP: ${conHolgura} m (+10%)`;
+    }
+
+    function cambiarNodoOrigenPunto(uid, nuevoNodoOrigen) {
+      const pt = listaPuntosRed.find(p => p.uid === uid);
+      if (!pt) return;
+
+      pt.nodo_origen = nuevoNodoOrigen;
+      const puntosEnEsteNodo = listaPuntosRed.filter(p => p.nodo_origen === nuevoNodoOrigen).length;
+      pt.puerto_switch = `Puerto #${puntosEnEsteNodo}`;
+
+      renderizarPuntosRed();
+    }
+
+    function renderizarPuntosRed() {
+      const container = document.getElementById('puntos_red_container');
+      calcularMetrajeTotalUTPRedes();
+
+      if (listaPuntosRed.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-6 text-white/50 font-medium cyber-glass-card border-dashed">
+            <i class="fa-solid fa-ethernet text-2xl mb-1.5 block text-indigo-400"></i>
+            <span>No hay puntos de red levantados. Haz clic en "+ Añadir Punto de Red" para registrar rutas y materiales.</span>
+          </div>
+        `;
+        return;
+      }
+
+      const cables = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('utp') || d.includes('ftp') || d.includes('cable');
+      });
+
+      const jacks = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('jack') || d.includes('keystone') || d.includes('conector');
+      });
+
+      container.innerHTML = '';
+      listaPuntosRed.forEach((pt, index) => {
+        const tarjeta = document.createElement('div');
+        tarjeta.className = 'cyber-glass-card p-5 space-y-3.5 text-xs transition';
+
+        let opcionesCables = `<option value="" style="background:#0f172a; color:#fff;">Seleccionar Cable UTP del Catálogo...</option>`;
+        cables.forEach(c => {
+          const sel = c.id === pt.cable_catalogo_id ? 'selected' : '';
+          opcionesCables += `<option value="${c.id}" ${sel} style="background:#0f172a; color:#fff;">${c.descripcion}</option>`;
+        });
+
+        let opcionesJacks = `<option value="" style="background:#0f172a; color:#fff;">Seleccionar Modelo de Jack RJ45...</option>`;
+        jacks.forEach(j => {
+          const sel = j.id === pt.jack_catalogo_id ? 'selected' : '';
+          opcionesJacks += `<option value="${j.id}" ${sel} style="background:#0f172a; color:#fff;">${j.descripcion}</option>`;
+        });
+
+        let opcionesNodos = `<option value="MDF" ${pt.nodo_origen === 'MDF' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Switch Principal (MDF)</option>`;
+        listaSubnodosIDF.forEach(idf => {
+          const sel = pt.nodo_origen === idf.uid ? 'selected' : '';
+          opcionesNodos += `<option value="${idf.uid}" ${sel} style="background:#0f172a; color:#fff;">${idf.nombre} (${idf.ubicacion})</option>`;
+        });
+
+        tarjeta.innerHTML = `
+          <div class="flex items-center justify-between border-b border-white/15 pb-2 flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span class="font-tech-head font-bold text-xs text-white flex items-center gap-1.5">
+                <i class="fa-solid fa-location-crosshairs text-indigo-400"></i> PUNTO DE RED #${index + 1}
+              </span>
+              <span class="text-[9px] font-tech-mono bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-400/30 font-bold">Faceplate: ${pt.etiqueta_faceplate || 'Sin Etiqueta'}</span>
+            </div>
+            <button type="button" onclick="eliminarPuntoRed('${pt.uid}')" class="text-xs font-bold text-rose-300 hover:text-rose-200 flex items-center gap-1 transition p-1 rounded hover:bg-white/10">
+              <i class="fa-solid fa-xmark"></i> <span class="hidden sm:inline">Eliminar</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs pb-3 border-b border-white/15 bg-white/5 p-3 rounded-xl text-white">
+            <div>
+              <label class="block text-[10px] font-bold text-indigo-300 mb-1"><i class="fa-solid fa-tag mr-1"></i> Etiqueta Definitiva (Faceplate)</label>
+              <input type="text" value="${pt.etiqueta_faceplate || ''}" oninput="actualizarCampoPunto('${pt.uid}', 'etiqueta_faceplate', this.value)" placeholder="Ej. TO-P2-04" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-indigo-200 bg-white/10 outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-indigo-300 mb-1"><i class="fa-solid fa-circle-nodes mr-1"></i> Estado de Obra (Ciclo de Vida)</label>
+              <select onchange="actualizarCampoPunto('${pt.uid}', 'estado_obra', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold ${pt.estado_obra === 'Operativo' ? 'text-emerald-300 bg-emerald-500/20' : pt.estado_obra === 'Cableado' ? 'text-amber-300 bg-amber-500/20' : 'text-white bg-white/10'}">
+                <option value="Propuesto" ${pt.estado_obra === 'Propuesto' ? 'selected' : ''} style="background:#0f172a; color:#fff;">🟡 Propuesto</option>
+                <option value="Cableado" ${pt.estado_obra === 'Cableado' ? 'selected' : ''} style="background:#0f172a; color:#fff;">🟠 Cableado (Tendido)</option>
+                <option value="Operativo" ${pt.estado_obra === 'Operativo' ? 'selected' : ''} style="background:#0f172a; color:#fff;">🟢 Operativo (Certificado)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs pt-1 text-white">
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">De Dónde a Dónde (Ruta / Ubicación)</label>
+              <input type="text" value="${pt.ruta}" oninput="actualizarCampoPunto('${pt.uid}', 'ruta', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Tipo de Servicio</label>
+              <select onchange="actualizarCampoPunto('${pt.uid}', 'tipo_servicio', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white bg-indigo-500/20">
+                <option value="Datos LAN (PC / IP)" ${pt.tipo_servicio === 'Datos LAN (PC / IP)' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Datos LAN (PC / IP)</option>
+                <option value="Voz IP / Telefonía" ${pt.tipo_servicio === 'Voz IP / Telefonía' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Voz IP / Telefonía</option>
+                <option value="Impresión / IoT / Periférico" ${pt.tipo_servicio === 'Impresión / IoT / Periférico' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Impresión / IoT / Periférico</option>
+                <option value="Enlace de Red / Trunk" ${pt.tipo_servicio === 'Enlace de Red / Trunk' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Enlace de Red / Trunk</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Nodo / Switch de Origen</label>
+              <select onchange="cambiarNodoOrigenPunto('${pt.uid}', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white bg-indigo-500/20">
+                ${opcionesNodos}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Puerto / Canal Switch</label>
+              <input type="text" value="${pt.puerto_switch || ''}" oninput="actualizarCampoPunto('${pt.uid}', 'puerto_switch', this.value)" placeholder="Ej. Puerto #1" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-indigo-300 bg-indigo-500/20 outline-none">
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Tipo de Cable UTP (Catálogo)</label>
+              <select onchange="actualizarCampoPunto('${pt.uid}', 'cable_catalogo_id', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                ${opcionesCables}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Metros Reales</label>
+              <input type="number" min="0" value="${pt.metros_10}" oninput="actualizarCampoPunto('${pt.uid}', 'metros_10', parseFloat(this.value)||0); calcularMetrajeTotalUTPRedes();" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">1. Modelo Jack</label>
+              <select onchange="actualizarCampoPunto('${pt.uid}', 'jack_catalogo_id', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                ${opcionesJacks}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">2. Jack Rack</label>
+              <select onchange="actualizarCampoPunto('${pt.uid}', 'jack_rack', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="Sí (1 Jack)" ${pt.jack_rack === 'Sí (1 Jack)' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Sí (1 Jack)</option>
+                <option value="No" ${pt.jack_rack === 'No' ? 'selected' : ''} style="background:#0f172a; color:#fff;">No</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">3. Jack Usuario</label>
+              <select onchange="actualizarCampoPunto('${pt.uid}', 'jack_usuario', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="Sí (1 Jack)" ${pt.jack_usuario === 'Sí (1 Jack)' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Sí (1 Jack)</option>
+                <option value="No" ${pt.jack_usuario === 'No' ? 'selected' : ''} style="background:#0f172a; color:#fff;">No</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Caja Sobrepuesta</label>
+              <select onchange="actualizarCampoPunto('${pt.uid}', 'caja_sobrepuesta', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="Sin Caja Sobrepuesta" ${pt.caja_sobrepuesta === 'Sin Caja Sobrepuesta' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Sin Caja Sobrepuesta</option>
+                <option value="Caja Superficial 2x4 Plástica" ${pt.caja_sobrepuesta === 'Caja Superficial 2x4 Plástica' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Caja Superficial 2x4 Plástica</option>
+                <option value="Caja Metálica Cuadrada 4x4" ${pt.caja_sobrepuesta === 'Caja Metálica Cuadrada 4x4' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Caja Metálica Cuadrada 4x4</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Faceplate</label>
+              <select onchange="actualizarCampoPunto('${pt.uid}', 'faceplate', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="Sí (1 Placa)" ${pt.faceplate === 'Sí (1 Placa)' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Sí (1 Placa)</option>
+                <option value="Sí (Placa Doble 2 Puertos)" ${pt.faceplate === 'Sí (Placa Doble 2 Puertos)' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Sí (Placa Doble 2 Puertos)</option>
+                <option value="No Requiere" ${pt.faceplate === 'No Requiere' ? 'selected' : ''} style="background:#0f172a; color:#fff;">No Requiere</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-4 flex flex-wrap items-center gap-3 pt-2 border-t border-white/15">
+              <button type="button" onclick="abrirSelectorFotoGlobal('pt', '${pt.uid}')" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                <i class="fa-solid fa-camera text-indigo-400"></i> <span>${pt.foto_base64 ? 'Cambiar Foto' : 'Adjuntar Foto de Ruta'}</span>
+              </button>
+              
+              <div id="preview_pt_${pt.uid}" class="flex items-center gap-2">
+                ${pt.foto_base64 ? `
+                  <div class="relative group">
+                    <img src="${pt.foto_base64}" onclick="abrirLightboxGlobal('${pt.foto_base64}', '${pt.ruta}')" class="h-10 w-10 rounded-lg object-cover border-2 border-indigo-400 shadow-sm cursor-zoom-in">
+                    <button type="button" onclick="eliminarFotoGlobal('pt', '${pt.uid}')" class="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px]">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <span class="text-[10px] text-emerald-300 font-bold font-tech-mono">Foto de ruta adjunta</span>
+                ` : '<span class="text-[10px] text-white/50 italic">Sin fotografía de ruta</span>'}
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(tarjeta);
+      });
+    }
+
+    function actualizarCampoPunto(uid, campo, valor) {
+      const pt = listaPuntosRed.find(p => p.uid === uid);
+      if (pt) pt[campo] = valor;
+    }
+
+    let tipoFotoGlobal = null;
+    let uidFotoGlobal = null;
+
+    function abrirSelectorFotoGlobal(tipo, uid) {
+      tipoFotoGlobal = tipo;
+      uidFotoGlobal = uid;
+      document.getElementById('modal_origen_foto').classList.remove('hidden');
+    }
+
+    function cerrarSelectorFoto() {
+      document.getElementById('modal_origen_foto').classList.add('hidden');
+      document.getElementById('input_camara_directa').value = '';
+      document.getElementById('input_galeria_directa').value = '';
+    }
+
+    function procesarFotoDesdeModal(e) {
+      if (!tipoFotoGlobal || !uidFotoGlobal) return;
+      const archivoSeleccionado = e.target.files[0];
+      if (!archivoSeleccionado) return;
+
+      const t = tipoFotoGlobal;
+      const u = uidFotoGlobal;
+      
+      cerrarSelectorFoto();
+      comprimirYSubirArchivoDirecto(archivoSeleccionado, t, u);
+    }
+
+    function comprimirYSubirArchivoDirecto(file, tipo, uid) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const maxDimension = 900;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxDimension) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            }
+          } else {
+            if (height > maxDimension) {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const base64Comprimido = canvas.toDataURL('image/jpeg', 0.65);
+
+          if (tipo === 'mdf_switch') {
+            fotoSwitchMdfBase64 = base64Comprimido;
+            renderizarPreviewFotoMdfSwitch();
+          } else if (tipo === 'eq') {
+            const eq = listaEquiposActivos.find(x => x.uid === uid);
+            if (eq) eq.foto_base64 = base64Comprimido;
+            renderizarEquiposActivos();
+          } else if (tipo === 'pt') {
+            const pt = listaPuntosRed.find(x => x.uid === uid);
+            if (pt) pt.foto_base64 = base64Comprimido;
+            renderizarPuntosRed();
+          } else if (tipo === 'idf') {
+            const idf = listaSubnodosIDF.find(x => x.uid === uid);
+            if (idf) idf.foto_base64 = base64Comprimido;
+            renderizarSubnodos();
+          }
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderizarPreviewFotoMdfSwitch() {
+      const container = document.getElementById('preview_mdf_switch_principal');
+      const btnTxt = document.getElementById('btn_txt_foto_mdf');
+      if (!container) return;
+
+      if (fotoSwitchMdfBase64) {
+        btnTxt.innerText = 'Cambiar Foto Switch MDF';
+        container.innerHTML = `
+          <div class="relative group">
+            <img src="${fotoSwitchMdfBase64}" onclick="abrirLightboxGlobal('${fotoSwitchMdfBase64}', 'Switch Principal MDF')" class="h-10 w-10 rounded-lg object-cover border-2 border-indigo-400 shadow-sm cursor-zoom-in">
+            <button type="button" onclick="eliminarFotoMdfSwitch()" class="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px]">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <span class="text-[10px] text-emerald-300 font-bold font-tech-mono">Foto adjunta</span>
+        `;
+      } else {
+        btnTxt.innerText = 'Adjuntar Foto de Switch MDF';
+        container.innerHTML = `<span class="text-[10px] text-white/50 italic">Sin fotografía de switch MDF</span>`;
+      }
+    }
+
+    function eliminarFotoMdfSwitch() {
+      fotoSwitchMdfBase64 = null;
+      renderizarPreviewFotoMdfSwitch();
+    }
+
+    function eliminarFotoGlobal(tipo, uid) {
+      if (tipo === 'eq') {
+        const eq = listaEquiposActivos.find(x => x.uid === uid);
+        if (eq) eq.foto_base64 = null;
+        renderizarEquiposActivos();
+      } else if (tipo === 'pt') {
+        const pt = listaPuntosRed.find(x => x.uid === uid);
+        if (pt) pt.foto_base64 = null;
+        renderizarPuntosRed();
+      } else if (tipo === 'idf') {
+        const idf = listaSubnodosIDF.find(x => x.uid === uid);
+        if (idf) idf.foto_base64 = null;
+        renderizarSubnodos();
+      }
+    }
+
+    function abrirLightboxGlobal(base64, titulo) {
+      document.getElementById('lightbox_img').src = base64;
+      document.getElementById('lightbox_titulo').innerText = titulo || 'Evidencia Visual';
+      document.getElementById('modal_lightbox').classList.remove('hidden');
+    }
+
+    function cerrarLightbox() {
+      document.getElementById('modal_lightbox').classList.add('hidden');
+      document.getElementById('lightbox_img').src = '';
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.body.classList.add('session-checked');
+      if (ticketId) {
+        document.getElementById('label_id_ticket').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+      } else {
+        document.getElementById('label_id_ticket').innerText = "# NUEVO";
+      }
+
+      await cargarCatalogoPrecios();
+
+      if (supabaseClient && ticketId) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('inspeccion_redes')
+            .select('*')
+            .eq('ticket_id', ticketId)
+            .single();
+
+          if (data && !error) {
+            document.getElementById('core_router_catalogo').value = data.core_router_catalogo_id || 'No Requiere';
+            document.getElementById('core_ip_gateway').value = data.core_ip_gateway || '192.168.1.1';
+            document.getElementById('core_isp').value = data.core_isp || '';
+            document.getElementById('core_tipo_wan').value = data.core_tipo_wan || 'IP Estática (Fija)';
+            document.getElementById('core_modo_operacion').value = data.core_modo_operacion || 'Router / Gateway Borde Principal';
+            document.getElementById('core_vlans').value = data.core_vlans || '';
+            document.getElementById('core_puerto_uplink').value = data.core_puerto_uplink || '';
+
+            document.getElementById('mdf_switch_catalogo').value = data.mdf_switch_catalogo_id || 'No Requiere';
+            document.getElementById('mdf_switch_ip').value = data.mdf_switch_ip || '192.168.1.2';
+            document.getElementById('mdf_switch_puertos').value = data.mdf_switch_puertos || '';
+            document.getElementById('mdf_switch_puerto_uplink').value = data.mdf_switch_puerto_uplink || '';
+            document.getElementById('mdf_switch_poe').value = data.mdf_switch_poe || '';
+            document.getElementById('mdf_switch_ubicacion').value = data.mdf_switch_ubicacion || '';
+            fotoSwitchMdfBase64 = data.foto_switch_mdf_base64 || null;
+            renderizarPreviewFotoMdfSwitch();
+
+            document.getElementById('mdf_rack_catalogo').value = data.mdf_rack_catalogo_id || 'No Requiere';
+            document.getElementById('pasivo_patchpanel_catalogo').value = data.patchpanel_catalogo_id || 'No Requiere';
+            document.getElementById('pasivo_cant_patchpanel').value = data.cant_patchpanel || 1;
+            document.getElementById('pasivo_organizador_catalogo').value = data.organizador_catalogo_id || 'No Requiere';
+            document.getElementById('pasivo_cant_organizador').value = data.cant_organizador || 1;
+            document.getElementById('pasivo_pdu_catalogo').value = data.pdu_catalogo_id || 'No Requiere';
+            document.getElementById('pasivo_cant_pdu').value = data.cant_pdu || 1;
+
+            document.getElementById('fibra_cable_catalogo').value = data.fibra_cable_catalogo_id || 'No Requiere';
+            document.getElementById('fibra_metros_total').value = data.fibra_metros_total || 0;
+            document.getElementById('fibra_mediaconverter_catalogo').value = data.fibra_mediaconverter_catalogo_id || 'No Requiere';
+            document.getElementById('fibra_cant_mediaconverter').value = data.fibra_cant_mediaconverter || 1;
+            document.getElementById('fibra_sfp_catalogo').value = data.fibra_sfp_catalogo_id || 'No Requiere';
+            document.getElementById('fibra_cant_sfp').value = data.fibra_cant_sfp || 1;
+            document.getElementById('fibra_conectores_catalogo').value = data.fibra_conectores_catalogo_id || 'No Requiere';
+            document.getElementById('fibra_cant_conectores').value = data.fibra_cant_conectores || 1;
+            document.getElementById('fibra_accesorios_catalogo').value = data.fibra_accesorios_catalogo_id || 'No Requiere';
+            document.getElementById('fibra_cant_accesorios').value = data.fibra_cant_accesorios || 1;
+
+            if (data.subnodos_idf && Array.isArray(data.subnodos_idf)) {
+              listaSubnodosIDF = data.subnodos_idf;
+              renderizarSubnodos();
+            }
+
+            if (data.equipos_activos && Array.isArray(data.equipos_activos)) {
+              listaEquiposActivos = data.equipos_activos;
+              renderizarEquiposActivos();
+            }
+
+            if (data.puntos_red && Array.isArray(data.puntos_red)) {
+              listaPuntosRed = data.puntos_red;
+              renderizarPuntosRed();
+            }
+          }
+        } catch (err) {
+          console.error("Error restaurando inspeccion_redes:", err);
+        }
+      }
+    });
+
+    async function guardarModuloRedes() {
+      const btn = document.getElementById('btn_guardar_cloud');
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`;
+
+      const redesData = {
+        ticket_id: ticketId || null,
+        core_router_catalogo_id: document.getElementById('core_router_catalogo').value,
+        core_ip_gateway: document.getElementById('core_ip_gateway').value,
+        core_isp: document.getElementById('core_isp').value,
+        core_tipo_wan: document.getElementById('core_tipo_wan').value,
+        core_modo_operacion: document.getElementById('core_modo_operacion').value,
+        core_vlans: document.getElementById('core_vlans').value,
+        core_puerto_uplink: document.getElementById('core_puerto_uplink').value,
+
+        mdf_switch_catalogo_id: document.getElementById('mdf_switch_catalogo').value,
+        mdf_switch_ip: document.getElementById('mdf_switch_ip').value,
+        mdf_switch_puertos: document.getElementById('mdf_switch_puertos').value,
+        mdf_switch_puerto_uplink: document.getElementById('mdf_switch_puerto_uplink').value,
+        mdf_switch_poe: document.getElementById('mdf_switch_poe').value,
+        mdf_switch_ubicacion: document.getElementById('mdf_switch_ubicacion').value,
+        foto_switch_mdf_base64: fotoSwitchMdfBase64,
+
+        mdf_rack_catalogo_id: document.getElementById('mdf_rack_catalogo').value,
+        patchpanel_catalogo_id: document.getElementById('pasivo_patchpanel_catalogo').value,
+        cant_patchpanel: parseInt(document.getElementById('pasivo_cant_patchpanel').value) || 0,
+        organizador_catalogo_id: document.getElementById('pasivo_organizador_catalogo').value,
+        cant_organizador: parseInt(document.getElementById('pasivo_cant_organizador').value) || 0,
+        pdu_catalogo_id: document.getElementById('pasivo_pdu_catalogo').value,
+        cant_pdu: parseInt(document.getElementById('pasivo_cant_pdu').value) || 0,
+
+        fibra_cable_catalogo_id: document.getElementById('fibra_cable_catalogo').value,
+        fibra_metros_total: parseFloat(document.getElementById('fibra_metros_total').value) || 0,
+        fibra_mediaconverter_catalogo_id: document.getElementById('fibra_mediaconverter_catalogo').value,
+        fibra_cant_mediaconverter: parseInt(document.getElementById('fibra_cant_mediaconverter').value) || 0,
+        fibra_sfp_catalogo_id: document.getElementById('fibra_sfp_catalogo').value,
+        fibra_cant_sfp: parseInt(document.getElementById('fibra_cant_sfp').value) || 0,
+        fibra_conectores_catalogo_id: document.getElementById('fibra_conectores_catalogo').value,
+        fibra_cant_conectores: parseInt(document.getElementById('fibra_cant_conectores').value) || 0,
+        fibra_accesorios_catalogo_id: document.getElementById('fibra_accesorios_catalogo').value,
+        fibra_cant_accesorios: parseInt(document.getElementById('fibra_cant_accesorios').value) || 0,
+
+        subnodos_idf: listaSubnodosIDF,
+        total_subnodos: listaSubnodosIDF.length,
+        equipos_activos: listaEquiposActivos,
+        total_equipos_activos: listaEquiposActivos.length,
+        puntos_red: listaPuntosRed,
+        cant_puntos_datos: listaPuntosRed.length,
+
+        updated_at: new Date().toISOString()
+      };
+
+      if (supabaseClient && ticketId) {
+        try {
+          const { error } = await supabaseClient
+            .from('inspeccion_redes')
+            .upsert(redesData, { onConflict: 'ticket_id' });
+
+          if (error) {
+            console.error("Error de Supabase al guardar redes:", error);
+            alert("Error al guardar en la base de datos: " + error.message);
+            btn.innerHTML = orig;
+            return false;
+          }
+        } catch (err) {
+          console.error("Excepción al guardar inspeccion_redes:", err);
+          alert("Excepción de red al guardar: " + err.message);
+          btn.innerHTML = orig;
+          return false;
+        }
+      }
+
+      btn.innerHTML = `<i class="fa-solid fa-check"></i> Guardado`;
+      setTimeout(() => { btn.innerHTML = orig; }, 1200);
+      return true;
+    }
+
+    async function guardarYSalir() {
+      const exito = await guardarModuloRedes();
+      if (exito) {
+        setTimeout(() => {
+          navegarA('inspecciones_index.html');
+        }, 500);
+      }
+    }
+  </script>
+
+  <!-- MODAL LIGHTBOX -->
+  <div id="modal_lightbox" onclick="cerrarLightbox()" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100] hidden flex flex-col justify-center items-center p-4">
+    <div class="relative max-w-2xl w-full flex flex-col items-center" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center w-full pb-2 text-white text-xs font-tech-mono">
+        <span id="lightbox_titulo" class="font-bold">Evidencia Visual</span>
+        <button onclick="cerrarLightbox()" class="p-1 text-white/70 hover:text-rose-400 transition text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <img id="lightbox_img" src="" class="max-h-[80vh] w-auto rounded-2xl border border-white/20 shadow-2xl object-contain">
+    </div>
+  </div>
+
+  <!-- MODAL FOTOS -->
+  <div id="modal_origen_foto" onclick="cerrarSelectorFoto()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[110] hidden flex justify-center items-end sm:items-center p-3 sm:p-4">
+    <div class="cyber-glass-card bg-slate-900/95 w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-white/20 space-y-4 text-white" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center pb-2 border-b border-white/15">
+        <h4 class="font-tech-head font-bold text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-camera-rotate text-indigo-400"></i> Seleccionar Fotografía
+        </h4>
+        <button type="button" onclick="cerrarSelectorFoto()" class="p-1 text-white/70 hover:text-rose-400 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <p class="text-xs text-white/70 leading-snug">¿Cómo deseas adjuntar la evidencia visual?</p>
+      
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <label class="cursor-pointer flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white transition text-center shadow-md">
+          <i class="fa-solid fa-camera text-2xl text-blue-300"></i>
+          <span class="text-xs font-bold leading-tight">Tomar Foto<br><span class="text-[10px] font-normal text-white/70">Cámara Directa</span></span>
+          <input type="file" id="input_camara_directa" accept="image/*" capture="environment" onchange="procesarFotoDesdeModal(event)" class="hidden">
+        </label>
+
+        <label class="cursor-pointer flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl btn-glass-action bg-purple-600/60 hover:bg-purple-600/80 text-white transition text-center shadow-md">
+          <i class="fa-solid fa-images text-2xl text-purple-300"></i>
+          <span class="text-xs font-bold leading-tight">Ver Galería<br><span class="text-[10px] font-normal text-white/70">Fotos o Archivos</span></span>
+          <input type="file" id="input_galeria_directa" accept="image/*" onchange="procesarFotoDesdeModal(event)" class="hidden">
+        </label>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

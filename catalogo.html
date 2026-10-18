@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo de Precios - ProTech Cyber-OS</title>
+  
+  <meta name="theme-color" content="#020617">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía & Estilos Base -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO NÍDIDO
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    /* ========================================================
+       2. TARJETAS Y CRISTAL CÓNCAVO (Homologado)
+       ======================================================== */
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        inset 5px 5px 12px rgba(0, 0, 0, 0.4), 
+        inset -5px -5px 12px rgba(255, 255, 255, 0.12),
+        0 25px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-glass-action {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 3px 3px 8px rgba(0, 0, 0, 0.25), 
+        inset -3px -3px 8px rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(0, 0, 0, 0.25);
+      border-radius: 1rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #ffffff;
+    }
+
+    .btn-glass-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.35), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.12),
+        0 15px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cyber-input, .glass-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+    .cyber-input option, .glass-input option {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    /* Menú lateral */
+    .collapse-content {
+      max-height: 400px; overflow: hidden; transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out; opacity: 1;
+    }
+    .collapse-content.collapsed { max-height: 0; opacity: 0; }
+    .collapse-icon { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapsed-btn .collapse-icon { transform: rotate(-90deg); }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: rgba(255, 255, 255, 0.22); 
+      color: #ffffff; 
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+    .menu-link.disabled { opacity: 0.5; cursor: not-allowed; }
+    .menu-link.disabled:hover { background: transparent; color: rgba(255, 255, 255, 0.85); }
+
+    button { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    button:active { transform: scale(0.97); }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden text-white session-checked">
+
+  <!-- VIDEO DE FONDO NÍDIDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL MAESTRA (MENÚ FILTRADO Y SEGURO) -->
+  <aside id="sidebar_menu" class="fixed md:static top-0 left-0 z-50 h-screen w-72 flex-col justify-between cyber-glass-card bg-slate-950/80 md:bg-slate-950/40 border-y-0 border-l-0 rounded-none flex-shrink-0 p-5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out flex shadow-xl md:shadow-none">
+    <div class="space-y-4 overflow-y-auto max-h-[calc(100vh-100px)] pr-2 hide-scrollbar">
+      
+      <!-- Logo Superior -->
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+            <div id="logo_fallback" style="display:none;" class="h-10 w-10 rounded-xl bg-slate-900 text-white font-bold text-base items-center justify-center">PS</div>
+            <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-950"></span>
+            </span>
+          </div>
+          <div>
+            <h1 class="font-bold text-[15px] text-white leading-tight">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="space-y-3">
+        <!-- Centro de Operaciones -->
+        <div>
+          <a href="index.html" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white shadow-sm relative overflow-hidden group transition">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"></div>
+            <i class="fa-solid fa-layer-group w-4 text-center text-sm text-white/80"></i>
+            <span class="font-bold text-xs uppercase tracking-wider">Centro Operaciones</span>
+          </a>
+        </div>
+
+        <!-- Área Operativa -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1.5 mb-1 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-gears"></i> Área Operativa</span>
+            <i class="fa-solid fa-chevron-down text-[9px]"></i>
+          </div>
+          <div class="space-y-1">
+            <a href="agenda_tickets.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-days"></i></div>
+              Agenda & Tickets
+            </a>
+            <a href="inspecciones_index.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-check"></i></div>
+              Inspección
+            </a>
+            <a href="orden_trabajo.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+              Órdenes de Trabajo
+            </a>
+            <a href="clientes_tech.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-cyan-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-address-book"></i></div>
+              Ficha Técnica / Clientes
+            </a>
+            <a href="acta_entrega.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-signature"></i></div>
+              Acta de Entrega
+            </a>
+            <a href="bandeja_operativa.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-orange-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-display"></i></div>
+              Monitor General OTs
+            </a>
+          </div>
+        </div>
+
+        <!-- Área Comercial -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-purple-300 tracking-wider p-1.5 mb-1 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-store"></i> Área Comercial</span>
+            <i class="fa-solid fa-chevron-down text-[9px]"></i>
+          </div>
+          <div class="space-y-1">
+            <a href="proforma.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-purple-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+              Generador de Proformas
+            </a>
+            <a href="catalogo.html" class="menu-link active">
+              <div class="icon-box h-6 w-6 rounded-md bg-purple-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-book-open"></i></div>
+              Catálogo de Precios
+            </a>
+          </div>
+        </div>
+
+        <!-- Área Financiera -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-emerald-300 tracking-wider p-1.5 mb-1 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-cash-register"></i> Área Financiera</span>
+            <i class="fa-solid fa-chevron-down text-[9px]"></i>
+          </div>
+          <div class="space-y-1">
+            <a href="finanzas.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-wallet"></i></div>
+              Caja & Cartera
+            </a>
+            <a href="bandeja.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-invoice"></i></div>
+              Bandeja Financiera
+            </a>
+            <a href="dashboard.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-chart-pie"></i></div>
+              Dashboard Analítico
+            </a>
+          </div>
+        </div>
+
+        <!-- Administración -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-rose-300 tracking-wider p-1.5 mb-1 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-shield-halved"></i> Administración</span>
+            <i class="fa-solid fa-chevron-down text-[9px]"></i>
+          </div>
+          <div class="space-y-1">
+            <a href="usuarios.html" class="menu-link">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-rose-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-users-gear"></i></div>
+              Personal & Roles (RBAC)
+            </a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Perfil de Usuario Inferior -->
+    <div class="p-3.5 rounded-2xl cyber-glass-card border border-white/20 flex items-center justify-between shadow-sm relative z-10 mt-2">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-bold text-xs shadow-md">JP</div>
+        <div class="truncate">
+          <p class="text-[11px] font-bold text-white truncate">Juan Pablo Luna</p>
+          <p class="font-tech-mono text-[9px] text-blue-300 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition" title="Cerrar Sesión">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden">
+    
+    <!-- HEADER SUPERIOR HOMOLOGADO -->
+    <header class="cyber-glass-card border-x-0 border-t-0 rounded-none px-6 py-4 flex items-center justify-between flex-shrink-0 z-30 bg-slate-950/30 backdrop-blur-md">
+      <div class="flex items-center gap-4">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white p-2 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 transition">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <div class="hidden md:flex relative w-72">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-white/50 text-xs z-10"></i>
+          <input type="text" id="filtro_busqueda" oninput="filtrarTabla()" placeholder="Buscar producto en catálogo..." class="cyber-input w-full text-xs pl-8 pr-3 py-2.5 rounded-xl shadow-sm outline-none transition relative z-10">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <select id="filtro_subsistema" onchange="filtrarTabla()" class="text-xs px-3 py-2.5 rounded-xl cyber-input font-semibold text-white shadow-sm outline-none">
+          <option value="TODOS" style="background:#0f172a; color:#fff;">Todos los Subsistemas</option>
+          <option value="CCTV" style="background:#0f172a; color:#fff;">CCTV</option>
+          <option value="Alarmas" style="background:#0f172a; color:#fff;">Alarmas</option>
+          <option value="Redes" style="background:#0f172a; color:#fff;">Redes</option>
+          <option value="Cercos" style="background:#0f172a; color:#fff;">Cercos</option>
+          <option value="Acceso" style="background:#0f172a; color:#fff;">Acceso</option>
+          <option value="Materiales" style="background:#0f172a; color:#fff;">Materiales</option>
+          <option value="Servicio" style="background:#0f172a; color:#fff;">Servicio</option>
+        </select>
+        <label class="cursor-pointer px-3.5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-file-arrow-up text-emerald-400"></i><span>CSV</span>
+          <input type="file" id="archivo_csv" accept=".csv" class="hidden" onchange="importarCSV(event)">
+        </label>
+        <button onclick="abrirModalMasivo()" class="px-3.5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-percent text-amber-400"></i><span class="hidden sm:inline">Ajuste Masivo</span>
+        </button>
+        <button onclick="abrirModalNuevo()" class="px-4 py-2.5 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition">
+          <i class="fa-solid fa-circle-plus text-blue-400"></i><span class="hidden sm:inline">Nuevo Ítem</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- CUERPO PRINCIPAL DEL CATÁLOGO -->
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-6 relative space-y-6 z-10">
+      
+      <div class="mb-2">
+        <h2 class="font-extrabold text-[24px] text-white tracking-tight flex items-center gap-3">
+          <i class="fa-solid fa-book-bookmark text-blue-400"></i> Catálogo Oficial de Precios
+        </h2>
+        <p class="font-tech-mono text-[10px] uppercase tracking-wider text-white/70 mt-1.5">BASE DE DATOS COMERCIAL • MARCA, MODELO & SKUs</p>
+      </div>
+
+      <!-- TABLA DE PRODUCTOS CON ESTÉTICA DE CRISTAL -->
+      <div class="glass-panel overflow-hidden shadow-xl rounded-2xl">
+        <div class="overflow-x-auto bg-slate-950/40">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-white/10 text-white font-tech-mono uppercase text-[10px] tracking-wider border-b border-white/15">
+                <th class="py-3 px-3.5">Subsistema</th>
+                <th class="py-3 px-3.5">Código SKU</th>
+                <th class="py-3 px-3.5">Marca / Modelo</th>
+                <th class="py-3 px-3.5 w-1/3">Descripción del Producto / Servicio</th>
+                <th class="py-3 px-3.5">Unidad</th>
+                <th class="py-3 px-3.5 text-right">Costo Dist. ($)</th>
+                <th class="py-3 px-3.5 text-center">Margen</th>
+                <th class="py-3 px-3.5 text-right">PVP Sugerido ($)</th>
+                <th class="py-3 px-3.5 text-center">Estado</th>
+                <th class="py-3 px-3.5 text-center w-28">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla_catalogo_body" class="divide-y divide-white/10 text-white/90">
+              <tr>
+                <td colspan="10" class="text-center py-12 text-white/50 font-tech-mono text-xs italic">Cargando catálogo desde Supabase...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="p-4 bg-white/5 border-t border-white/15 flex justify-between items-center text-xs text-white/70 font-tech-mono">
+          <span id="contador_registros" class="font-bold text-white">Total: 0 productos</span>
+          <span class="text-[10px] uppercase text-blue-400 font-bold">Sincronizado en tiempo real con Supabase</span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODAL: AGREGAR / EDITAR PRODUCTO -->
+  <div id="modal_producto" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[80] hidden flex justify-center items-center p-4 overflow-y-auto">
+    <div class="cyber-glass-card bg-slate-900/90 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-white/20 flex flex-col text-white">
+      
+      <div class="px-6 py-4 border-b border-white/15 flex justify-between items-center bg-white/5">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+            <i class="fa-solid fa-box-open"></i>
+          </div>
+          <div>
+            <h3 id="modal_titulo" class="font-bold text-sm text-white leading-tight">Nuevo Producto / Servicio</h3>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-white/60">Gestión de Ítem</p>
+          </div>
+        </div>
+        <button onclick="cerrarModal()" class="text-white/70 hover:text-rose-400 p-2 rounded-lg hover:bg-white/10 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form onsubmit="guardarProducto(event)" class="p-6 space-y-4 text-xs bg-slate-950/40">
+        <input type="hidden" id="prod_id">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-white/70 mb-1">Subsistema *</label>
+            <select id="prod_subsistema" required onchange="generarCodigoAutomatico()" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+              <option value="CCTV">CCTV</option>
+              <option value="Alarmas">Alarmas</option>
+              <option value="Redes">Redes</option>
+              <option value="Cercos">Cercos</option>
+              <option value="Acceso">Acceso</option>
+              <option value="Materiales">Materiales</option>
+              <option value="Servicio">Servicio</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-white/70 mb-1">Categoría *</label>
+            <select id="prod_categoria" onchange="generarCodigoAutomatico()" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+              <option value="Equipo">Equipo</option>
+              <option value="Material">Material</option>
+              <option value="Accesorio">Accesorio</option>
+              <option value="Servicio">Servicio</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-white/70 mb-1">Marca</label>
+            <input type="text" id="prod_marca" placeholder="Ej. Hikvision, Dahua..." class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+          </div>
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-white/70 mb-1">Modelo</label>
+            <input type="text" id="prod_modelo" placeholder="Ej. DS-2CD1323..." class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-tech-mono uppercase font-bold text-blue-300 mb-1">Código Interno / SKU (Automático)</label>
+          <input type="text" id="prod_codigo" placeholder="Ej. CCT-EQP-0001" class="w-full text-xs border rounded-xl p-2.5 outline-none font-mono font-bold bg-blue-500/20 text-blue-200 border-blue-400/40 shadow-inner">
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-tech-mono uppercase font-bold text-white/70 mb-1">Descripción Completa *</label>
+          <input type="text" id="prod_descripcion" required placeholder="Ej. Cámara Domo IP 2MP 2.8mm AcuSense" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] font-tech-mono uppercase font-bold text-white/70 mb-1">Unidad de Medida</label>
+            <select id="prod_unidad" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+              <option value="Unidad">Unidad</option>
+              <option value="Metros">Metros</option>
+              <option value="Tramos">Tramos</option>
+              <option value="Pares">Pares</option>
+              <option value="Global">Global</option>
+              <option value="Paquetes">Paquetes</option>
+              <option value="Cajas">Cajas</option>
+            </select>
+          </div>
+          <div class="flex items-center pt-5">
+            <label class="flex items-center gap-2 cursor-pointer bg-white/10 px-3 py-2 rounded-xl border border-white/20 w-full shadow-sm">
+              <input type="checkbox" id="prod_activo" checked class="h-4 w-4 rounded border-white/30 text-blue-600 focus:ring-blue-500">
+              <span class="text-xs font-bold text-white">Producto Activo</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- SECCIÓN DE PRECIOS & CÁLCULO DE MARGEN -->
+        <div class="p-4 bg-white/5 border border-white/15 rounded-2xl space-y-3.5 shadow-sm">
+          <div class="grid grid-cols-3 gap-2.5 items-end">
+            <div>
+              <label class="block text-[10px] font-tech-mono uppercase font-bold text-white/70 mb-1">Costo Dist. ($)</label>
+              <input type="number" step="0.01" min="0" id="prod_costo" oninput="calcularPVPDesdePorcentaje()" value="0.00" class="cyber-input w-full text-xs rounded-xl p-2.5 font-bold text-white text-center">
+            </div>
+            <div>
+              <label class="block text-[10px] font-tech-mono uppercase font-bold text-blue-300 mb-1">% Ganancia</label>
+              <input type="number" step="1" min="0" id="prod_porcentaje" oninput="calcularPVPDesdePorcentaje()" value="35" class="cyber-input w-full text-xs rounded-xl p-2.5 font-bold text-blue-300 text-center bg-blue-500/20">
+            </div>
+            <div>
+              <label class="block text-[10px] font-tech-mono uppercase font-bold text-emerald-400 mb-1">PVP Sugerido *</label>
+              <input type="number" step="0.01" min="0" id="prod_pvp" required oninput="calcularPorcentajeDesdePVP()" value="0.00" class="w-full text-xs border border-emerald-400/40 rounded-xl p-2.5 font-black text-emerald-300 text-center bg-emerald-500/20 shadow-inner">
+            </div>
+          </div>
+
+          <!-- Botones rápidos de margen -->
+          <div class="flex items-center gap-1.5 pt-2 border-t border-white/10 flex-wrap">
+            <span class="text-[10px] text-white/60 font-tech-mono font-bold">Margen:</span>
+            <button type="button" onclick="aplicarMargenRapido(20)" class="px-2.5 py-1 bg-white/10 hover:bg-blue-500/30 border border-white/20 rounded-lg text-[10px] font-bold text-white transition">+20%</button>
+            <button type="button" onclick="aplicarMargenRapido(30)" class="px-2.5 py-1 bg-white/10 hover:bg-blue-500/30 border border-white/20 rounded-lg text-[10px] font-bold text-white transition">+30%</button>
+            <button type="button" onclick="aplicarMargenRapido(35)" class="px-2.5 py-1 bg-white/10 hover:bg-blue-500/30 border border-white/20 rounded-lg text-[10px] font-bold text-white transition">+35%</button>
+            <button type="button" onclick="aplicarMargenRapido(45)" class="px-2.5 py-1 bg-white/10 hover:bg-blue-500/30 border border-white/20 rounded-lg text-[10px] font-bold text-white transition">+45%</button>
+            <button type="button" onclick="aplicarMargenRapido(50)" class="px-2.5 py-1 bg-white/10 hover:bg-blue-500/30 border border-white/20 rounded-lg text-[10px] font-bold text-white transition">+50%</button>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-white/15 flex justify-end gap-2">
+          <button type="button" onclick="cerrarModal()" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold transition">Cancelar</button>
+          <button type="submit" id="btn_guardar" class="px-5 py-2.5 btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white rounded-xl font-bold shadow-md transition">Guardar Producto</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- MODAL: AJUSTE MASIVO PORCENTUAL -->
+  <div id="modal_masivo" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[80] hidden flex justify-center items-center p-4">
+    <div class="cyber-glass-card bg-slate-900/90 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-white/20 text-white">
+      
+      <div class="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-6 py-4 flex justify-between items-center shadow-sm">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-percent text-amber-200"></i> Ajuste Masivo de Precios
+        </h3>
+        <button onclick="cerrarModalMasivo()" class="text-white hover:text-slate-200 font-black text-lg px-2">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs bg-slate-950/40">
+        <p class="text-white/80 leading-relaxed">
+          Esta función actualizará el <strong>PVP Sugerido</strong> de todos los productos seleccionados calculándolo automáticamente a partir de su <strong>Costo Distribuidor</strong>.
+        </p>
+
+        <div>
+          <label class="block text-[10px] font-tech-mono uppercase font-bold text-white/70 mb-1">Aplicar a:</label>
+          <select id="masivo_subsistema" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+            <option value="TODOS">Todo el Catálogo Completo</option>
+            <option value="CCTV">Solo CCTV</option>
+            <option value="Alarmas">Solo Alarmas</option>
+            <option value="Redes">Solo Redes & Fibra</option>
+            <option value="Cercos">Solo Cercos Eléctricos</option>
+            <option value="Acceso">Solo Control de Acceso</option>
+            <option value="Materiales">Solo Materiales & Tubería</option>
+            <option value="Servicio">Solo Mano de Obra</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-tech-mono uppercase font-bold text-white/70 mb-1">Porcentaje de Ganancia a Aplicar (%):</label>
+          <input type="number" step="1" min="1" id="masivo_porcentaje" value="35" class="w-full text-sm border border-amber-400/40 rounded-xl p-2.5 outline-none font-black text-amber-300 bg-amber-500/20 text-center shadow-inner">
+        </div>
+
+        <div class="bg-amber-500/20 border border-amber-500/30 p-3.5 rounded-2xl text-[11px] text-amber-200">
+          <strong>Ejemplo:</strong> Si un equipo cuesta <strong>$100.00</strong> y aplicas <strong>35%</strong>, su nuevo PVP será <strong>$135.00</strong>.
+        </div>
+
+        <div class="pt-4 border-t border-white/15 flex justify-end gap-2">
+          <button type="button" onclick="cerrarModalMasivo()" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold transition">Cancelar</button>
+          <button type="button" id="btn_aplicar_masivo" onclick="ejecutarAjusteMasivo()" class="px-4 py-2.5 btn-glass-action bg-amber-600/60 hover:bg-amber-600/80 text-white rounded-xl font-bold shadow-md transition">Aplicar a los Productos</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let CATALOGO_DATA = [];
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    function calcularPVPDesdePorcentaje() {
+      const costo = parseFloat(document.getElementById('prod_costo').value) || 0;
+      const pct = parseFloat(document.getElementById('prod_porcentaje').value) || 0;
+      const pvp = costo * (1 + (pct / 100));
+      document.getElementById('prod_pvp').value = pvp.toFixed(2);
+    }
+
+    function calcularPorcentajeDesdePVP() {
+      const costo = parseFloat(document.getElementById('prod_costo').value) || 0;
+      const pvp = parseFloat(document.getElementById('prod_pvp').value) || 0;
+      if (costo > 0) {
+        const pct = ((pvp - costo) / costo) * 100;
+        document.getElementById('prod_porcentaje').value = Math.round(pct);
+      }
+    }
+
+    function aplicarMargenRapido(margen) {
+      document.getElementById('prod_porcentaje').value = margen;
+      calcularPVPDesdePorcentaje();
+    }
+
+    async function generarCodigoAutomatico() {
+      if (document.getElementById('prod_id').value || !supabaseClient) return;
+
+      const subsistema = document.getElementById('prod_subsistema').value;
+      const categoria = document.getElementById('prod_categoria').value;
+      
+      const prefijosSub = { 'CCTV': 'CCT', 'Alarmas': 'ALM', 'Redes': 'RED', 'Cercos': 'CER', 'Acceso': 'ACC', 'Materiales': 'MAT', 'Servicio': 'SRV' };
+      const prefijosCat = { 'Equipo': 'EQP', 'Material': 'MAT', 'Accesorio': 'ACC', 'Servicio': 'SRV' };
+
+      const subPrefix = prefijosSub[subsistema] || 'GEN';
+      const catPrefix = prefijosCat[categoria] || 'GEN';
+      const patron = `${subPrefix}-${catPrefix}-`;
+
+      const { data } = await supabaseClient.from('catalogo_precios').select('codigo').ilike('codigo', `${patron}%`);
+      const correlativo = (data ? data.length + 1 : 1).toString().padStart(4, '0');
+      document.getElementById('prod_codigo').value = `${patron}${correlativo}`;
+    }
+
+    async function cargarCatalogo() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('catalogo_precios')
+          .select('*')
+          .order('subsistema', { ascending: true })
+          .order('descripcion', { ascending: true });
+
+        if (error) throw error;
+        CATALOGO_DATA = data || [];
+        renderTabla(CATALOGO_DATA);
+      } catch (err) {
+        alert('Error al cargar catálogo: ' + err.message);
+      }
+    }
+
+    function renderTabla(lista) {
+      const tbody = document.getElementById('tabla_catalogo_body');
+      const contador = document.getElementById('contador_registros');
+      tbody.innerHTML = '';
+      contador.innerText = `Total: ${lista.length} productos`;
+
+      if (lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-white/50 font-tech-mono text-xs italic">No se encontraron productos registrados.</td></tr>`;
+        return;
+      }
+
+      lista.forEach(item => {
+        const costo = parseFloat(item.costo_distribuidor || 0);
+        const pvp = parseFloat(item.pvp_sugerido || 0);
+        const margen = costo > 0 ? Math.round(((pvp - costo) / costo) * 100) : 0;
+        const marcaModelo = [item.marca, item.modelo].filter(Boolean).join(' / ') || '<span class="text-white/40 italic">Sin especificar</span>';
+        const activo = item.activo !== false;
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-white/5 border-b border-white/10 transition ${!activo ? 'opacity-60 bg-white/5' : ''}">
+            <td class="py-3 px-3.5 font-bold text-white">${item.subsistema}</td>
+            <td class="py-3 px-3.5 text-white/80 font-mono text-[11px] font-semibold">${item.codigo || '-'}</td>
+            <td class="py-3 px-3.5 text-white/90 font-medium text-xs">${marcaModelo}</td>
+            <td class="py-3 px-3.5 font-semibold text-white">${item.descripcion}</td>
+            <td class="py-3 px-3.5 text-white/60 font-tech-mono text-xs">${item.unidad || 'Unidad'}</td>
+            <td class="py-3 px-3.5 text-right font-semibold text-white/75 font-tech-mono">$${costo.toFixed(2)}</td>
+            <td class="py-3 px-3.5 text-center font-bold text-blue-300 bg-blue-500/20 font-tech-mono">+${margen}%</td>
+            <td class="py-3 px-3.5 text-right font-black text-emerald-300 bg-emerald-500/20 font-tech-mono">$${pvp.toFixed(2)}</td>
+            <td class="py-3 px-3.5 text-center">
+              <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${activo ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-white/10 text-white/60'}">${activo ? 'Activo' : 'Inactivo'}</span>
+            </td>
+            <td class="py-3 px-3.5 text-center space-x-2">
+              <button onclick="editarProducto('${item.id}')" class="text-blue-400 hover:text-blue-300 font-bold transition" title="Editar">Editar</button>
+              <button onclick="eliminarProducto('${item.id}')" class="text-rose-400 hover:text-rose-300 font-bold transition" title="Eliminar">✕</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function filtrarTabla() {
+      const q = document.getElementById('filtro_busqueda').value.toLowerCase().trim();
+      const sub = document.getElementById('filtro_subsistema').value;
+
+      const filtrados = CATALOGO_DATA.filter(item => {
+        const matchSub = (sub === 'TODOS' || item.subsistema === sub);
+        const matchText = (item.descripcion?.toLowerCase().includes(q) || item.codigo?.toLowerCase().includes(q) || item.marca?.toLowerCase().includes(q) || item.modelo?.toLowerCase().includes(q));
+        return matchSub && matchText;
+      });
+
+      renderTabla(filtrados);
+    }
+
+    function abrirModalNuevo() {
+      document.getElementById('modal_titulo').innerText = 'Nuevo Producto / Servicio';
+      document.getElementById('prod_id').value = '';
+      document.getElementById('prod_subsistema').value = 'CCTV';
+      document.getElementById('prod_categoria').value = 'Equipo';
+      document.getElementById('prod_marca').value = '';
+      document.getElementById('prod_modelo').value = '';
+      document.getElementById('prod_descripcion').value = '';
+      document.getElementById('prod_unidad').value = 'Unidad';
+      document.getElementById('prod_activo').checked = true;
+      document.getElementById('prod_costo').value = '0.00';
+      document.getElementById('prod_porcentaje').value = '35';
+      document.getElementById('prod_pvp').value = '0.00';
+      
+      generarCodigoAutomatico();
+      document.getElementById('modal_producto').classList.remove('hidden');
+    }
+
+    function cerrarModal() {
+      document.getElementById('modal_producto').classList.add('hidden');
+    }
+
+    function editarProducto(id) {
+      const item = CATALOGO_DATA.find(p => p.id === id);
+      if (!item) return;
+
+      document.getElementById('modal_titulo').innerText = 'Editar Producto / Servicio';
+      document.getElementById('prod_id').value = item.id;
+      document.getElementById('prod_subsistema').value = item.subsistema;
+      document.getElementById('prod_categoria').value = item.categoria || 'Equipo';
+      document.getElementById('prod_marca').value = item.marca || '';
+      document.getElementById('prod_modelo').value = item.modelo || '';
+      document.getElementById('prod_codigo').value = item.codigo || '';
+      document.getElementById('prod_descripcion').value = item.descripcion;
+      document.getElementById('prod_unidad').value = item.unidad || 'Unidad';
+      document.getElementById('prod_activo').checked = item.activo !== false;
+      
+      const costo = parseFloat(item.costo_distribuidor || 0);
+      const pvp = parseFloat(item.pvp_sugerido || 0);
+      document.getElementById('prod_costo').value = costo.toFixed(2);
+      document.getElementById('prod_pvp').value = pvp.toFixed(2);
+      
+      const pct = costo > 0 ? Math.round(((pvp - costo) / costo) * 100) : 35;
+      document.getElementById('prod_porcentaje').value = pct;
+
+      document.getElementById('modal_producto').classList.remove('hidden');
+    }
+
+    async function guardarProducto(event) {
+      event.preventDefault();
+      const btn = document.getElementById('btn_guardar');
+      btn.disabled = true;
+      btn.innerText = 'Guardando...';
+
+      const id = document.getElementById('prod_id').value;
+      const registro = {
+        subsistema: document.getElementById('prod_subsistema').value,
+        categoria: document.getElementById('prod_categoria').value,
+        marca: document.getElementById('prod_marca').value.trim() || null,
+        modelo: document.getElementById('prod_modelo').value.trim() || null,
+        codigo: document.getElementById('prod_codigo').value.trim(),
+        descripcion: document.getElementById('prod_descripcion').value.trim().toUpperCase(),
+        unidad: document.getElementById('prod_unidad').value,
+        activo: document.getElementById('prod_activo').checked,
+        costo_distribuidor: parseFloat(document.getElementById('prod_costo').value) || 0,
+        pvp_sugerido: parseFloat(document.getElementById('prod_pvp').value) || 0
+      };
+
+      try {
+        if (id) {
+          const { error } = await supabaseClient.from('catalogo_precios').update(registro).eq('id', id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient.from('catalogo_precios').insert([registro]);
+          if (error) throw error;
+        }
+        cerrarModal();
+        await cargarCatalogo();
+      } catch (err) {
+        alert('Error al guardar: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Guardar Producto';
+      }
+    }
+
+    async function eliminarProducto(id) {
+      const item = CATALOGO_DATA.find(p => p.id === id);
+      if (!confirm(`¿Estás seguro de eliminar "${item?.descripcion || 'este producto'}"?`)) return;
+
+      try {
+        const { error } = await supabaseClient.from('catalogo_precios').delete().eq('id', id);
+        if (error) throw error;
+        await cargarCatalogo();
+      } catch (err) {
+        alert('Error al eliminar: ' + err.message);
+      }
+    }
+
+    function abrirModalMasivo() {
+      document.getElementById('modal_masivo').classList.remove('hidden');
+    }
+    function cerrarModalMasivo() {
+      document.getElementById('modal_masivo').classList.add('hidden');
+    }
+
+    async function ejecutarAjusteMasivo() {
+      const subsistema = document.getElementById('masivo_subsistema').value;
+      const pct = parseFloat(document.getElementById('masivo_porcentaje').value) || 0;
+      const factor = 1 + (pct / 100);
+
+      const itemsAfectados = CATALOGO_DATA.filter(item => {
+        return (subsistema === 'TODOS' || item.subsistema === subsistema) && parseFloat(item.costo_distribuidor || 0) > 0;
+      });
+
+      if (itemsAfectados.length === 0) {
+        alert('No hay productos con costo mayor a 0 para actualizar.');
+        return;
+      }
+
+      if (!confirm(`Se actualizará el PVP de ${itemsAfectados.length} productos aplicando un +${pct}% sobre su costo distribuidor. ¿Continuar?`)) return;
+
+      const btn = document.getElementById('btn_aplicar_masivo');
+      btn.disabled = true;
+      btn.innerText = 'Actualizando...';
+
+      try {
+        for (const item of itemsAfectados) {
+          const nuevoPVP = parseFloat((parseFloat(item.costo_distribuidor) * factor).toFixed(2));
+          await supabaseClient.from('catalogo_precios').update({ pvp_sugerido: nuevoPVP }).eq('id', item.id);
+        }
+
+        alert(`✓ Se actualizaron ${itemsAfectados.length} productos exitosamente.`);
+        cerrarModalMasivo();
+        await cargarCatalogo();
+      } catch (err) {
+        alert('Error en ajuste masivo: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Aplicar a los Productos';
+      }
+    }
+
+    function importarCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async function(results) {
+          const filas = results.data;
+          if (filas.length === 0) {
+            alert('El archivo CSV está vacío.');
+            return;
+          }
+
+          const registros = filas.map(f => ({
+            subsistema: f.subsistema || 'CCTV',
+            codigo: f.codigo || '',
+            marca: f.marca || null,
+            modelo: f.modelo || null,
+            descripcion: (f.descripcion || 'Sin descripción').toUpperCase(),
+            unidad: f.unidad || 'Unidad',
+            costo_distribuidor: parseFloat(f.costo_distribuidor) || 0,
+            pvp_sugerido: parseFloat(f.pvp_sugerido) || 0,
+            categoria: f.categoria || 'Equipo',
+            activo: f.activo !== 'false' && f.activo !== false
+          }));
+
+          if (confirm(`Se encontraron ${registros.length} productos para importar. ¿Deseas subirlos a Supabase?`)) {
+            try {
+              const { error } = await supabaseClient.from('catalogo_precios').insert(registros);
+              if (error) throw error;
+              alert(`✓ ${registros.length} productos importados con éxito.`);
+              await cargarCatalogo();
+            } catch (err) {
+              alert('Error en la importación masiva: ' + err.message);
+            }
+          }
+        }
+      });
+    }
+
+    cargarCatalogo();
+  </script>
+</body>
+</html>

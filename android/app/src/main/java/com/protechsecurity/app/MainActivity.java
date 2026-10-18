@@ -1,0 +1,5 @@
+package com.protechsecurity.app;
+
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {}

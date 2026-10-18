@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>ProTech Security — Generador de Proformas</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Técnica Homologada -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Motor Offline-First -->
+  <script src="protech-offline.js"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO Y MICRO-RETÍCULA CAD (GPU SAFE)
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.16), transparent 60%),
+        linear-gradient(rgba(2, 6, 23, 0.65), rgba(2, 6, 23, 0.8));
+    }
+    .tech-grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+    }
+
+    /* ========================================================
+       2. TARJETAS CYBER-GLASS CON LUZ ESPECULAR (GPU SAFE)
+       ======================================================== */
+    .cyber-glass-card, .glass-card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.82) 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.08),
+        inset -1px -1px 3px rgba(0, 0, 0, 0.5),
+        0 12px 28px -6px rgba(0, 0, 0, 0.55) !important;
+      border-radius: 1.25rem !important;
+      position: relative !important;
+      color: #ffffff !important;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease;
+    }
+    .cyber-glass-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 12%;
+      right: 12%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.55), transparent);
+      pointer-events: none;
+    }
+    .cyber-glass-card:hover, .glass-card:hover {
+      border-color: rgba(59, 130, 246, 0.5) !important;
+    }
+
+    /* Lienzo de Documento Comercial */
+    .report-glass-card {
+      background: linear-gradient(160deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.92) 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.25),
+        0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
+      border-radius: 1.5rem;
+      position: relative;
+      color: #ffffff;
+    }
+
+    .btn-glass-action {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.92) 0%, rgba(51, 65, 85, 0.88) 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+      border-radius: 0.875rem !important;
+      transition: all 0.18s ease;
+      color: #ffffff !important;
+    }
+    .btn-glass-action:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(51, 65, 85, 0.98) 0%, rgba(71, 85, 105, 0.92) 100%) !important;
+      border-color: rgba(59, 130, 246, 0.65) !important;
+    }
+    .btn-glass-action:active:not(:disabled) { transform: scale(0.97); }
+    .btn-glass-action:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-cyber-purple {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+      border: 1px solid rgba(147, 197, 253, 0.45) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 16px rgba(37, 99, 235, 0.4) !important;
+      border-radius: 0.875rem !important;
+      color: #ffffff !important;
+      transition: all 0.18s ease;
+    }
+    .btn-cyber-purple:hover:not(:disabled) {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 20px rgba(37, 99, 235, 0.55) !important;
+    }
+
+    .cyber-input {
+      background: rgba(15, 23, 42, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #ffffff !important;
+      box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.45) !important;
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder { color: rgba(255, 255, 255, 0.45); }
+    .cyber-input:focus {
+      background: rgba(30, 41, 59, 0.98) !important;
+      border-color: rgba(59, 130, 246, 0.85) !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+      outline: none;
+    }
+    .cyber-input option { background: #0f172a; color: #ffffff; }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .font-tech-head { font-family: var(--tech-sans); }
+    .hide-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    .doc-input {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 2px 5px;
+      width: 100%;
+      transition: all 0.18s;
+      color: inherit;
+    }
+    .doc-input:hover, .doc-input:focus {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px dashed rgba(147, 197, 253, 0.45);
+      outline: none;
+    }
+    .doc-input::-webkit-outer-spin-button, .doc-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    /* Menú lateral colapsable */
+    #sidebar_menu {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, opacity 0.25s ease;
+    }
+    @media (min-width: 768px) {
+      #sidebar_menu.collapsed {
+        width: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        border-right-width: 0 !important;
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+    }
+
+    .collapse-content {
+      max-height: 420px; overflow: hidden; transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out; opacity: 1;
+    }
+    .collapse-content.collapsed { max-height: 0; opacity: 0; }
+    .collapse-icon { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapsed-btn .collapse-icon { transform: rotate(-90deg); }
+
+    .pdf-avoid-break {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    /* ========================================================
+       ANIMACIÓN DE SALIDA AL PORTAL PRINCIPAL (CYBER-EXIT)
+       ======================================================== */
+    body.cyber-exit-active {
+      pointer-events: none;
+      overflow: hidden;
+    }
+    body.cyber-exit-active aside,
+    body.cyber-exit-active header,
+    body.cyber-exit-active main,
+    body.cyber-exit-active #mobile_bottom_dock {
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.55s ease, filter 0.55s ease;
+      transform: scale(0.96) translateY(-10px);
+      opacity: 0;
+      filter: blur(8px);
+    }
+    #cyber_exit_overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.98) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #cyber_exit_overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .exit-card-box {
+      transform: translateY(16px) scale(0.95);
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #cyber_exit_overlay.active .exit-card-box {
+      transform: translateY(0) scale(1);
+    }
+    @keyframes progressPulse {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+    .animate-cyber-bar {
+      animation: progressPulse 1.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @media print {
+      body { background: #ffffff !important; color: #000000 !important; }
+      header, aside, .no-print, .bg-video-container, .bg-video-overlay, .tech-grid-overlay, #panel_herramientas, #titulo_seccion, #modal_preview, #toast_container, #mobile_bottom_dock, #cyber_exit_overlay { display: none !important; }
+      #contenedor_documento { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border: none !important; background: white !important; color: black !important; }
+      #contenedor_documento * { color: black !important; }
+      .doc-input { border: none !important; background: transparent !important; }
+      .action-column { display: none !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen relative flex flex-col md:flex-row pb-20 md:pb-0 text-white antialiased overflow-x-hidden session-checked">
+
+  <!-- CONTENEDOR DE NOTIFICACIONES CYBER-TOAST -->
+  <div id="toast_container" class="fixed top-4 right-4 z-[9990] flex flex-col gap-2.5 max-w-xs sm:max-w-sm w-full pointer-events-none px-2 sm:px-0"></div>
+
+  <!-- OVERLAY DE TRANSICIÓN AL CENTRO DE OPERACIONES -->
+  <div id="cyber_exit_overlay" class="no-print">
+    <div class="exit-card-box cyber-glass-card p-6 sm:p-8 rounded-2xl border border-blue-500/40 flex flex-col items-center text-center max-w-xs w-full mx-4 shadow-2xl">
+      <div class="w-14 h-14 rounded-2xl bg-blue-600/20 border border-blue-400/40 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20">
+        <i id="exit_icon" class="fa-solid fa-shield-halved text-2xl text-blue-400 animate-bounce"></i>
+      </div>
+      <span id="exit_badge" class="font-tech-mono text-[10px] uppercase tracking-widest text-emerald-400 font-bold mb-1">
+        ● Sincronización Completada
+      </span>
+      <h3 id="exit_title" class="font-tech-head font-extrabold text-base text-white mb-1">
+        Proforma Emitida con Éxito
+      </h3>
+      <p id="exit_sub_label" class="text-xs text-white/60 mb-5">
+        Retornando al Centro de Operaciones...
+      </p>
+      <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden border border-white/10">
+        <div id="exit_progress_bar" class="h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 w-0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIDEO DE FONDO Y RETÍCULA TÉCNICA -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline preload="auto">
+      <source src="fondo-tech.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+  <div class="tech-grid-overlay"></div>
+
+  <!-- OVERLAY MÓVIL -->
+  <div id="mobile_menu_overlay" onclick="cerrarMobileMenu()" class="fixed inset-0 bg-slate-950/80 z-40 hidden transition-opacity duration-300"></div>
+
+  <!-- BARRA LATERAL -->
+  <aside id="sidebar_menu" class="fixed md:sticky top-0 left-0 z-50 h-[100dvh] w-72 flex-col justify-between border-r border-white/15 p-4 sm:p-5 flex bg-slate-950/95 md:bg-slate-950/55 flex-shrink-0 no-print -translate-x-full md:translate-x-0">
+    <div class="space-y-4 relative z-10 overflow-y-auto max-h-[calc(100vh-110px)] pr-1 hide-scrollbar">
+      
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-9 w-auto object-contain drop-shadow" onerror="this.style.display='none'; document.getElementById('logo_nextgen').style.display='flex';">
+            <div id="logo_nextgen" style="display:none;" class="h-9 w-9 rounded-xl bg-blue-600 text-white font-tech-head text-sm items-center justify-center shadow-lg font-black">PS</div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="font-tech-head font-extrabold text-[15px] text-white leading-tight">ProTech</h1>
+              <span id="protech_net_status_badge" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-[8px] font-tech-mono text-emerald-300 font-bold">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>ONLINE
+              </span>
+            </div>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-0.5">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+        <button type="button" onclick="cerrarMobileMenu()" class="md:hidden text-white/70 hover:text-rose-400 transition p-1.5 bg-white/10 rounded-lg">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <nav class="space-y-3 text-xs font-semibold">
+        <div>
+          <a href="index.html" onclick="event.preventDefault(); transicionSalidaPortal('index.html', '', true);" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white shadow-sm relative overflow-hidden group transition hover:bg-white/15 cursor-pointer">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"></div>
+            <i class="fa-solid fa-layer-group w-4 text-center text-sm text-blue-400"></i>
+            <span class="font-bold">Centro de Operaciones</span>
+          </a>
+        </div>
+
+        <!-- ÁREA OPERATIVA -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_operativa', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_operativa" class="collapse-content space-y-1 mt-2">
+            <a href="agenda_tickets.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
+              <span>Agenda & Tickets</span>
+            </a>
+            <button onclick="navegarA('inspecciones_index.html')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-list"></i></div>
+              <span>Dashboard Inspección</span>
+            </button>
+            <button onclick="navegarA('inspeccion_equipos.html')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <span>Consolidado Equipos</span>
+            </button>
+            <button onclick="navegarA('inspeccion_materiales.html')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-toolbox"></i></div>
+              <span>Calculadora Materiales</span>
+            </button>
+            <button onclick="navegarA('acta_entrega.html')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-signature"></i></div>
+              <span>Acta de Entrega</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ÁREA COMERCIAL -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_comercial', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-store"></i> Área Comercial</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_comercial" class="collapse-content space-y-1 mt-2">
+            <a href="proforma.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white bg-blue-600/40 font-bold transition group border border-blue-400/50 shadow-sm">
+              <div class="icon-box h-6 w-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+              <span>Generador de Proformas</span>
+            </a>
+            <a href="catalogo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <span>Catálogo de Precios</span>
+            </a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="p-3 rounded-2xl cyber-glass-card border border-white/20 flex items-center justify-between shadow-sm relative z-10 mt-3">
+      <div class="flex items-center gap-2.5 overflow-hidden">
+        <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-tech-head font-bold text-xs shadow-md flex-shrink-0">JP</div>
+        <div class="truncate">
+          <p class="text-[11px] font-bold text-white truncate">Juan Pablo Luna</p>
+          <p class="font-tech-mono text-[8px] text-blue-300 uppercase font-bold">Ing. Proyectos • Admin</p>
+        </div>
+      </div>
+      <button onclick="transicionSalidaPortal('index.html', '', true)" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition flex-shrink-0" title="Volver al Portal">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden">
+    
+    <!-- HEADER STICKY -->
+    <header class="border-b border-white/15 sticky top-0 z-30 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 bg-slate-950/90 flex-shrink-0 no-print">
+      <div class="flex items-center gap-2.5 sm:gap-4 min-w-0">
+        <button type="button" onclick="toggleMobileMenu()" class="text-white p-2 sm:p-2.5 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 active:scale-95 transition focus:outline-none flex-shrink-0" title="Alternar Menú">
+          <i class="fa-solid fa-bars text-xs sm:text-sm"></i>
+        </button>
+        <div class="truncate">
+          <span class="font-tech-mono text-[10px] sm:text-xs font-bold text-blue-300 uppercase tracking-wider block truncate">Ingeniería Comercial & Cotizaciones</span>
+          <span id="header_resumen_prf" class="text-[11px] text-white/70 font-medium truncate block">Sincronizado con Catálogo Oficial</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <button onclick="navegarA('inspecciones_index.html')" class="px-2.5 sm:px-3 py-2 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center gap-1.5 transition" title="Volver al Panel de Inspección">
+          <i class="fa-solid fa-gauge-high text-blue-400"></i> <span class="hidden md:inline">Panel Obra</span>
+        </button>
+        <button onclick="compartirProformaWhatsApp()" class="px-2.5 sm:px-3.5 py-2 rounded-xl btn-glass-action border-emerald-400/40 text-white text-xs font-bold flex items-center gap-1.5 transition" title="Enviar Resumen por WhatsApp">
+          <i class="fa-brands fa-whatsapp text-emerald-400 text-sm"></i> <span class="hidden sm:inline">WhatsApp</span>
+        </button>
+        <button onclick="abrirVistaPrevia()" class="px-2.5 sm:px-3.5 py-2 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center gap-1.5 transition" title="Vista Previa en Papel Blanco">
+          <i class="fa-solid fa-eye text-blue-400"></i> <span class="hidden sm:inline">Vista Previa</span>
+        </button>
+        <button id="btn_guardar_cloud" onclick="guardarProformaEnNube()" class="hidden sm:flex px-4 py-2 rounded-xl btn-cyber-purple text-white font-bold text-xs items-center gap-1.5 transition">
+          <i class="fa-solid fa-paper-plane"></i> <span>Procesar & Emitir</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 p-3.5 sm:p-6 md:p-8 overflow-y-auto hide-scrollbar relative z-10 pb-28 md:pb-12">
+      <div class="max-w-[1320px] mx-auto">
+        
+        <div id="titulo_seccion" class="mb-5 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <div class="inline-flex items-center gap-2 text-[10px] font-tech-mono uppercase tracking-widest text-blue-400 font-bold mb-1">
+              <i class="fa-solid fa-file-invoice-dollar animate-pulse"></i> MÓDULO COMERCIAL • CÁLCULO AUTOMÁTICO DE EQUIPOS, MATERIALES Y M.O.
+            </div>
+            <h2 class="font-tech-head font-extrabold text-xl sm:text-2xl text-white tracking-tight">
+              Generador Ejecutivo de Proformas Comerciales
+            </h2>
+          </div>
+          <div class="flex items-center gap-2 self-start sm:self-auto">
+            <button onclick="generarPDF()" class="px-3.5 py-2 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center gap-1.5">
+              <i class="fa-solid fa-download text-emerald-400"></i> <span>Descargar PDF Directo</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-col xl:flex-row gap-6 items-start">
+          
+          <!-- PANEL DE HERRAMIENTAS IZQUIERDO -->
+          <div id="panel_herramientas" class="w-full xl:w-[340px] flex-shrink-0 space-y-4 xl:sticky xl:top-4">
+            
+            <!-- 1. VINCULAR E IMPORTAR TICKET -->
+            <div class="cyber-glass-card p-4 rounded-2xl space-y-3 border-l-4 border-l-blue-500">
+              <h4 class="text-[11px] font-bold text-white uppercase tracking-wide flex items-center justify-between">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-rotate text-blue-400"></i> 1. Cargar Levantamiento</span>
+                <span id="label_ticket_id" class="text-[10px] font-tech-mono text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded border border-blue-400/30"># SIN TICKET</span>
+              </h4>
+              <div class="space-y-2.5">
+                <div>
+                  <label class="block text-[10px] font-bold text-white/70 mb-1">Seleccionar Ticket de Inspección:</label>
+                  <select id="select_tickets_disponibles" onchange="cambiarTicketSeleccionado(this.value)" class="cyber-input rounded-xl p-2.5 text-[11px] font-medium w-full">
+                    <option value="">-- Modo Proforma Libre / Directa --</option>
+                  </select>
+                </div>
+                <button onclick="sincronizarDatosTicket(true)" class="w-full px-3 py-2.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition flex items-center justify-center gap-2 shadow-sm">
+                  <i class="fa-solid fa-cloud-arrow-down text-blue-400"></i> <span>Importar Consolidado 360°</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. AÑADIR ÍTEMS MANUALES -->
+            <div class="cyber-glass-card p-4 rounded-2xl space-y-2.5 border-l-4 border-l-emerald-500">
+              <h4 class="text-[11px] font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                <i class="fa-solid fa-cart-plus text-emerald-400"></i> 2. Añadir Ítem de Catálogo / Libre
+              </h4>
+              <div>
+                <label class="block text-[10px] font-bold text-white/70 mb-1">Buscar en Catálogo Oficial:</label>
+                <select id="select_catalogo_manual" onchange="cargarPrecioCatalogo(this)" class="cyber-input rounded-xl p-2.5 text-[11px] font-medium w-full">
+                  <option value="">-- Seleccionar ítem --</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/70 mb-1">Descripción en Proforma:</label>
+                <input type="text" id="desc_manual" placeholder="Ej. Cable UTP extra..." class="cyber-input rounded-xl p-2.5 text-[11px] font-medium w-full">
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-white/70 mb-1">Grupo:</label>
+                  <select id="grupo_manual" class="cyber-input rounded-xl p-2 text-[10px] font-medium w-full">
+                    <option value="EQUIPOS Y DISPOSITIVOS">Equipos</option>
+                    <option value="MATERIALES E INSUMOS">Materiales</option>
+                    <option value="SERVICIOS Y MANO DE OBRA">Servicios</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-white/70 mb-1">Cant.:</label>
+                  <input type="number" id="cant_manual" min="1" step="any" value="1" class="cyber-input rounded-xl p-2 text-[11px] font-tech-mono font-bold text-white w-full text-center">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-white/70 mb-1">PVP ($):</label>
+                  <input type="number" id="pvp_manual" step="0.01" value="0.00" class="cyber-input rounded-xl p-2 text-[11px] font-tech-mono font-bold text-emerald-400 w-full text-center">
+                </div>
+              </div>
+              <button onclick="agregarItemManual()" class="w-full mt-1 px-3 py-2.5 rounded-xl btn-glass-action border-emerald-400/40 text-white text-[11px] font-bold transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-plus text-emerald-400"></i> <span>Agregar a Proforma</span>
+              </button>
+            </div>
+
+            <!-- 3. ASISTENTE DE MANO DE OBRA E INGENIERÍA -->
+            <div class="cyber-glass-card p-4 rounded-2xl space-y-2.5 border-l-4 border-l-amber-400">
+              <h4 class="text-[11px] font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                <i class="fa-solid fa-person-digging text-amber-400"></i> 3. Asistente Mano de Obra
+              </h4>
+              <div>
+                <label class="block text-[10px] font-bold text-white/70 mb-1">Modalidad de Servicio:</label>
+                <select id="modalidad_mo" onchange="ajustarPvpSugeridoMo()" class="cyber-input rounded-xl p-2.5 text-[11px] font-medium w-full">
+                  <option value="nueva">Instalación Nueva por Punto ($35)</option>
+                  <option value="mantenimiento">Mantenimiento Preventivo por Punto ($15)</option>
+                  <option value="correctivo">Diagnóstico y Correctivo ($45)</option>
+                  <option value="configuracion">Programación / Certificación Red & NVR ($80)</option>
+                  <option value="global">Servicio Global Proyecto Completo ($180)</option>
+                </select>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-white/70 mb-1">Cant. Puntos / Serv.:</label>
+                  <input type="number" id="mo_cantidad" value="1" min="1" class="cyber-input rounded-xl p-2 text-[11px] font-tech-mono font-bold text-white text-center w-full">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-white/70 mb-1">Tarifa Unit. ($):</label>
+                  <input type="number" id="mo_pvp" value="35.00" step="0.5" class="cyber-input rounded-xl p-2 text-[11px] font-tech-mono font-bold text-amber-300 text-center w-full">
+                </div>
+              </div>
+              <button onclick="agregarManoObraParametrica()" class="w-full mt-1 px-3 py-2.5 rounded-xl btn-glass-action border-amber-400/40 text-white text-[11px] font-bold transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-calculator text-amber-300"></i> <span>Calcular y Añadir M.O.</span>
+              </button>
+            </div>
+
+            <!-- 4. AJUSTES FINANCIEROS Y TÉRMINOS -->
+            <div class="cyber-glass-card p-4 rounded-2xl space-y-3 border-l-4 border-l-blue-400">
+              <div class="flex items-center justify-between border-b border-white/15 pb-2">
+                <h4 class="text-[11px] font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                  <i class="fa-solid fa-percent text-blue-400"></i> 4. Finanzas & Términos
+                </h4>
+                <button type="button" onclick="limpiarItemsEnCero()" class="text-[9px] font-tech-mono bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 px-2 py-0.5 rounded border border-rose-400/30 transition" title="Quitar filas con precio $0.00">
+                  Quitar $0.00
+                </button>
+              </div>
+
+              <!-- Interruptor Kit de Materiales -->
+              <div class="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/10">
+                <span class="text-[10px] font-bold text-white/80">Agrupar Materiales en 1 Kit</span>
+                <input type="checkbox" id="chk_agrupar_materiales" onchange="renderDocumento()" class="w-4 h-4 rounded accent-blue-600 cursor-pointer">
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-white/70 mb-1">Descuento ($):</label>
+                  <input type="number" id="desc_global" value="0" min="0" step="0.01" oninput="renderDocumento()" class="cyber-input rounded-xl p-2 text-[11px] font-tech-mono text-blue-300 font-bold w-full">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-white/70 mb-1">IVA Ecuador (%):</label>
+                  <input type="number" id="iva_porcentaje" value="15" min="0" step="1" oninput="renderDocumento()" class="cyber-input rounded-xl p-2 text-[11px] font-tech-mono font-bold w-full">
+                </div>
+              </div>
+              
+              <div class="space-y-2 pt-1">
+                <div class="flex gap-2 items-center">
+                  <label class="w-16 text-[9px] font-bold text-white/60 uppercase font-tech-mono">Pago:</label>
+                  <input type="text" id="term_pago" value="50% Anticipo, 50% Contra Entrega" class="cyber-input rounded-lg p-1.5 text-[10px] font-medium flex-1">
+                </div>
+                <div class="flex gap-2 items-center">
+                  <label class="w-16 text-[9px] font-bold text-white/60 uppercase font-tech-mono">Validez:</label>
+                  <input type="text" id="term_validez" value="15 Días" class="cyber-input rounded-lg p-1.5 text-[10px] font-medium flex-1">
+                </div>
+                <div class="flex gap-2 items-center">
+                  <label class="w-16 text-[9px] font-bold text-white/60 uppercase font-tech-mono">Entrega:</label>
+                  <input type="text" id="term_entrega" value="Inmediata según cronograma" class="cyber-input rounded-lg p-1.5 text-[10px] font-medium flex-1">
+                </div>
+                <div class="flex gap-2 items-center">
+                  <label class="w-16 text-[9px] font-bold text-white/60 uppercase font-tech-mono">Garantía:</label>
+                  <input type="text" id="term_garantia" value="1 Año contra defectos de fábrica" class="cyber-input rounded-lg p-1.5 text-[10px] font-medium flex-1">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LIENZO DE LA PROFORMA COMERCIAL -->
+          <div class="flex-1 w-full flex justify-center">
+            <div id="contenedor_documento" class="report-glass-card p-5 sm:p-10 lg:p-12 w-full max-w-[920px] min-h-[1050px] relative flex flex-col">
+              
+              <!-- ENCABEZADO CORPORATIVO -->
+              <div class="flex flex-col sm:flex-row justify-between items-start gap-4 border-b-2 border-white/20 pb-5 mb-6 pdf-avoid-break">
+                <div class="flex items-center gap-4">
+                  <img src="logo.png" alt="ProTech Logo" class="h-14 sm:h-16 w-auto object-contain" onerror="this.style.display='none';">
+                  <div>
+                    <h1 class="font-extrabold text-xl sm:text-2xl tracking-tight text-white">PROTECH SECURITY</h1>
+                    <p class="font-bold text-xs text-white/80 mt-0.5">Seguridad Electrónica, CCTV, Alarmas, Redes & Control de Acceso</p>
+                    <p class="text-[10px] text-white/60 font-tech-mono mt-0.5">RUC: 1713637120001 • Quito, Ecuador • contacto@protechsecurityec.com</p>
+                  </div>
+                </div>
+                <div class="text-right flex flex-col items-end w-full sm:w-auto border-t sm:border-t-0 border-white/10 pt-3 sm:pt-0">
+                  <span class="bg-blue-600/70 border border-blue-400/40 text-white font-bold text-[10px] px-3 py-1 rounded uppercase tracking-wider mb-1.5">Proforma Comercial</span>
+                  <p class="font-tech-mono font-bold text-sm text-white">N° <span id="doc_numero">PRF-2026-0001</span></p>
+                  <p class="text-[10px] font-tech-mono text-white/60 mt-1">Fecha Emisión: <span id="doc_fecha" class="font-bold text-white/90">--/--/----</span></p>
+                  <p class="text-[10px] font-tech-mono text-white/60 mt-0.5">Validez Oferta: <span id="doc_validez_label" class="font-bold text-white/90">15 Días</span></p>
+                </div>
+              </div>
+
+              <!-- DATOS EDITABLES DEL CLIENTE -->
+              <div class="bg-white/5 border border-white/15 rounded-xl p-4 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pdf-avoid-break">
+                <div class="space-y-1">
+                  <p class="text-[9px] font-bold text-white/50 uppercase tracking-wider">Cliente / Razón Social:</p>
+                  <input type="text" id="doc_cliente" class="doc-input font-extrabold text-sm text-white" value="Consumidor Final" placeholder="Nombre o Razón Social">
+                  <div class="flex items-center gap-1 font-tech-mono text-[10px] text-white/75">
+                    <span class="flex-shrink-0">C.I./RUC:</span>
+                    <input type="text" id="doc_ruc" class="doc-input font-bold text-white w-40" placeholder="1700000000001">
+                  </div>
+                  <div class="flex items-center gap-1 font-tech-mono text-[10px] text-white/75">
+                    <span class="flex-shrink-0">Teléfono:</span>
+                    <input type="text" id="doc_telefono" class="doc-input font-bold text-white w-40" placeholder="0990000000">
+                  </div>
+                </div>
+                <div class="sm:text-right space-y-1">
+                  <p class="text-[9px] font-bold text-white/50 uppercase tracking-wider">Ubicación / Proyecto:</p>
+                  <input type="text" id="doc_ubicacion" class="doc-input sm:text-right font-medium text-white/90 text-[11px]" value="Quito, Ecuador" placeholder="Dirección de la obra">
+                  <p class="font-tech-mono text-[10px] text-white/60 pt-1">Especialista: <span class="text-white font-semibold">Ing. Juan Pablo Luna</span></p>
+                  <p class="font-tech-mono text-[10px] text-blue-300 font-bold">Alcance: <span id="doc_modalidad_label">Instalación Nueva</span></p>
+                </div>
+              </div>
+
+              <!-- TABLA DE ÍTEMS DE LA PROFORMA -->
+              <div class="flex-1 overflow-x-auto hide-scrollbar">
+                <table class="w-full text-left text-xs mb-6 min-w-[560px]">
+                  <thead class="bg-white/10 border-y border-white/20 text-[9px] font-bold text-white/80 uppercase font-tech-mono">
+                    <tr>
+                      <th class="p-2.5 w-16 text-center">Cant.</th>
+                      <th class="p-2.5">Descripción del Equipo / Material / Servicio</th>
+                      <th class="p-2.5 w-24 text-center">Unidad</th>
+                      <th class="p-2.5 w-28 text-right whitespace-nowrap">PVP Unit. ($)</th>
+                      <th class="p-2.5 w-28 text-right whitespace-nowrap">Total ($)</th>
+                      <th class="p-2.5 w-10 text-center action-column no-print"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabla_items_body" class="divide-y divide-white/10 text-white/90">
+                    <tr><td colspan="6" class="p-8 text-center text-white/50 italic font-tech-mono">Sincronizando ítems del proyecto...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- TOTALES Y CONDICIONES COMERCIALES -->
+              <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-end gap-5 mt-auto pt-6 border-t border-white/20 pdf-avoid-break">
+                <div class="w-full sm:w-7/12 bg-blue-500/10 border border-blue-500/25 rounded-xl p-4 space-y-2">
+                  <p class="text-[10px] font-bold text-blue-300 uppercase tracking-wider">Forma de Pago, Banco & Garantía:</p>
+                  <ul class="text-[10px] text-white/85 space-y-1 list-disc pl-4 font-medium leading-relaxed">
+                    <li>Anticipo (50% para inicio): <strong id="doc_anticipo_val" class="text-emerald-300">$0.00</strong> | Saldo (50% contra entrega): <strong id="doc_saldo_val" class="text-white">$0.00</strong>.</li>
+                    <li><strong>Datos Bancarios:</strong> Banco Pichincha, Cuenta de Ahorros N° <strong>2205729265</strong>, a nombre de <strong>Juan Pablo Luna Paredes</strong> (C.I. 1713637120). Enviar comprobante de transferencia al correo o WhatsApp.</li>
+                    <li>Garantía Técnica: <span id="doc_garantia_label" class="font-bold text-white">1 Año contra defectos de fábrica</span>.</li>
+                    <li>Exclusiones: No incluye obra civil mayor, picado/resane de paredes ni pintura, salvo acuerdo expreso.</li>
+                  </ul>
+                </div>
+
+                <div class="w-full sm:w-5/12 bg-white/5 border border-white/15 rounded-xl p-4 text-[11px] font-tech-mono space-y-1.5">
+                  <div class="flex justify-between text-[10px] text-white/50 border-b border-white/10 pb-1.5 mb-1">
+                    <span>Eq: <strong id="doc_sub_eq" class="text-white/80">$0.00</strong></span>
+                    <span>Mat: <strong id="doc_sub_mat" class="text-white/80">$0.00</strong></span>
+                    <span>M.O: <strong id="doc_sub_mo" class="text-white/80">$0.00</strong></span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-white/70 font-bold">Subtotal Bruto:</span>
+                    <span id="doc_subtotal" class="font-bold text-white">$0.00</span>
+                  </div>
+                  <div class="flex justify-between text-blue-300 hidden" id="row_descuento">
+                    <span class="font-bold">Descuento Especial:</span>
+                    <span id="doc_descuento_val" class="font-bold">-$0.00</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-white/70 font-bold">Base Imponible:</span>
+                    <span id="doc_subtotal_neto" class="font-bold text-white">$0.00</span>
+                  </div>
+                  <div class="flex justify-between border-b border-white/15 pb-2">
+                    <span class="text-white/70 font-bold">IVA (<span id="doc_iva_label">15</span>%):</span>
+                    <span id="doc_iva_val" class="font-bold text-white">$0.00</span>
+                  </div>
+                  <div class="flex justify-between items-center text-sm text-emerald-300 bg-emerald-500/15 p-2.5 rounded-lg border border-emerald-400/30 pt-2">
+                    <span class="font-bold uppercase">Total Inversión:</span>
+                    <span id="doc_total_final" class="font-black text-base tracking-tight">$0.00</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- FIRMAS DE CONFORMIDAD -->
+              <div class="mt-12 pt-8 grid grid-cols-2 gap-8 text-center text-[10px] text-white/60 pdf-avoid-break">
+                <div class="max-w-[220px] mx-auto w-full">
+                  <div class="border-t border-white/40 pt-2 font-bold text-white">Ing. Juan Pablo Luna</div>
+                  <p class="font-tech-mono text-[9px]">ProTech Security • Gerencia Técnica</p>
+                </div>
+                <div class="max-w-[220px] mx-auto w-full">
+                  <div class="border-t border-white/40 pt-2 font-bold text-white">Aceptación del Cliente</div>
+                  <p class="font-tech-mono text-[9px]">Firma y Sello de Conformidad</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- BARRA INFERIOR TÁCTIL EXCLUSIVA PARA MÓVIL -->
+    <div id="mobile_bottom_dock" class="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-slate-950/95 border-t border-white/15 px-3 py-2.5 flex items-center gap-2 shadow-2xl no-print">
+      <button type="button" onclick="abrirVistaPrevia()" class="flex-1 py-2.5 px-3 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95">
+        <i class="fa-solid fa-eye text-blue-400"></i>
+        <span>Vista Previa</span>
+      </button>
+      <button id="btn_guardar_cloud_mobile" type="button" onclick="guardarProformaEnNube()" class="flex-1 py-2.5 px-3 rounded-xl btn-cyber-purple text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95">
+        <i class="fa-solid fa-paper-plane"></i>
+        <span>Emitir Proforma</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- MODAL DE VISTA PREVIA EN PAPEL BLANCO -->
+  <div id="modal_preview" class="fixed inset-0 bg-slate-950/90 z-[100] hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div class="cyber-glass-card bg-slate-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-white/20 text-white">
+      <div class="px-5 py-3.5 border-b border-white/15 flex justify-between items-center bg-slate-950">
+        <h3 class="font-tech-head font-bold text-xs sm:text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-file-pdf text-rose-400"></i> Vista Previa de Impresión (Formato A4)
+        </h3>
+        <button onclick="cerrarVistaPrevia()" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg bg-white/10 border border-white/20">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+      <div class="p-3 sm:p-6 overflow-y-auto flex-1 flex justify-center bg-slate-800/60 hide-scrollbar">
+        <div id="preview_content_clone" class="bg-white text-slate-900 shadow-2xl border border-slate-300 p-6 sm:p-10 w-full max-w-[820px] rounded-xl">
+          <!-- Clon dinámico del documento -->
+        </div>
+      </div>
+      <div class="px-5 py-3.5 border-t border-white/15 bg-slate-950 flex justify-end gap-2.5">
+        <button onclick="compartirProformaWhatsApp()" class="px-4 py-2 rounded-xl btn-glass-action text-white font-bold text-xs flex items-center gap-1.5 transition">
+          <i class="fa-brands fa-whatsapp text-emerald-400"></i> Enviar WhatsApp
+        </button>
+        <button onclick="generarPDF()" class="px-4 py-2 rounded-xl btn-cyber-purple text-white font-bold text-xs flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-download"></i> Descargar PDF
+        </button>
+        <button onclick="cerrarVistaPrevia()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+    window.supabaseClient = supabaseClient;
+
+    let urlParams = new URLSearchParams(window.location.search);
+    let ticketId = urlParams.get('id') || urlParams.get('ticket_id') || localStorage.getItem('protech_current_ticket_id') || '';
+    if (ticketId === 'null' || ticketId === 'undefined') ticketId = '';
+
+    let proformaIdParam = urlParams.get('proforma_id') || urlParams.get('codigo') || '';
+    if (proformaIdParam === 'null' || proformaIdParam === 'undefined') proformaIdParam = '';
+
+    let ticketGlobalInfo = {};
+    let catalogoGlobal = [];
+    let catalogoDict = {};
+    let itemsProforma = []; 
+    let urlProformaPublica = '';
+    let numProformaActual = `PRF-2026-${Math.random().toString(36).substring(2,6).toUpperCase()}`;
+
+    const ORDEN_GRUPOS = ['EQUIPOS Y DISPOSITIVOS', 'MATERIALES E INSUMOS', 'SERVICIOS Y MANO DE OBRA'];
+
+    const MAPA_CAMPOS_CANTIDAD = {
+      switch_desktop_catalogo_id: 'cant_switches',
+      microsd_catalogo_id: 'cant_microsd',
+      bocina_catalogo_id: 'cant_bocinas',
+      balun_catalogo_id: 'cant_baluns',
+      caja_catalogo_id: 'cant_cajas',
+      fuente_indiv_catalogo_id: 'cant_fuentes_indiv',
+      cortapicos_catalogo_id: 'cant_cortapicos',
+      patchcord_catalogo_id: 'cant_patchcords',
+      teclado_catalogo_id: 'cant_teclados',
+      expansor_catalogo_id: 'cant_expansores',
+      sirena_ext_catalogo_id: 'cant_sirenas_ext',
+      sirena_int_catalogo_id: 'cant_sirenas_int',
+      bateria_catalogo_id: 'cant_baterias'
+    };
+
+    function mostrarToast(mensaje, tipo = 'info') {
+      const container = document.getElementById('toast_container');
+      if (!container) return;
+      const colores = { success: 'border-emerald-400/50 text-emerald-300 bg-slate-900/95', error: 'border-rose-400/50 text-rose-300 bg-slate-900/95', info: 'border-blue-400/50 text-blue-300 bg-slate-900/95' };
+      const iconos = { success: 'fa-circle-check text-emerald-400', error: 'fa-triangle-exclamation text-rose-400', info: 'fa-circle-info text-blue-400' };
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 ${colores[tipo] || colores.info}`;
+      toast.innerHTML = `<i class="fa-solid ${iconos[tipo] || iconos.info} text-sm flex-shrink-0"></i><span class="text-xs font-semibold text-white leading-snug">${mensaje}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+      setTimeout(() => { toast.classList.add('opacity-0', 'translate-x-4'); setTimeout(() => toast.remove(), 300); }, 3600);
+    }
+
+    function transicionSalidaPortal(urlDestino = 'index.html', numDoc = '', salidaManual = false) {
+      const overlay = document.getElementById('cyber_exit_overlay');
+      const bar = document.getElementById('exit_progress_bar');
+      const title = document.getElementById('exit_title');
+      const badge = document.getElementById('exit_badge');
+      const subLabel = document.getElementById('exit_sub_label');
+
+      if (salidaManual) {
+        if (badge) badge.innerText = "● Navegación del Sistema";
+        if (title) title.innerText = "Centro de Operaciones";
+        if (subLabel) subLabel.innerText = "Abriendo módulo principal Cyber-OS...";
+      } else if (numDoc && subLabel) {
+        subLabel.innerText = `Documento ${numDoc} archivado • Abriendo Portal...`;
+      }
+
+      document.body.classList.add('cyber-exit-active');
+      if (overlay) overlay.classList.add('active');
+      if (bar) bar.classList.add('animate-cyber-bar');
+
+      setTimeout(() => {
+        window.location.href = urlDestino;
+      }, 1350);
+    }
+
+    function generarIdUnico() { return 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4); }
+    function navegarA(pagina) { window.location.href = ticketId ? `${pagina}?id=${encodeURIComponent(ticketId)}` : pagina; }
+
+    function toggleMobileMenu() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      if (window.innerWidth >= 768) {
+        sidebar.classList.toggle('collapsed');
+      } else {
+        const estaOculto = sidebar.classList.contains('-translate-x-full');
+        if (estaOculto) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); }
+        else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); }
+      }
+    }
+
+    function cerrarMobileMenu() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      if (sidebar) sidebar.classList.add('-translate-x-full');
+      if (overlay) overlay.classList.add('hidden');
+    }
+
+    function toggleArea(idContent, headerElement) {
+      const content = document.getElementById(idContent);
+      if (content) {
+        content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed-btn');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      cerrarMobileMenu();
+      document.getElementById('doc_fecha').innerText = new Date().toLocaleDateString('es-EC');
+      document.getElementById('doc_numero').innerText = numProformaActual;
+
+      await cargarCatalogoOficial();
+      await cargarListaTicketsDisponibles();
+
+      if (proformaIdParam) {
+        await cargarProformaExistente(proformaIdParam);
+      } else if (ticketId) {
+        localStorage.setItem('protech_current_ticket_id', ticketId);
+        document.getElementById('label_ticket_id').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+        const selTk = document.getElementById('select_tickets_disponibles');
+        if (selTk) selTk.value = ticketId;
+        await sincronizarDatosTicket(false);
+      } else {
+        document.getElementById('label_ticket_id').innerText = "MODO LIBRE";
+        renderDocumento();
+      }
+
+      document.getElementById('term_pago').addEventListener('input', (e) => {
+        const el = document.getElementById('doc_pago_label');
+        if (el) el.innerText = e.target.value || '-';
+      });
+      document.getElementById('term_validez').addEventListener('input', (e) => {
+        const el = document.getElementById('doc_validez_label');
+        if (el) el.innerText = e.target.value || '-';
+      });
+      document.getElementById('term_entrega').addEventListener('input', (e) => {
+        const el = document.getElementById('doc_entrega_label');
+        if (el) el.innerText = e.target.value || '-';
+      });
+      document.getElementById('term_garantia').addEventListener('input', (e) => {
+        const el = document.getElementById('doc_garantia_label');
+        if (el) el.innerText = e.target.value || '-';
+      });
+      document.body.classList.add('session-checked');
+    });
+
+    async function cargarCatalogoOficial() {
+      try {
+        if (typeof ProTechOffline !== 'undefined') {
+          catalogoGlobal = await ProTechOffline.obtenerCatalogo(supabaseClient);
+        } else if (supabaseClient) {
+          const { data } = await supabaseClient.from('catalogo_precios').select('*').order('descripcion');
+          catalogoGlobal = data || [];
+        }
+
+        catalogoDict = {};
+        const select = document.getElementById('select_catalogo_manual');
+        select.innerHTML = `<option value="">-- Seleccionar ítem (${catalogoGlobal.length}) --</option>`;
+
+        catalogoGlobal.forEach(item => {
+          catalogoDict[item.id] = item;
+          select.innerHTML += `<option value="${item.id}" data-cat="${item.categoria || 'Equipo'}" data-pvp="${item.pvp_sugerido || 0}" data-desc="${item.descripcion}">${item.descripcion} ($${Number(item.pvp_sugerido || 0).toFixed(2)})</option>`;
+        });
+      } catch (err) { console.error(err); }
+    }
+
+    async function cargarListaTicketsDisponibles() {
+      if (!supabaseClient || !navigator.onLine) return;
+      try {
+        const { data } = await supabaseClient.from('tickets').select('id, cliente, direccion, estado').order('created_at', { ascending: false }).limit(30);
+        const sel = document.getElementById('select_tickets_disponibles');
+        if (sel && data) {
+          sel.innerHTML = `<option value="">-- Modo Proforma Libre / Directa --</option>`;
+          data.forEach(t => {
+            const selected = t.id === ticketId ? 'selected' : '';
+            sel.innerHTML += `<option value="${t.id}" ${selected}>#${t.id.substring(0,6).toUpperCase()} — ${t.cliente || 'Sin nombre'}</option>`;
+          });
+        }
+      } catch (e) {}
+    }
+
+    async function cambiarTicketSeleccionado(nuevoId) {
+      ticketId = nuevoId;
+      if (ticketId) {
+        localStorage.setItem('protech_current_ticket_id', ticketId);
+        document.getElementById('label_ticket_id').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+        await sincronizarDatosTicket(true);
+      } else {
+        document.getElementById('label_ticket_id').innerText = "MODO LIBRE";
+        itemsProforma = [];
+        document.getElementById('doc_cliente').value = "Consumidor Final";
+        document.getElementById('doc_ruc').value = "";
+        document.getElementById('doc_telefono').value = "";
+        document.getElementById('doc_ubicacion').value = "Quito, Ecuador";
+        renderDocumento();
+      }
+    }
+
+    async function cargarProformaExistente(identificador) {
+      if (!supabaseClient) return;
+      try {
+        let query = supabaseClient.from('proformas').select('*');
+        if (String(identificador).startsWith('PRF-')) {
+          query = query.eq('numero_proforma', identificador);
+        } else {
+          query = query.eq('id', identificador);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
+        if (error || !data) {
+          if (ticketId) {
+            await sincronizarDatosTicket(false);
+            return;
+          }
+          throw new Error("No se encontró la proforma.");
+        }
+
+        proformaIdParam = data.id;
+        numProformaActual = data.numero_proforma;
+        document.getElementById('doc_numero').innerText = numProformaActual;
+        document.getElementById('doc_cliente').value = data.cliente || 'Consumidor Final';
+        document.getElementById('doc_ruc').value = data.identificacion || '';
+        document.getElementById('doc_telefono').value = data.telefono || '';
+        document.getElementById('doc_ubicacion').value = data.ubicacion || 'Quito, Ecuador';
+        ticketId = data.inspeccion_id || ticketId || '';
+
+        if (ticketId) {
+          localStorage.setItem('protech_current_ticket_id', ticketId);
+          document.getElementById('label_ticket_id').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+          const selTk = document.getElementById('select_tickets_disponibles');
+          if (selTk) selTk.value = ticketId;
+        }
+
+        if (data.items) {
+          const itemsRaw = typeof data.items === 'string' ? JSON.parse(data.items) : data.items;
+          itemsProforma = itemsRaw.map(i => ({
+            id: i.codigo || generarIdUnico(),
+            grupo: i.grupo || 'EQUIPOS Y DISPOSITIVOS',
+            descripcion: i.descripcion,
+            cantidad: parseFloat(i.cantidad) || 1,
+            pvp: parseFloat(i.pvp) || 0,
+            total: (parseFloat(i.cantidad) || 1) * (parseFloat(i.pvp) || 0),
+            unidad: i.unidad || 'Unidades'
+          }));
+        }
+        renderDocumento();
+        mostrarToast(`Proforma ${numProformaActual} cargada`, "info");
+      } catch(e) {
+        console.error(e);
+        mostrarToast("Error cargando proforma: " + e.message, "error");
+      }
+    }
+
+    async function sincronizarDatosTicket(notificar = false) {
+      if (!ticketId) {
+        mostrarToast("Selecciona primero un ticket o añade ítems manualmente", "info");
+        return;
+      }
+
+      document.getElementById('tabla_items_body').innerHTML = `<tr><td colspan="6" class="p-8 text-center text-blue-400 font-bold"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Importando consolidado 360° de Supabase...</td></tr>`;
+      
+      try {
+        let proy = null;
+        if (typeof ProTechOffline !== 'undefined') {
+          proy = await ProTechOffline.leerTodoElProyecto(supabaseClient, ticketId);
+        } else {
+          const [resTicket, resCctv, resRedes, resAlm, resCercos, resAcceso, resMat] = await Promise.all([
+            supabaseClient.from('tickets').select('*').eq('id', ticketId).maybeSingle(),
+            supabaseClient.from('inspeccion_cctv').select('*').eq('ticket_id', ticketId).maybeSingle(),
+            supabaseClient.from('inspeccion_redes').select('*').eq('ticket_id', ticketId).maybeSingle(),
+            supabaseClient.from('inspeccion_alarmas').select('*').eq('ticket_id', ticketId).maybeSingle(),
+            supabaseClient.from('inspeccion_cercos').select('*').eq('ticket_id', ticketId).maybeSingle(),
+            supabaseClient.from('inspeccion_acceso').select('*').eq('ticket_id', ticketId).maybeSingle(),
+            supabaseClient.from('inspeccion_materiales').select('*').eq('ticket_id', ticketId).maybeSingle()
+          ]);
+          proy = { ticket: resTicket.data || {}, cctv: resCctv.data || {}, redes: resRedes.data || {}, alarmas: resAlm.data || {}, cercos: resCercos.data || {}, acceso: resAcceso.data || {}, materiales: resMat.data || {} };
+        }
+
+        ticketGlobalInfo = proy.ticket || {};
+        const cctv = proy.cctv || {};
+        const redes = proy.redes || {};
+        const alm = proy.alarmas || {};
+        const cercos = proy.cercos || {};
+        const acceso = proy.acceso || {};
+        const mat = proy.materiales || {};
+
+        document.getElementById('doc_cliente').value = ticketGlobalInfo.cliente || "Consumidor Final";
+        document.getElementById('doc_ruc').value = ticketGlobalInfo.ruc || "";
+        document.getElementById('doc_ubicacion').value = ticketGlobalInfo.direccion || "Quito, Ecuador";
+        document.getElementById('doc_telefono').value = ticketGlobalInfo.telefono || "";
+
+        itemsProforma = [];
+        const eqExtraData = ticketGlobalInfo.topologia_data?.consolidado_equipos_extra || {};
+        const ajustesCant = eqExtraData.ajustes_cantidades || {};
+        const manualesEq = Array.isArray(eqExtraData.items_manuales) ? eqExtraData.items_manuales : [];
+
+        // 1. Equipos nivel raíz y switches/cámaras
+        [cctv, redes, alm, cercos, acceso].forEach(obj => {
+          if (!obj) return;
+          Object.keys(obj).forEach(key => {
+            if (key.endsWith('_catalogo_id') && obj[key] && !String(obj[key]).includes('No Requiere') && !String(obj[key]).includes('Sin ') && obj[key] !== '') {
+              const catItem = catalogoDict[obj[key]];
+              if (catItem && catItem.categoria === 'Equipo') {
+                let cant = 1;
+                const campoCant = MAPA_CAMPOS_CANTIDAD[key];
+                if (campoCant && obj[campoCant] !== undefined) {
+                  cant = parseInt(obj[campoCant], 10);
+                  if (isNaN(cant) || cant <= 0) return;
+                }
+                agregarItemAuto(catItem, cant, 'EQUIPOS Y DISPOSITIVOS', catItem.descripcion, catItem.pvp_sugerido, String(catItem.id), 'Unidades');
+              }
+            }
+          });
+        });
+
+        (cctv.switches_cctv || []).forEach(sw => {
+          if (sw.item_catalogo_id && catalogoDict[sw.item_catalogo_id]) {
+            const catItem = catalogoDict[sw.item_catalogo_id];
+            agregarItemAuto(catItem, 1, 'EQUIPOS Y DISPOSITIVOS', catItem.descripcion, catItem.pvp_sugerido, String(catItem.id), 'Unidades');
+          } else {
+            const descSw = (sw.descripcion_catalogo || sw.nombre || 'Switch PoE de Video').trim();
+            const matchCat = catalogoGlobal.find(i => i.descripcion?.trim().toUpperCase() === descSw.toUpperCase() && i.categoria === 'Equipo');
+            agregarItemAuto(matchCat, 1, 'EQUIPOS Y DISPOSITIVOS', descSw, sw.pvp_sugerido || (matchCat ? matchCat.pvp_sugerido : 45.0), null, 'Unidades');
+          }
+        });
+
+        (cctv.camaras || []).forEach(c => {
+          if (c.item_catalogo_id && catalogoDict[c.item_catalogo_id]) {
+            const catItem = catalogoDict[c.item_catalogo_id];
+            agregarItemAuto(catItem, 1, 'EQUIPOS Y DISPOSITIVOS', catItem.descripcion, catItem.pvp_sugerido, String(catItem.id), 'Unidades');
+          } else {
+            const desc = (c.descripcion_catalogo || c.descripcion || 'Cámara de Seguridad CCTV').trim();
+            const matchCat = catalogoGlobal.find(i => i.descripcion?.trim().toUpperCase() === desc.toUpperCase() && i.categoria === 'Equipo');
+            agregarItemAuto(matchCat, 1, 'EQUIPOS Y DISPOSITIVOS', desc, c.pvp_sugerido || (matchCat ? matchCat.pvp_sugerido : 35.0), null, 'Unidades');
+          }
+        });
+
+        (alm.zonas || []).forEach(z => {
+          const matchCat = catalogoDict[z.item_catalogo_id] || catalogoGlobal.find(i => i.descripcion?.trim().toUpperCase() === (z.descripcion || '').trim().toUpperCase());
+          const desc = z.descripcion || z.descripcion_catalogo || 'Sensor de Alarma';
+          if (matchCat && matchCat.categoria === 'Equipo') {
+            agregarItemAuto(matchCat, 1, 'EQUIPOS Y DISPOSITIVOS', desc, matchCat.pvp_sugerido, String(matchCat.id), 'Unidades');
+          }
+        });
+
+        itemsProforma.forEach(item => {
+          if (item.keyRef && ajustesCant[item.keyRef] !== undefined) {
+            item.cantidad = parseFloat(ajustesCant[item.keyRef]) || item.cantidad;
+            item.total = item.cantidad * item.pvp;
+          }
+        });
+
+        manualesEq.forEach(ext => {
+          agregarItemAuto(null, parseFloat(ext.cantidad) || 1, 'EQUIPOS Y DISPOSITIVOS', ext.descripcion, parseFloat(ext.pvp) || 0, null, 'Unidades');
+        });
+
+        // 2. Materiales Consolidados + Extras
+        const todosMateriales = [...(mat.materiales_consolidados || []), ...(mat.materiales_extras || [])];
+        todosMateriales.forEach(m => {
+          const desc = m.descripcion || m.nombre;
+          if (!desc || desc.trim() === '') return; 
+          const cant = parseFloat(m.cantidad || m.metros || 1) || 1;
+          const unidadMat = m.unidad || 'Unidades';
+          const matchCat = catalogoGlobal.find(i => i.descripcion?.trim().toUpperCase() === desc.trim().toUpperCase());
+          agregarItemAuto(matchCat, cant, 'MATERIALES E INSUMOS', desc, matchCat ? matchCat.pvp_sugerido : 0, null, unidadMat);
+        });
+
+        itemsProforma.sort((a, b) => b.pvp - a.pvp);
+        escanearPuntosSugeridos();
+        renderDocumento();
+
+        if (notificar) mostrarToast(`Consolidado importado (${itemsProforma.length} líneas)`, "success");
+      } catch (e) {
+        console.error(e);
+        mostrarToast("Error al importar datos del ticket", "error");
+      }
+    }
+
+    function agregarItemAuto(catObj, cantidad, grupo, fallbackDesc = 'Ítem', fallbackPvp = 0, keyRef = null, unidad = 'Unidades') {
+      const desc = catObj ? catObj.descripcion : fallbackDesc;
+      if (!desc || desc.trim() === '' || cantidad <= 0) return;
+      const pvp = catObj ? (parseFloat(catObj.pvp_sugerido) || 0) : (parseFloat(fallbackPvp) || 0);
+      
+      const existente = itemsProforma.find(i => i.descripcion.trim().toUpperCase() === desc.trim().toUpperCase() && i.grupo === grupo);
+      if (existente) {
+        existente.cantidad += cantidad;
+        existente.total = existente.cantidad * existente.pvp;
+      } else {
+        itemsProforma.push({
+          id: generarIdUnico(),
+          keyRef: keyRef,
+          grupo: grupo,
+          descripcion: desc,
+          cantidad: cantidad,
+          pvp: pvp,
+          total: cantidad * pvp,
+          unidad: unidad
+        });
+      }
+    }
+
+    function cargarPrecioCatalogo(sel) {
+      if (!sel.value) {
+        document.getElementById('pvp_manual').value = "0.00";
+        return;
+      }
+      const opt = sel.options[sel.selectedIndex];
+      document.getElementById('pvp_manual').value = opt.getAttribute('data-pvp');
+      document.getElementById('desc_manual').value = opt.getAttribute('data-desc');
+    }
+
+    function agregarItemManual() {
+      const desc = document.getElementById('desc_manual').value.trim();
+      const cant = parseFloat(document.getElementById('cant_manual').value) || 1;
+      const pvp = parseFloat(document.getElementById('pvp_manual').value) || 0;
+      const grp = document.getElementById('grupo_manual').value;
+      if (!desc) { mostrarToast("Ingresa una descripción", "error"); return; }
+      itemsProforma.push({ id: generarIdUnico(), grupo: grp, descripcion: desc, cantidad: cant, pvp: pvp, total: cant * pvp, unidad: 'Unidades' });
+      renderDocumento();
+      document.getElementById('select_catalogo_manual').value = "";
+      document.getElementById('desc_manual').value = "";
+      document.getElementById('cant_manual').value = "1";
+      document.getElementById('pvp_manual').value = "0.00";
+      mostrarToast("Ítem agregado", "success");
+    }
+
+    function limpiarItemsEnCero() {
+      const antes = itemsProforma.length;
+      itemsProforma = itemsProforma.filter(i => i.pvp > 0);
+      renderDocumento();
+      mostrarToast(`Se quitaron ${antes - itemsProforma.length} ítems en $0.00`, "info");
+    }
+
+    function escanearPuntosSugeridos() {
+      let pts = 0;
+      itemsProforma.forEach(i => { if (i.grupo === 'EQUIPOS Y DISPOSITIVOS') pts += i.cantidad; });
+      document.getElementById('mo_cantidad').value = pts > 0 ? pts : 1;
+    }
+
+    function ajustarPvpSugeridoMo() {
+      const tipo = document.getElementById('modalidad_mo').value;
+      let pvpInput = document.getElementById('mo_pvp');
+      let selectLabel = document.getElementById('modalidad_mo').options[document.getElementById('modalidad_mo').selectedIndex].text.split(' (')[0];
+      document.getElementById('doc_modalidad_label').innerText = selectLabel;
+      
+      if (tipo === 'nueva') pvpInput.value = "35.00";
+      else if (tipo === 'mantenimiento') pvpInput.value = "15.00";
+      else if (tipo === 'correctivo') pvpInput.value = "45.00";
+      else if (tipo === 'configuracion') { pvpInput.value = "80.00"; document.getElementById('mo_cantidad').value = 1; }
+      else if (tipo === 'global') { pvpInput.value = "180.00"; document.getElementById('mo_cantidad').value = 1; }
+    }
+
+    function agregarManoObraParametrica() {
+      const tipo = document.getElementById('modalidad_mo').value;
+      const cantidad = parseFloat(document.getElementById('mo_cantidad').value) || 1;
+      const pvpBase = parseFloat(document.getElementById('mo_pvp').value) || 0;
+
+      let desc = "";
+      if (tipo === 'nueva') desc = "Mano de Obra Técnica: Instalación física, canalización, cableado y montaje por punto";
+      else if (tipo === 'mantenimiento') desc = "Servicio de Mantenimiento Preventivo, limpieza óptica y ajuste técnico";
+      else if (tipo === 'correctivo') desc = "Diagnóstico Electrónico y Reparación Correctiva en Sitio";
+      else if (tipo === 'configuracion') desc = "Ingeniería: Configuración de Grabador/Red, direccionamiento IP y enlace P2P móvil";
+      else desc = "Servicio Global de Instalación, Configuración y Puesta en Marcha del Proyecto";
+
+      itemsProforma.push({ id: generarIdUnico(), grupo: 'SERVICIOS Y MANO DE OBRA', descripcion: desc, cantidad: cantidad, pvp: pvpBase, total: cantidad * pvpBase, unidad: 'Servicio' });
+      renderDocumento();
+      mostrarToast("Mano de obra añadida", "success");
+    }
+
+    function eliminarItem(id) {
+      itemsProforma = itemsProforma.filter(i => i.id !== id);
+      renderDocumento();
+    }
+
+    function actualizarInputTabla(id, campo, valorStr) {
+      const item = itemsProforma.find(i => i.id === id);
+      if (!item) return;
+      let val = Math.max(0, parseFloat(valorStr) || 0);
+      item[campo] = val; item.total = item.cantidad * item.pvp;
+      renderDocumento(); 
+    }
+
+    function actualizarDescTabla(id, valor) {
+      const item = itemsProforma.find(i => i.id === id);
+      if (item) item.descripcion = valor;
+    }
+
+    function renderDocumento() {
+      const tbody = document.getElementById('tabla_items_body');
+      tbody.innerHTML = '';
+
+      const agruparMaterialesKit = document.getElementById('chk_agrupar_materiales')?.checked || false;
+
+      if (itemsProforma.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-white/50 italic">No hay ítems cargados en la proforma.</td></tr>`;
+        actualizarTotales(0, 0, 0, 0);
+        return;
+      }
+
+      let subtotalGeneral = 0;
+      let subEquipos = 0;
+      let subMateriales = 0;
+      let subManoObra = 0;
+
+      ORDEN_GRUPOS.forEach(grupoNombre => {
+        let itemsGrupo = itemsProforma.filter(i => i.grupo === grupoNombre);
+
+        if (agruparMaterialesKit && grupoNombre === 'MATERIALES E INSUMOS' && itemsGrupo.length > 0) {
+          const totalKitPvp = itemsGrupo.reduce((acc, curr) => acc + curr.total, 0);
+          itemsGrupo = [{
+            id: 'kit_materiales_unico',
+            grupo: 'MATERIALES E INSUMOS',
+            descripcion: 'Lote Global de Materiales, Ductería, Cableado UTP, Cajas Estancas y Herrajes de Fijación de Obra',
+            cantidad: 1,
+            pvp: totalKitPvp,
+            total: totalKitPvp,
+            unidad: 'Lote'
+          }];
+        }
+
+        if (itemsGrupo.length > 0) {
+          tbody.innerHTML += `
+            <tr class="bg-white/10 border-y border-white/15 pdf-avoid-break">
+              <td colspan="6" class="px-3 py-2 text-[10px] font-bold text-white tracking-wider font-tech-mono uppercase">
+                <i class="fa-solid fa-layer-group text-blue-400 mr-2"></i> ${grupoNombre}
+              </td>
+            </tr>
+          `;
+          let subtotalGrupo = 0;
+          itemsGrupo.forEach(item => {
+            subtotalGrupo += item.total;
+            const safeDesc = (item.descripcion || '').replace(/"/g, '&quot;');
+            const unidadItem = item.unidad || 'Und';
+            tbody.innerHTML += `
+              <tr class="hover:bg-white/5 transition border-b border-white/10 group pdf-avoid-break">
+                <td class="p-2 text-center align-middle">
+                  <input type="number" min="0" step="any" value="${item.cantidad}" onchange="actualizarInputTabla('${item.id}', 'cantidad', this.value)" class="doc-input text-center font-tech-mono font-bold text-blue-300">
+                </td>
+                <td class="p-2 align-middle">
+                  <input type="text" value="${safeDesc}" onchange="actualizarDescTabla('${item.id}', this.value)" class="doc-input font-medium text-white">
+                </td>
+                <td class="p-2 text-center align-middle font-tech-mono text-white/70 text-[11px] whitespace-nowrap">
+                  ${unidadItem}
+                </td>
+                <td class="p-2 text-right align-middle whitespace-nowrap">
+                  <div class="inline-flex items-center justify-end font-tech-mono w-full">
+                    <span class="text-white/50 text-[10px] mr-1">$</span>
+                    <input type="number" min="0" step="0.01" value="${item.pvp.toFixed(2)}" onchange="actualizarInputTabla('${item.id}', 'pvp', this.value)" class="doc-input text-right font-medium text-white min-w-[70px] max-w-[95px]">
+                  </div>
+                </td>
+                <td class="p-2 text-right align-middle font-tech-mono font-bold text-white whitespace-nowrap">
+                  $${item.total.toFixed(2)}
+                </td>
+                <td class="p-2 text-center align-middle action-column no-print">
+                  <button onclick="eliminarItem('${item.id}')" class="text-rose-400 hover:text-rose-300 bg-rose-500/20 hover:bg-rose-500/30 p-1.5 rounded transition opacity-80 sm:opacity-0 group-hover:opacity-100" title="Eliminar ítem">
+                    <i class="fa-solid fa-trash-can text-[10px]"></i>
+                  </button>
+                </td>
+              </tr>
+            `;
+          });
+          subtotalGeneral += subtotalGrupo;
+          if (grupoNombre === 'EQUIPOS Y DISPOSITIVOS') subEquipos = subtotalGrupo;
+          else if (grupoNombre === 'MATERIALES E INSUMOS') subMateriales = subtotalGrupo;
+          else if (grupoNombre === 'SERVICIOS Y MANO DE OBRA') subManoObra = subtotalGrupo;
+        }
+      });
+      actualizarTotales(subtotalGeneral, subEquipos, subMateriales, subManoObra);
+    }
+
+    function actualizarTotales(subtotalBruto, subEq = 0, subMat = 0, subMo = 0) {
+      const descuento = parseFloat(document.getElementById('desc_global').value) || 0;
+      const ivaPorc = parseFloat(document.getElementById('iva_porcentaje').value) || 0;
+      const subNeto = Math.max(0, subtotalBruto - descuento);
+      const ivaVal = subNeto * (ivaPorc / 100);
+      const totalF = subNeto + ivaVal;
+      const anticipo50 = totalF * 0.50;
+
+      document.getElementById('doc_sub_eq').innerText = `$${subEq.toFixed(2)}`;
+      document.getElementById('doc_sub_mat').innerText = `$${subMat.toFixed(2)}`;
+      document.getElementById('doc_sub_mo').innerText = `$${subMo.toFixed(2)}`;
+
+      document.getElementById('doc_subtotal').innerText = `$${subtotalBruto.toFixed(2)}`;
+      document.getElementById('doc_descuento_val').innerText = `-$${descuento.toFixed(2)}`;
+      document.getElementById('doc_subtotal_neto').innerText = `$${subNeto.toFixed(2)}`;
+      document.getElementById('doc_iva_label').innerText = ivaPorc;
+      document.getElementById('doc_iva_val').innerText = `$${ivaVal.toFixed(2)}`;
+      document.getElementById('doc_total_final').innerText = `$${totalF.toFixed(2)}`;
+      document.getElementById('doc_anticipo_val').innerText = `$${anticipo50.toFixed(2)}`;
+      document.getElementById('doc_saldo_val').innerText = `$${anticipo50.toFixed(2)}`;
+      document.getElementById('row_descuento').classList.toggle('hidden', descuento <= 0);
+    }
+
+    function formatearClonParaExportacion(clon) {
+      clon.querySelectorAll('.action-column, .no-print').forEach(el => el.remove());
+      
+      clon.querySelectorAll('tr').forEach(row => {
+        const inputCant = row.querySelector("input[onchange*='cantidad']");
+        const inputDesc = row.querySelector("input[onchange*='actualizarDescTabla']");
+        const inputPvp = row.querySelector("input[onchange*='pvp']");
+
+        if (inputCant) {
+          const td = inputCant.closest('td');
+          if (td) td.innerHTML = `<span style="font-family: monospace; font-weight: bold; color: #0f172a;">${inputCant.value}</span>`;
+        }
+        if (inputDesc) {
+          const td = inputDesc.closest('td');
+          if (td) td.innerHTML = `<span style="font-weight: 500; color: #0f172a;">${inputDesc.value}</span>`;
+        }
+        if (inputPvp) {
+          const td = inputPvp.closest('td');
+          if (td) td.innerHTML = `<span style="font-family: monospace; font-weight: 600; color: #0f172a; white-space: nowrap;">$${parseFloat(inputPvp.value || 0).toFixed(2)}</span>`;
+        }
+      });
+
+      clon.querySelectorAll('.doc-input').forEach(el => {
+        const val = el.value || el.innerText || '--';
+        const span = document.createElement('span');
+        span.style.fontWeight = 'bold';
+        span.style.color = '#0f172a';
+        span.innerText = val;
+        el.parentNode.replaceChild(span, el);
+      });
+
+      clon.querySelectorAll('*').forEach(el => {
+        el.style.color = '#0f172a';
+        if (el.classList.contains('bg-white/10') || el.classList.contains('bg-white/5')) {
+          el.style.backgroundColor = '#f8fafc';
+          el.style.borderColor = '#cbd5e1';
+        }
+        if (el.classList.contains('bg-blue-500/10') || el.classList.contains('bg-emerald-500/15')) {
+          el.style.backgroundColor = '#f1f5f9';
+          el.style.borderColor = '#94a3b8';
+        }
+      });
+    }
+
+    function abrirVistaPrevia() {
+      const clon = document.getElementById('contenedor_documento').cloneNode(true);
+      clon.classList.remove('report-glass-card');
+      clon.style.backgroundColor = '#ffffff';
+      clon.style.color = '#0f172a';
+      formatearClonParaExportacion(clon);
+
+      const containerClone = document.getElementById('preview_content_clone');
+      containerClone.innerHTML = '';
+      containerClone.appendChild(clon);
+      document.getElementById('modal_preview').classList.remove('hidden');
+    }
+
+    function cerrarVistaPrevia() {
+      document.getElementById('modal_preview').classList.add('hidden');
+    }
+
+    async function generarPDF() {
+      mostrarToast("Generando PDF de la Proforma Comercial...", "info");
+      const elementoInforme = document.getElementById('contenedor_documento').cloneNode(true);
+      elementoInforme.classList.remove('report-glass-card');
+      elementoInforme.style.backgroundColor = '#ffffff';
+      elementoInforme.style.color = '#0f172a';
+      formatearClonParaExportacion(elementoInforme);
+
+      const nombreCliente = (document.getElementById('doc_cliente').value || 'Cliente').trim().replace(/\s+/g,'_');
+      
+      const opcionesPdf = {
+        margin: [8, 8, 8, 8],
+        filename: `${numProformaActual}_${nombreCliente}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        pagebreak: { mode: ['css', 'legacy'], avoid: '.pdf-avoid-break' },
+        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      await html2pdf().from(elementoInforme).set(opcionesPdf).save();
+      mostrarToast("PDF descargado exitosamente", "success");
+    }
+
+    function compartirProformaWhatsApp() {
+      let tel = (document.getElementById('doc_telefono').value || '').replace(/\D/g, '');
+      if (tel.startsWith('09') && tel.length === 10) tel = '593' + tel.substring(1);
+      else if (tel.length === 9 && tel.startsWith('9')) tel = '593' + tel;
+
+      const cliente = document.getElementById('doc_cliente').value.trim() || 'Estimado Cliente';
+      const total = document.getElementById('doc_total_final').innerText;
+      const validez = document.getElementById('term_validez').value;
+
+      let texto = `Hola *${cliente}*, le saluda el Ing. Juan Pablo Luna de *ProTech Security*.\n\n` +
+                  `Le comparto el resumen de su *Proforma Comercial N° ${numProformaActual}*:\n` +
+                  `• *Total Inversión (IVA incl.):* ${total}\n` +
+                  `• *Validez de la oferta:* ${validez}\n` +
+                  (urlProformaPublica ? `\n📄 *Descargar Proforma PDF aquí:*\n${urlProformaPublica}\n` : `\nEn breve le adjunto el documento PDF detallado por este medio.`);
+
+      const urlWa = tel ? `https://wa.me/${tel}?text=${encodeURIComponent(texto)}` : `https://wa.me/?text=${encodeURIComponent(texto)}`;
+      window.open(urlWa, '_blank');
+    }
+
+    async function guardarProformaEnNube() {
+      const btn = document.getElementById('btn_guardar_cloud');
+      const btnMob = document.getElementById('btn_guardar_cloud_mobile');
+      const originHtml = btn ? btn.innerHTML : '';
+      const originMob = btnMob ? btnMob.innerHTML : '';
+
+      if (itemsProforma.length === 0) {
+        mostrarToast("La proforma está vacía.", "error");
+        return;
+      }
+
+      if (btn) { btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Procesando...`; btn.disabled = true; }
+      if (btnMob) { btnMob.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Procesando...`; btnMob.disabled = true; }
+
+      try {
+        const clienteText = document.getElementById('doc_cliente').value.trim() || 'Consumidor Final';
+        const identText = document.getElementById('doc_ruc').value.trim() || '9999999999999';
+        const telfText = document.getElementById('doc_telefono').value.trim() || '--';
+        const ubiText = document.getElementById('doc_ubicacion').value.trim() || 'Quito, Ecuador';
+        const validezText = document.getElementById('term_validez').value.trim() || '15 Días';
+
+        const subtotalNeto = parseFloat(document.getElementById('doc_subtotal_neto').innerText.replace('$', '')) || 0;
+        const ivaVal = parseFloat(document.getElementById('doc_iva_val').innerText.replace('$', '')) || 0;
+        const totalFinal = parseFloat(document.getElementById('doc_total_final').innerText.replace('$', '')) || 0;
+
+        const itemsFormateados = itemsProforma.map(i => ({
+          codigo: i.id,
+          grupo: i.grupo,
+          descripcion: i.descripcion,
+          cantidad: i.cantidad,
+          pvp: i.pvp,
+          unidad: i.unidad || 'Unidades'
+        }));
+
+        const elementoInforme = document.getElementById('contenedor_documento').cloneNode(true);
+        elementoInforme.classList.remove('report-glass-card');
+        elementoInforme.style.backgroundColor = '#ffffff';
+        elementoInforme.style.color = '#0f172a';
+        formatearClonParaExportacion(elementoInforme);
+
+        const opcionesPdf = {
+          margin: [8, 8, 8, 8],
+          filename: `${numProformaActual}_${clienteText.replace(/\s+/g,'_')}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          pagebreak: { mode: ['css', 'legacy'], avoid: '.pdf-avoid-break' },
+          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        const pdfWorker = await html2pdf().from(elementoInforme).set(opcionesPdf).output('blob');
+
+        const linkDescarga = document.createElement('a');
+        linkDescarga.href = window.URL.createObjectURL(pdfWorker);
+        linkDescarga.download = `${numProformaActual}_${clienteText.replace(/\s+/g,'_')}.pdf`;
+        linkDescarga.click();
+
+        let proformaGuardadaId = proformaIdParam;
+
+        if (navigator.onLine && supabaseClient) {
+          const filePath = `proformas/${numProformaActual}_${ticketId || 'libre'}.pdf`;
+          const { error: uploadError } = await supabaseClient.storage
+            .from('dossieres')
+            .upload(filePath, pdfWorker, { upsert: true, contentType: 'application/pdf' });
+
+          if (!uploadError) {
+            const { data: publicUrlData } = supabaseClient.storage.from('dossieres').getPublicUrl(filePath);
+            urlProformaPublica = publicUrlData.publicUrl;
+          }
+
+          if (proformaIdParam) {
+            await supabaseClient.from('proformas').update({
+              cliente: clienteText,
+              identificacion: identText,
+              telefono: telfText,
+              ubicacion: ubiText,
+              items: JSON.stringify(itemsFormateados),
+              subtotal: subtotalNeto.toFixed(2),
+              iva: ivaVal.toFixed(2),
+              total_contado: totalFinal.toFixed(2),
+              saldo_pendiente: totalFinal.toFixed(2)
+            }).eq('id', proformaIdParam);
+          } else {
+            const { data: insertData, error: insertError } = await supabaseClient.from('proformas').insert([{
+              numero_proforma: numProformaActual,
+              inspeccion_id: ticketId || null,
+              cliente: clienteText,
+              identificacion: identText,
+              telefono: telfText,
+              ubicacion: ubiText,
+              items: JSON.stringify(itemsFormateados),
+              subtotal: subtotalNeto.toFixed(2),
+              iva: ivaVal.toFixed(2),
+              total_contado: totalFinal.toFixed(2),
+              estado: 'PENDIENTE',
+              monto_anticipo: '0.00',
+              saldo_pendiente: totalFinal.toFixed(2)
+            }]).select('id').single();
+
+            if (!insertError && insertData) {
+              proformaGuardadaId = insertData.id;
+            }
+          }
+
+          if (ticketId) {
+            await supabaseClient.from('tickets').update({ estado: 'cotizacion' }).eq('id', ticketId);
+          }
+
+          const paramsLink = new URLSearchParams();
+          if (proformaGuardadaId) paramsLink.set('proforma_id', proformaGuardadaId);
+          else paramsLink.set('codigo', numProformaActual);
+          if (ticketId) paramsLink.set('id', ticketId);
+
+          const urlAppWeb = `https://app.protechsecurityec.com/proforma.html?${paramsLink.toString()}`;
+
+          // Envío de correo electrónico corporativo
+          try {
+            await supabaseClient.functions.invoke('enviar-correo-proforma', {
+              body: {
+                cliente: clienteText,
+                codigoInforme: numProformaActual,
+                codigoProforma: numProformaActual,
+                total: totalFinal.toFixed(2),
+                telefono: telfText,
+                validez: validezText,
+                urlProforma: urlAppWeb,
+                urlPdf: urlProformaPublica,
+                ticketId: ticketId || '',
+                proformaId: proformaGuardadaId || '',
+                correoDestino: "jpluna@protechsecurityec.com"
+              }
+            });
+          } catch (eMail) {
+            console.warn("Aviso al enviar correo:", eMail);
+          }
+
+// =========================================================
+          // 🚀 INTEGRACIÓN N8N + WHATSAPP (LISTA PARA CONECTAR)
+          // =========================================================
+          try {
+            const webhookN8nUrl = "http://localhost:5678/webhook/enviar-proforma-whatsapp";
+            
+            await fetch(webhookN8nUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                cliente: clienteText,
+                telefono: telfText,
+                codigoProforma: numProformaActual,
+                total: totalFinal.toFixed(2),
+                validez: validezText,
+                urlPdf: urlProformaPublica,
+                ticketId: ticketId || ""
+              })
+            });
+            console.log("📨 Datos despachados a n8n para WhatsApp.");
+          } catch (errN8n) {
+            console.warn("Aviso: No se pudo conectar con n8n para el WhatsApp:", errN8n);
+          }
+          // =========================================================
+
+          mostrarToast(`¡Proforma ${numProformaActual} emitida y respaldada en la nube!`, "success");
+        } else {
+          mostrarToast(`Proforma ${numProformaActual} generada en modo offline`, "info");
+        }
+
+        setTimeout(() => {
+          transicionSalidaPortal('index.html', numProformaActual, false);
+        }, 400);
+
+      } catch(e) {
+        console.error(e); 
+        mostrarToast("Error procesando proforma: " + e.message, "error");
+        if (btn) { btn.innerHTML = originHtml; btn.disabled = false; }
+        if (btnMob) { btnMob.innerHTML = originMob; btnMob.disabled = false; }
+      }
+    }
+  </script>
+</body>
+</html>

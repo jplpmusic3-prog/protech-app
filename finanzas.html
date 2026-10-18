@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flujo de Caja & Rentabilidad - ProTech Security</title>
+  
+  <!-- Configuración PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+  
+  <!-- Tipografía Corporativa Master -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO NÍDIDO
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    /* ========================================================
+       2. TARJETAS Y CRISTAL CÓNCAVO (Homologado)
+       ======================================================== */
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        inset 5px 5px 12px rgba(0, 0, 0, 0.4), 
+        inset -5px -5px 12px rgba(255, 255, 255, 0.12),
+        0 25px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-glass-action {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 3px 3px 8px rgba(0, 0, 0, 0.25), 
+        inset -3px -3px 8px rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(0, 0, 0, 0.25);
+      border-radius: 1rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #ffffff;
+    }
+
+    .btn-glass-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.35), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.12),
+        0 15px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cyber-input, .glass-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+    .cyber-input option, .glass-input option {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    /* Animación colapsable del menú lateral */
+    .collapse-content {
+      max-height: 400px; overflow: hidden; transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out; opacity: 1;
+    }
+    .collapse-content.collapsed { max-height: 0; opacity: 0; }
+    .collapse-icon { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapsed-btn .collapse-icon { transform: rotate(-90deg); }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: rgba(255, 255, 255, 0.22); 
+      color: #ffffff; 
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+
+    /* Acordeón de abonos internos */
+    .collapse-abonos {
+      max-height: 0; overflow: hidden; transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out; opacity: 0;
+    }
+    .collapse-abonos.open { max-height: 600px; opacity: 1; }
+    .collapse-chevron { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapse-chevron.rotated { transform: rotate(180deg); }
+  </style>
+</head>
+<body class="min-h-screen relative flex flex-col md:flex-row pb-20 md:pb-0 text-white antialiased overflow-x-hidden session-checked">
+
+  <!-- VIDEO DE FONDO NÍDIDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL TÁCTICA -->
+  <aside id="sidebar_menu" class="fixed md:sticky top-0 left-0 z-50 h-[100dvh] w-72 flex-col justify-between cyber-glass-card bg-slate-950/80 md:bg-slate-950/40 border-y-0 border-l-0 rounded-none flex-shrink-0 p-5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out flex no-print">
+    <div class="space-y-4 relative z-10 overflow-y-auto max-h-[calc(100vh-100px)] pr-1 hide-scrollbar">
+      
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain drop-shadow" onerror="this.style.display='none'; document.getElementById('logo_nextgen').style.display='flex';">
+            <div id="logo_nextgen" style="display:none;" class="h-10 w-10 rounded-2xl gradient-cyber-brand text-white font-tech-head text-base items-center justify-center shadow-lg shadow-blue-500/25 font-black">PS</div>
+            <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-950"></span>
+            </span>
+          </div>
+          <div>
+            <h1 class="font-tech-head font-extrabold text-base text-white leading-none">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-1">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white/70 hover:text-rose-400 transition p-2 bg-white/10 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <nav class="space-y-3 text-xs font-semibold">
+        <div>
+          <a href="index.html" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white shadow-sm relative overflow-hidden group transition">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"></div>
+            <i class="fa-solid fa-layer-group w-4 text-center text-sm text-white/80"></i>
+            <span class="font-bold">Centro de Operaciones</span>
+          </a>
+        </div>
+
+        <!-- ÁREA OPERATIVA -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_operativa', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_operativa" class="collapse-content space-y-1 mt-2">
+            <a href="agenda_tickets.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
+              <span>Agenda & Tickets</span>
+            </a>
+            <a href="inspecciones_index.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-list"></i></div>
+              <span>Inspección</span>
+            </a>
+            <a href="orden_trabajo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+              <span>Órdenes de Trabajo</span>
+            </a>
+            <a href="clientes_tech.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-cyan-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-address-book"></i></div>
+              <span>Ficha Técnica / Clientes</span>
+            </a>
+            <a href="acta_entrega.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-signature"></i></div>
+              <span>Acta de Entrega</span>
+            </a>
+            <a href="bandeja_operativa.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-orange-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-list-check"></i></div>
+              <span>Monitor General OTs</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ÁREA COMERCIAL & FINANCIERA (Activa) -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_comercial', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-purple-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-store"></i> Área Comercial</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_comercial" class="collapse-content space-y-1 mt-2">
+            <a href="bandeja.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-purple-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-folder-open"></i></div>
+              <span>Bandeja & Aprobaciones</span>
+            </a>
+            <a href="finanzas.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white bg-purple-600/40 font-bold transition group border border-purple-400/40 shadow-sm">
+              <div class="icon-box h-6 w-6 rounded-md bg-purple-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-wallet"></i></div>
+              <span>Flujo de Caja & Finanzas</span>
+            </a>
+            <a href="catalogo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <span>Catálogo de Precios</span>
+            </a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="p-3.5 rounded-2xl cyber-glass-card border border-white/20 flex items-center justify-between shadow-sm relative z-10 mt-3">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-tech-head font-bold text-xs shadow-md">JP</div>
+        <div class="truncate">
+          <p class="text-xs font-bold text-white truncate">Juan Pablo Luna</p>
+          <p class="font-tech-mono text-[9px] text-blue-300 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-2 rounded-lg hover:bg-white/10 transition" title="Desconectar">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden">
+    
+    <!-- HEADER CORPORATIVO -->
+    <header class="cyber-glass-card border-x-0 border-t-0 rounded-none sticky top-0 z-40 px-4 md:px-8 py-3.5 flex items-center justify-between shadow-sm flex-shrink-0 bg-slate-950/30 backdrop-blur-md">
+      <div class="flex items-center space-x-3.5">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white p-2 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 transition">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <div>
+          <h1 class="font-tech-head font-extrabold text-base text-white leading-none">Gestión Financiera & Obras</h1>
+          <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-1">Control de Presupuestos, Anticipos y Cartera</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2.5">
+        <button onclick="exportarReporteCSV()" class="px-3.5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center gap-2 transition" title="Exportar reporte a Excel (CSV)">
+          <i class="fa-solid fa-file-excel text-emerald-400"></i> Exportar CSV
+        </button>
+        <button onclick="cargarDatosFinancieros()" class="px-3.5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center gap-2 transition">
+          <i class="fa-solid fa-rotate text-blue-400"></i> Sincronizar
+        </button>
+        <button onclick="abrirModalPago()" class="px-4 py-2.5 rounded-xl btn-glass-action text-white font-bold text-xs flex items-center gap-2 transition">
+          <i class="fa-solid fa-cash-register text-emerald-400"></i> Registrar Abono
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto hide-scrollbar relative z-10 space-y-6">
+      <div class="max-w-[1300px] mx-auto space-y-6">
+
+        <div class="flex flex-col md:flex-row justify-between md:items-end gap-4">
+          <div>
+            <h2 class="font-tech-head font-extrabold text-2xl text-white tracking-tight flex items-center gap-3">
+              <i class="fa-solid fa-wallet text-emerald-400 drop-shadow-md"></i> Resumen Financiero & Cartera
+            </h2>
+            <p class="font-tech-mono text-[11px] uppercase tracking-wider text-white/70 mt-1.5">GESTIÓN DE PRESUPUESTOS Y CONTROL DE OBRAS</p>
+          </div>
+        </div>
+
+        <!-- TARJETAS DE KPIS SUPERIOR HOMOLOGADAS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <!-- Total Emitido -->
+          <div class="cyber-glass-card p-5 rounded-2xl relative overflow-hidden">
+            <p class="font-tech-mono text-[10px] font-bold text-white/70 uppercase tracking-wider mb-1">TOTAL EMITIDO</p>
+            <p id="kpi-total-emitido" class="text-2xl md:text-3xl font-black text-white font-tech-mono">$0.00</p>
+            <p id="kpi-total-emitido-desc" class="text-[10px] text-white/60 mt-1 font-tech-mono">0 proformas registradas</p>
+          </div>
+
+          <!-- Aprobadas / Facturadas -->
+          <div class="cyber-glass-card p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-emerald-400">
+            <p class="font-tech-mono text-[10px] font-bold text-emerald-300 uppercase tracking-wider mb-1">APROBADAS / FACTURADAS</p>
+            <p id="kpi-aprobadas" class="text-2xl md:text-3xl font-black text-emerald-300 font-tech-mono">$0.00</p>
+            <p id="kpi-aprobadas-desc" class="text-[10px] text-emerald-300/80 mt-1 font-tech-mono">0 obras cerradas/activas</p>
+          </div>
+
+          <!-- Anticipos Cobrados -->
+          <div class="cyber-glass-card p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-blue-400">
+            <p class="font-tech-mono text-[10px] font-bold text-blue-300 uppercase tracking-wider mb-1">ANTICIPOS COBRADOS</p>
+            <p id="kpi-anticipos" class="text-2xl md:text-3xl font-black text-blue-300 font-tech-mono">$0.00</p>
+            <p class="text-[10px] text-blue-300/80 mt-1 font-tech-mono">Dinero recaudado</p>
+          </div>
+
+          <!-- Saldos por Cobrar -->
+          <div class="cyber-glass-card p-5 rounded-2xl relative overflow-hidden border-l-4 border-l-amber-400">
+            <p class="font-tech-mono text-[10px] font-bold text-amber-300 uppercase tracking-wider mb-1">SALDOS POR COBRAR</p>
+            <p id="kpi-pendientes" class="text-2xl md:text-3xl font-black text-amber-300 font-tech-mono">$0.00</p>
+            <p class="text-[10px] text-amber-300/80 mt-1 font-tech-mono">Cobro contra entrega</p>
+          </div>
+
+        </div>
+
+        <!-- SECCIÓN 1: EXPEDIENTES FINANCIEROS POR TARJETAS DE PROYECTO -->
+        <div class="cyber-glass-card p-6 rounded-2xl shadow-sm space-y-5">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-4 border-b border-white/15 gap-4">
+            <div>
+              <h2 class="font-tech-head font-bold text-white text-base flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-blue-400"></i> Expedientes & Trazabilidad de Pagos por Obra
+              </h2>
+              <p class="text-xs text-white/70 mt-0.5">Control visual de abonos, anticipos y saldos agrupados por cada expediente de proyecto.</p>
+            </div>
+            
+            <!-- FILTROS AVANZADOS (BÚSQUEDA, ESTADO Y PERÍODO) -->
+            <div class="flex flex-wrap gap-2.5 w-full md:w-auto">
+              <input type="text" id="filtro-texto" onkeyup="filtrarTarjetasProyecto()" placeholder="Buscar cliente o número de OT..." class="cyber-input text-xs px-3 py-2 rounded-xl w-full md:w-48 outline-none">
+              
+              <select id="filtro-periodo" onchange="filtrarTarjetasProyecto()" class="cyber-input text-xs px-3 py-2 rounded-xl font-bold text-white outline-none">
+                <option value="todos" style="background:#0f172a; color:#fff;">📅 Todo el Historial</option>
+                <option value="mes_actual" selected style="background:#0f172a; color:#fff;">🗓️ Mes en Curso</option>
+                <option value="ultimos_30" style="background:#0f172a; color:#fff;">⚡ Últimos 30 Días</option>
+              </select>
+
+              <select id="filtro-estado-pago" onchange="filtrarTarjetasProyecto()" class="cyber-input text-xs px-3 py-2 rounded-xl font-bold text-white outline-none">
+                <option value="todos" style="background:#0f172a; color:#fff;">Todos los Estados</option>
+                <option value="activo" style="background:#0f172a; color:#fff;">Con Saldo Pendiente</option>
+                <option value="liquidado" style="background:#0f172a; color:#fff;">Liquidados / 100%</option>
+                <option value="mora" style="background:#0f172a; color:#fff;">⚠️️ Cuentas en Mora</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- CONTENEDOR DE TARJETAS DE PROYECTO -->
+          <div id="contenedor-tarjetas-proyecto" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="col-span-2 p-8 text-center text-white/50 italic font-medium">Sincronizando expedientes financieros...</div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: REPORTE DE RENTABILIDAD POR OBRA (COSTOS REALES) -->
+        <div class="cyber-glass-card p-6 rounded-2xl shadow-sm space-y-4">
+          <div class="flex justify-between items-center border-b border-white/15 pb-3">
+            <div>
+              <h2 class="font-tech-head font-bold text-white text-base flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-indigo-400"></i> Reporte de Rentabilidad por Proyecto / Obra (Costos Reales)
+              </h2>
+              <p class="text-xs text-white/70">Comparativa analítica entre el valor facturado y el costo real de materiales e infraestructura registrada.</p>
+            </div>
+            <div class="bg-indigo-500/20 px-3 py-1.5 rounded-xl border border-indigo-400/30 shadow-sm flex gap-2 items-center">
+              <span class="text-[10px] text-indigo-300 font-bold uppercase font-tech-mono">Margen Global:</span>
+              <span id="fin-margen-promedio" class="text-sm font-black text-indigo-200 font-tech-mono">0.0%</span>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto hide-scrollbar">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="text-white/60 font-semibold border-b border-white/15 bg-white/5 font-tech-mono text-[10px] uppercase">
+                  <th class="p-3">N° OT</th>
+                  <th class="p-3">Cliente / Ubicación</th>
+                  <th class="p-3 text-right">Valor Facturado</th>
+                  <th class="p-3 text-right">Costo Real Materiales</th>
+                  <th class="p-3 text-right">Ganancia Neta</th>
+                  <th class="p-3 text-center">Margen %</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-rentabilidad-body" class="divide-y divide-white/10 text-white/90">
+                <tr><td colspan="6" class="p-6 text-center text-white/50 italic">Calculando márgenes de rentabilidad...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: REGISTRAR PAGO / ABONO -->
+  <div id="modal-pago" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex justify-center items-center p-4">
+    <div class="cyber-glass-card bg-slate-900/95 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-white/20 flex flex-col text-white">
+      <div class="bg-slate-950/80 px-6 py-4 flex justify-between items-center border-b border-white/15">
+        <h3 class="text-sm font-bold font-tech-head text-white">Registrar Nuevo Abono / Pago</h3>
+        <button onclick="cerrarModalPago()" class="text-white/70 hover:text-white text-lg font-black px-2">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs bg-slate-950/40">
+        <div>
+          <label class="block font-bold text-white/80 mb-1">Seleccionar Orden de Trabajo *</label>
+          <select id="pago-select-ot" class="cyber-input w-full rounded-xl p-2.5 font-bold outline-none">
+            <option value="" style="background:#0f172a; color:#fff;">Cargando órdenes de trabajo...</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-white/80 mb-1">Monto a Abonar ($) *</label>
+          <input type="number" step="0.01" id="pago-monto" placeholder="0.00" class="cyber-input w-full rounded-xl p-2.5 font-mono font-bold text-emerald-300 outline-none">
+        </div>
+
+        <div>
+          <label class="block font-bold text-white/80 mb-1">Método de Pago *</label>
+          <select id="pago-metodo" class="cyber-input w-full rounded-xl p-2.5 font-semibold outline-none">
+            <option value="Transferencia Bancaria" style="background:#0f172a; color:#fff;">Transferencia Bancaria</option>
+            <option value="Efectivo" style="background:#0f172a; color:#fff;">Efectivo</option>
+            <option value="PayPhone (Link de Pago)" style="background:#0f172a; color:#fff;">Tarjeta de Crédito - PayPhone</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-white/80 mb-1">Ref / Lote / Comprobante</label>
+          <input type="text" id="pago-comprobante" placeholder="Ej. Lote PayPhone #12345" class="cyber-input w-full rounded-xl p-2.5 outline-none">
+        </div>
+      </div>
+
+      <div class="bg-white/5 px-6 py-3 border-t border-white/15 flex justify-end gap-2">
+        <button type="button" onclick="cerrarModalPago()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition">Cancelar</button>
+        <button type="button" onclick="guardarAbonoPago()" class="px-4 py-2 btn-glass-action bg-emerald-600/60 hover:bg-emerald-600/80 text-white font-bold rounded-xl shadow transition">Guardar Abono</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let listaOTsFinanzas = [];
+    let expedientesProyectos = [];
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    function toggleArea(idContent, headerElement) {
+      const content = document.getElementById(idContent);
+      if (content) {
+        content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed-btn');
+      }
+    }
+
+    window.addEventListener('load', () => {
+      cargarDatosFinancieros();
+    });
+
+    function clasificarMetodo(textoRaw) {
+      if (!textoRaw) return 'Transferencia Bancaria';
+      const t = String(textoRaw).toLowerCase();
+      if (t.includes('payphone') || t.includes('tarjeta')) return 'PayPhone';
+      if (t.includes('efectivo') || t.includes('cash')) return 'Efectivo';
+      if (t.includes('transferencia') || t.includes('banco') || t.includes('depósito')) return 'Transferencia Bancaria';
+      return textoRaw;
+    }
+
+    async function cargarDatosFinancieros() {
+      if (!supabaseClient) {
+        alert("Error de conexión a la base de datos.");
+        return;
+      }
+
+      document.getElementById('contenedor-tarjetas-proyecto').innerHTML = `<div class="col-span-2 p-8 text-center text-blue-400 font-bold"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Consolidando expedientes y flujos financieros...</div>`;
+
+      try {
+        const [resProf, resOT, resAbonos, resCat] = await Promise.all([
+          supabaseClient.from('proformas').select('*'),
+          supabaseClient.from('ordenes_trabajo').select('*').order('created_at', { ascending: false }),
+          supabaseClient.from('pagos_abonos').select('*').order('created_at', { ascending: false }),
+          supabaseClient.from('catalogo_precios').select('*')
+        ]);
+
+        if (resOT.error) throw resOT.error;
+
+        const dataProformas = resProf.data || [];
+        listaOTsFinanzas = resOT.data || [];
+        const pagosAbonos = resAbonos.data || [];
+        const catalogoItems = resCat.data || [];
+
+        const catDict = {};
+        catalogoItems.forEach(ci => { catDict[ci.id] = ci; });
+
+        const selectOT = document.getElementById('pago-select-ot');
+        if (selectOT) {
+          selectOT.innerHTML = '<option value="" style="background:#0f172a; color:#fff;">-- Seleccionar OT --</option>';
+          listaOTsFinanzas.forEach(o => {
+            if(Number(o.saldo || 0) > 0) {
+               selectOT.innerHTML += `<option value="${o.id}" style="background:#0f172a; color:#fff;">${o.numero_ot || 'OT-' + o.id} - ${o.cliente} (Saldo: $${Number(o.saldo || 0).toFixed(2)})</option>`;
+            }
+          });
+        }
+
+        let totalEmitidoSuma = 0;
+        let countEmitidas = 0;
+        let totalAprobadasSuma = 0;
+        let countAprobadas = 0;
+
+        dataProformas.forEach(p => {
+          const valorProf = Number(p.total || p.total_contado || 0);
+          totalEmitidoSuma += valorProf;
+          countEmitidas++;
+
+          const est = String(p.estado || '').toLowerCase();
+          if (est.includes('aprobad') || est.includes('facturad') || est.includes('emitid')) {
+            totalAprobadasSuma += valorProf;
+            countAprobadas++;
+          }
+        });
+
+        let totalAnticiposCobrados = 0;
+        pagosAbonos.forEach(p => {
+          totalAnticiposCobrados += Number(p.monto || 0);
+        });
+
+        let totalPorCobrar = 0;
+        const mapaExpedientes = new Map();
+
+        listaOTsFinanzas.forEach(ot => {
+          const totalOT = Number(ot.subtotal || ot.total || 0);
+          const saldoOT = Number(ot.saldo || 0);
+          totalPorCobrar += saldoOT;
+
+          let costoRealOT = totalOT * 0.40;
+          let itemsOT = ot.items || ot.lineas || [];
+          if (Array.isArray(itemsOT) && itemsOT.length > 0) {
+            let sumaCostos = 0;
+            itemsOT.forEach(it => {
+              const precioUni = Number(it.precio || it.valor || it.costo || 0);
+              const cant = Number(it.cantidad || it.cant || 1);
+              sumaCostos += (precioUni * 0.5 * cant);
+            });
+            if(sumaCostos > 0) costoRealOT = sumaCostos;
+          }
+
+          mapaExpedientes.set(String(ot.id), {
+            id: ot.id,
+            numero: ot.numero_ot || `OT-${ot.id}`,
+            cliente: ot.cliente || 'Consumidor Final',
+            ubicacion: ot.ubicacion || 'Quito, Ecuador',
+            estado: ot.estado,
+            fechaCreacion: ot.created_at,
+            total: totalOT,
+            saldo: saldoOT,
+            costoReal: costoRealOT,
+            proforma_id: ot.proforma_id,
+            abonos: []
+          });
+        });
+
+        mapaExpedientes.forEach((exp, otKey) => {
+          pagosAbonos.forEach(p => {
+            if (String(p.ot_id) === otKey) {
+              exp.abonos.push({
+                fecha: p.created_at,
+                monto: Number(Number(p.monto || 0).toFixed(2)),
+                metodo: clasificarMetodo(p.metodo),
+                comprobante: p.comprobante || p.referencia_ot || 'Pago Registrado'
+              });
+            }
+          });
+        });
+
+        document.getElementById('kpi-total-emitido').innerText = `$${totalEmitidoSuma.toFixed(2)}`;
+        document.getElementById('kpi-total-emitido-desc').innerText = `${countEmitidas} proformas registradas`;
+        
+        document.getElementById('kpi-aprobadas').innerText = `$${totalAprobadasSuma.toFixed(2)}`;
+        document.getElementById('kpi-aprobadas-desc').innerText = `${countAprobadas} obras cerradas/activas`;
+
+        document.getElementById('kpi-anticipos').innerText = `$${totalAnticiposCobrados.toFixed(2)}`;
+        document.getElementById('kpi-pendientes').innerText = `$${totalPorCobrar.toFixed(2)}`;
+
+        expedientesProyectos = Array.from(mapaExpedientes.values());
+        filtrarTarjetasProyecto();
+        renderizarRentabilidad(expedientesProyectos);
+
+      } catch (err) {
+        console.error("Error al cargar finanzas:", err);
+        document.getElementById('contenedor-tarjetas-proyecto').innerHTML = `<div class="col-span-2 p-8 text-center text-rose-400 font-bold">Error: ${err.message}</div>`;
+      }
+    }
+
+    function renderizarTarjetasProyecto(lista) {
+      const contenedor = document.getElementById('contenedor-tarjetas-proyecto');
+      contenedor.innerHTML = '';
+
+      if (lista.length === 0) {
+        contenedor.innerHTML = `<div class="col-span-2 p-8 text-center text-white/50 italic">No se encontraron expedientes financieros para los filtros seleccionados.</div>`;
+        return;
+      }
+
+      lista.forEach((exp, index) => {
+        const totalAbonadoCalculado = exp.abonos.reduce((acc, item) => acc + item.monto, 0);
+        const saldoReal = Math.max(0, exp.total - totalAbonadoCalculado);
+        const porcentaje = exp.total > 0 ? Math.min(100, (totalAbonadoCalculado / exp.total) * 100) : (saldoReal === 0 ? 100 : 0);
+        
+        const esLiquidado = saldoReal <= 0.01;
+
+        const diasAntiguedad = exp.fechaCreacion ? (Date.now() - new Date(exp.fechaCreacion).getTime()) / (1000 * 60 * 60 * 24) : 0;
+        const enMora = !esLiquidado && diasAntiguedad > 15;
+
+        let badgeEstadoHtml = esLiquidado 
+          ? `<span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase font-tech-mono bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">100% Liquidado</span>`
+          : (enMora 
+              ? `<span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase font-tech-mono bg-rose-500/20 text-rose-300 border border-rose-400/30 animate-pulse">⚠️ En Mora (${Math.floor(diasAntiguedad)}d)</span>`
+              : `<span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase font-tech-mono bg-amber-500/20 text-amber-300 border border-amber-400/30">Con Saldo Pendiente</span>`
+            );
+
+        let abonosHtml = '';
+        if (exp.abonos.length === 0) {
+          abonosHtml = `<p class="text-[11px] text-white/50 italic py-1">Sin pagos registrados en este expediente.</p>`;
+        } else {
+          abonosHtml = exp.abonos.map(ab => `
+            <div class="flex justify-between items-center bg-white/5 p-2.5 rounded-xl border border-white/10 text-[11px] shadow-sm text-white">
+              <div>
+                <span class="font-bold text-white">${ab.metodo}</span>
+                <span class="text-white/60 font-mono text-[10px] block">${new Date(ab.fecha).toLocaleDateString('es-EC', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})} • ${ab.comprobante}</span>
+              </div>
+              <span class="font-black text-emerald-300 font-tech-mono">+$${ab.monto.toFixed(2)}</span>
+            </div>
+          `).join('');
+        }
+
+        contenedor.innerHTML += `
+          <div class="cyber-glass-card p-5 rounded-2xl shadow-sm border ${enMora ? 'border-rose-400/40 shadow-rose-900/20' : 'border-white/15'} space-y-4 flex flex-col justify-between">
+            <div class="flex justify-between items-start gap-2">
+              <div>
+                <span class="font-tech-mono text-[10px] font-bold text-blue-300 bg-blue-500/20 px-2 py-0.5 rounded-md border border-blue-400/30">${exp.numero}</span>
+                <h3 class="font-tech-head font-extrabold text-white text-sm mt-1.5">${exp.cliente}</h3>
+                <p class="text-[10px] text-white/60"><i class="fa-solid fa-location-dot mr-1 text-white/40"></i>${exp.ubicacion}</p>
+              </div>
+              <div>${badgeEstadoHtml}</div>
+            </div>
+
+            <!-- Mini Grid Financiero -->
+            <div class="grid grid-cols-3 gap-2 bg-white/5 p-3 rounded-xl border border-white/10 text-center font-tech-mono text-white">
+              <div>
+                <span class="text-[9px] font-bold text-white/60 uppercase block">Total</span>
+                <span class="text-xs font-black text-white">$${exp.total.toFixed(2)}</span>
+              </div>
+              <div>
+                <span class="text-[9px] font-bold text-white/60 uppercase block">Abonado</span>
+                <span class="text-xs font-black text-emerald-300">$${totalAbonadoCalculado.toFixed(2)}</span>
+              </div>
+              <div>
+                <span class="text-[9px] font-bold text-white/60 uppercase block">Saldo</span>
+                <span class="text-xs font-black text-rose-300">$${saldoReal.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <!-- Barra de Progreso -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[10px] font-bold font-tech-mono text-white/75">
+                <span>Progreso de Cobro</span>
+                <span>${porcentaje.toFixed(0)}%</span>
+              </div>
+              <div class="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                <div class="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-500" style="width: ${porcentaje}%"></div>
+              </div>
+            </div>
+
+            <!-- Acordeón Desplegable de Abonos -->
+            <div class="space-y-2 pt-1 border-t border-white/15">
+              <button onclick="toggleAcordeonAbonos(${index})" class="w-full flex justify-between items-center text-xs font-bold text-white/80 hover:text-white transition py-1">
+                <span class="flex items-center gap-1.5 font-tech-head text-[11px]"><i class="fa-solid fa-receipt text-white/50"></i> Historial de Abonos (${exp.abonos.length})</span>
+                <i id="chevron-abonos-${index}" class="fa-solid fa-chevron-down text-[10px] collapse-chevron text-white/70"></i>
+              </button>
+              <div id="acordeon-abonos-${index}" class="collapse-abonos space-y-1.5">
+                ${abonosHtml}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function toggleAcordeonAbonos(index) {
+      const content = document.getElementById(`acordeon-abonos-${index}`);
+      const chevron = document.getElementById(`chevron-abonos-${index}`);
+      if (content && chevron) {
+        content.classList.toggle('open');
+        chevron.classList.toggle('rotated');
+      }
+    }
+
+    function filtrarTarjetasProyecto() {
+      const texto = document.getElementById('filtro-texto').value.toLowerCase();
+      const estadoFiltro = document.getElementById('filtro-estado-pago').value;
+      const periodoFiltro = document.getElementById('filtro-periodo').value;
+
+      const ahora = new Date();
+      const mesActualNum = ahora.getMonth();
+      const anioActualNum = ahora.getFullYear();
+
+      const filtrados = expedientesProyectos.filter(exp => {
+        const matchTexto = exp.cliente.toLowerCase().includes(texto) || exp.numero.toLowerCase().includes(texto);
+        
+        const totalAbonado = exp.abonos.reduce((acc, item) => acc + item.monto, 0);
+        const saldoReal = Math.max(0, exp.total - totalAbonado);
+        const esLiquidado = saldoReal <= 0.01;
+        const diasAntiguedad = exp.fechaCreacion ? (Date.now() - new Date(exp.fechaCreacion).getTime()) / (1000 * 60 * 60 * 24) : 0;
+        const enMora = !esLiquidado && diasAntiguedad > 15;
+        
+        let matchEstado = true;
+        if (estadoFiltro === 'activo') matchEstado = !esLiquidado;
+        if (estadoFiltro === 'liquidado') matchEstado = esLiquidado;
+        if (estadoFiltro === 'mora') matchEstado = enMora;
+
+        let matchPeriodo = true;
+        if (exp.fechaCreacion) {
+          const fechaOT = new Date(exp.fechaCreacion);
+          if (periodoFiltro === 'mes_actual') {
+            matchPeriodo = (fechaOT.getMonth() === mesActualNum && fechaOT.getFullYear() === anioActualNum);
+          } else if (periodoFiltro === 'ultimos_30') {
+            matchPeriodo = diasAntiguedad <= 30;
+          }
+        }
+
+        return matchTexto && matchEstado && matchPeriodo;
+      });
+
+      renderizarTarjetasProyecto(filtrados);
+    }
+
+    function renderizarRentabilidad(lista) {
+      const tbody = document.getElementById('tabla-rentabilidad-body');
+      if (!tbody) return;
+
+      if (lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-white/50 italic">No hay obras registradas para calcular rentabilidad.</td></tr>`;
+        return;
+      }
+
+      let sumaMargenes = 0;
+
+      tbody.innerHTML = lista.map(exp => {
+        const valorFacturado = exp.total;
+        if(valorFacturado === 0) return '';
+        
+        const costoReal = exp.costoReal;
+        const gananciaNeta = valorFacturado - costoReal;
+        const margenPct = valorFacturado > 0 ? (gananciaNeta / valorFacturado) * 100 : 0;
+        sumaMargenes += margenPct;
+
+        return `
+          <tr class="hover:bg-white/5 transition">
+            <td class="p-3 font-mono font-bold text-white">${exp.numero}</td>
+            <td class="p-3 font-semibold text-white/90">${exp.cliente} <span class="block text-[10px] text-white/50 font-normal">${exp.ubicacion}</span></td>
+            <td class="p-3 text-right font-mono font-bold text-white">$${valorFacturado.toFixed(2)}</td>
+            <td class="p-3 text-right font-mono text-rose-300">$${costoReal.toFixed(2)}</td>
+            <td class="p-3 text-right font-mono font-bold text-emerald-300">$${gananciaNeta.toFixed(2)}</td>
+            <td class="p-3 text-center font-mono font-bold text-indigo-300">${margenPct.toFixed(1)}%</td>
+          </tr>
+        `;
+      }).join('');
+
+      const promedio = lista.length > 0 ? sumaMargenes / lista.length : 0;
+      document.getElementById('fin-margen-promedio').textContent = `${promedio.toFixed(1)}%`;
+    }
+
+    function exportarReporteCSV() {
+      if (expedientesProyectos.length === 0) {
+        alert("No hay datos para exportar.");
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,N° OT;Cliente;Ubicacion;Total Facturado;Abonado;Saldo Pendiente;Estado\r\n";
+      
+      expedientesProyectos.forEach(exp => {
+        const abonado = exp.abonos.reduce((a, b) => a + b.monto, 0);
+        const saldo = Math.max(0, exp.total - abonado);
+        const estado = saldo <= 0.01 ? "Liquidado" : "Pendiente";
+        csvContent += `${exp.numero};"${exp.cliente}";"${exp.ubicacion}";${exp.total.toFixed(2)};${abonado.toFixed(2)};${saldo.toFixed(2)};${estado}\r\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Reporte_Financiero_ProTech_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function abrirModalPago() {
+      document.getElementById('pago-monto').value = '';
+      document.getElementById('pago-comprobante').value = '';
+      document.getElementById('modal-pago').classList.remove('hidden');
+    }
+
+    function cerrarModalPago() {
+      document.getElementById('modal-pago').classList.add('hidden');
+    }
+
+    async function guardarAbonoPago() {
+      const otId = document.getElementById('pago-select-ot').value;
+      const monto = Number(document.getElementById('pago-monto').value);
+      const metodo = document.getElementById('pago-metodo').value;
+      const comprobante = document.getElementById('pago-comprobante').value.trim();
+
+      if (!otId || !monto || monto <= 0) {
+        alert("Selecciona una orden de trabajo y un monto válido.");
+        return;
+      }
+
+      const otObj = listaOTsFinanzas.find(o => String(o.id) === String(otId));
+      if (!otObj) return;
+
+      try {
+        let proformaData = null;
+        if (otObj.proforma_id) {
+          const { data: prof } = await supabaseClient
+            .from('proformas')
+            .select('*')
+            .eq('id', otObj.proforma_id)
+            .maybeSingle();
+          proformaData = prof;
+        }
+
+        const nuevoPago = {
+          ot_id: otObj.id,
+          proforma_id: otObj.proforma_id || null,
+          referencia_ot: otObj.numero_ot || `OT-${otObj.id}`,
+          cliente: otObj.cliente,
+          monto: monto,
+          metodo: metodo,
+          comprobante: comprobante || 'Abono Manual'
+        };
+
+        const { error: errPago } = await supabaseClient.from('pagos_abonos').insert([nuevoPago]);
+        if (errPago) throw errPago;
+
+        const saldoActualOT = Number(otObj.saldo || 0);
+        const nuevoSaldoOT = Math.max(0, saldoActualOT - monto);
+        const otFacturada = (nuevoSaldoOT === 0);
+
+        await supabaseClient.from('ordenes_trabajo').update({ 
+          saldo: nuevoSaldoOT,
+          estado: otFacturada ? 'facturado' : otObj.estado
+        }).eq('id', otObj.id);
+
+        if (proformaData) {
+          const totalContado = Number(proformaData.total_contado || proformaData.total || 0);
+          const anticipoActual = Number(proformaData.monto_anticipo || proformaData.anticipo || 0);
+          const nuevoAnticipoAcumulado = anticipoActual + monto;
+          const nuevoSaldoPendiente = Math.max(0, totalContado - nuevoAnticipoAcumulado);
+          const proformaFacturada = (nuevoSaldoPendiente === 0);
+
+          await supabaseClient.from('proformas').update({
+            monto_anticipo: nuevoAnticipoAcumulado,
+            saldo_pendiente: nuevoSaldoPendiente,
+            estado: proformaFacturada ? 'FACTURADA' : proformaData.estado
+          }).eq('id', proformaData.id);
+        }
+
+        cerrarModalPago();
+        await cargarDatosFinancieros();
+        alert("✓ Abono registrado con éxito y saldos actualizados en cascada.");
+      } catch (err) {
+        alert("Error al registrar abono: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
