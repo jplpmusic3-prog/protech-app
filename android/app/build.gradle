@@ -2,12 +2,12 @@ apply plugin: 'com.android.application'
 
 android {
     namespace "com.protech.app"
-    compileSdk rootProject.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 33
+    compileSdk 33
 
     defaultConfig {
         applicationId "com.protech.app"
-        minSdk rootProject.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 22
-        targetSdk rootProject.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 33
+        minSdk 22
+        targetSdk 33
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -29,22 +29,15 @@ repositories {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
-    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
-    implementation "androidx.core:core-ktx:$androidxCoreKTXVersion"
-    implementation "androidx.activity:activity-compose:$androidxActivityVersion"
-    implementation platform('androidx.compose:compose-bom:$composeBomVersion')
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.activity:activity-compose:1.8.0'
+    implementation platform('androidx.compose:compose-bom:2023.10.01')
     implementation 'androidx.compose.ui:ui'
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
     implementation 'androidx.compose.material3:material3'
-    testImplementation 'junit:junit:$junitVersion'
-    androidTestImplementation 'androidx.test.ext:junit:$androidxExtJunitVersion'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion'
-    androidTestImplementation platform('androidx.compose:compose-bom:$composeBomVersion')
-    androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
-    debugImplementation 'androidx.compose.ui:ui-tooling'
-    debugImplementation 'androidx.compose.ui:ui-test-manifest'
 }
 
 configurations.all {
