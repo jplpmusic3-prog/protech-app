@@ -29,10 +29,10 @@ jobs:
         run: npx cap sync android
 
       - name: Compilar APK de Android
-     run: |
-       cd android
-       chmod +x gradlew
-       ./gradlew assembleDebug --refresh-dependencies
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --refresh-dependencies
 
       - name: Subir APK generada
         uses: actions/upload-artifact@v4
