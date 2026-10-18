@@ -1,0 +1,2225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Topología General Dinámica — ProTech Security</title>
+  
+  <!-- Configuración PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Técnica Homologada -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO Y MICRO-RETÍCULA CAD (GPU SAFE)
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.14), transparent 60%),
+        linear-gradient(rgba(2, 6, 23, 0.65), rgba(2, 6, 23, 0.78));
+    }
+    .tech-grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+    }
+
+    /* ========================================================
+       2. TARJETAS CYBER-GLASS CON LUZ ESPECULAR Y TELEMETRÍA
+       ======================================================== */
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.82) 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.08),
+        inset -1px -1px 3px rgba(0, 0, 0, 0.5),
+        0 12px 28px -6px rgba(0, 0, 0, 0.55) !important;
+      border-radius: 1.25rem !important;
+      position: relative !important;
+      color: #ffffff !important;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.18s ease;
+    }
+    .cyber-glass-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 12%;
+      right: 12%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.55), transparent);
+      pointer-events: none;
+    }
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      border-color: rgba(59, 130, 246, 0.5) !important;
+    }
+
+    .corner-telemetry::after {
+      content: "";
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid rgba(59, 130, 246, 0.45);
+      border-bottom: 2px solid rgba(59, 130, 246, 0.45);
+      pointer-events: none;
+    }
+
+    .btn-glass-action {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.92) 0%, rgba(51, 65, 85, 0.88) 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+      border-radius: 0.875rem !important;
+      transition: all 0.18s ease;
+      color: #ffffff !important;
+    }
+    .btn-glass-action:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(51, 65, 85, 0.98) 0%, rgba(71, 85, 105, 0.92) 100%) !important;
+      border-color: rgba(59, 130, 246, 0.65) !important;
+    }
+    .btn-glass-action:active:not(:disabled) { transform: scale(0.97); }
+    .btn-glass-action:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-cyber-primary {
+      background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%) !important;
+      border: 1px solid rgba(165, 180, 252, 0.45) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 16px rgba(79, 70, 229, 0.4) !important;
+      border-radius: 0.875rem !important;
+      color: #ffffff !important;
+      transition: all 0.18s ease;
+    }
+    .btn-cyber-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 20px rgba(79, 70, 229, 0.55) !important;
+    }
+    .btn-cyber-primary:active:not(:disabled) { transform: scale(0.97); }
+
+    .cyber-input {
+      background: rgba(15, 23, 42, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #ffffff !important;
+      box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.45) !important;
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder { color: rgba(255, 255, 255, 0.45); }
+    .cyber-input:focus {
+      background: rgba(30, 41, 59, 0.98) !important;
+      border-color: rgba(59, 130, 246, 0.85) !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+      outline: none;
+    }
+    .cyber-input option { background: #0f172a; color: #ffffff; }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .hide-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+
+    /* ========================================================
+       3. SIDEBAR RESPONSIVO Y PESTAÑAS
+       ======================================================== */
+    #sidebar_menu {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, opacity 0.25s ease;
+    }
+    @media (min-width: 768px) {
+      #sidebar_menu.collapsed {
+        width: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        border-right-width: 0 !important;
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+    }
+
+    .menu-link {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.55rem 0.75rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.82); transition: all 0.2s; margin-bottom: 0.3rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.1); color: #ffffff; }
+    .menu-link.active { 
+      background: linear-gradient(90deg, rgba(147, 51, 234, 0.45) 0%, rgba(79, 70, 229, 0.25) 100%); 
+      color: #ffffff; 
+      border: 1px solid rgba(168, 85, 247, 0.6);
+      box-shadow: 0 4px 14px rgba(147, 51, 234, 0.28);
+    }
+    .menu-link.active .icon-box { background-color: #7c3aed !important; color: white !important; border: none !important; }
+
+    .tab-btn {
+      padding: 0.65rem 1.2rem; font-size: 0.75rem; font-weight: 700; border-radius: 0.85rem; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+    }
+    .tab-btn.inactive {
+      background: rgba(15, 23, 42, 0.75); color: rgba(255, 255, 255, 0.7); border-color: rgba(255, 255, 255, 0.15);
+    }
+    .tab-btn.inactive:hover {
+      background: rgba(30, 41, 59, 0.9); color: #ffffff; border-color: rgba(255, 255, 255, 0.3);
+    }
+    .tab-btn.active-cctv {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.5) 0%, rgba(29, 78, 216, 0.35) 100%); color: #bfdbfe; border-color: rgba(59, 130, 246, 0.7); box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+    .tab-btn.active-redes {
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.5) 0%, rgba(67, 56, 202, 0.35) 100%); color: #e0e7ff; border-color: rgba(99, 102, 241, 0.7); box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+    }
+    .tab-btn.active-mosaico {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.45) 0%, rgba(5, 150, 105, 0.3) 100%); color: #a7f3d0; border-color: rgba(16, 185, 129, 0.7); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .osd-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 0.55rem;
+      font-family: var(--tech-mono);
+      font-size: 11px;
+      color: #38bdf8;
+      text-shadow: 1px 1px 2px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000;
+    }
+
+    .pdf-avoid-break {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    #page_transition_overlay {
+      transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @media print {
+      header, main, aside, nav, .no-print, #toast_container, #modal_lightbox, #mobile_bottom_dock, .bg-video-container, .bg-video-overlay, .tech-grid-overlay, #page_transition_overlay { display: none !important; }
+      html, body { background: #ffffff !important; color: #000000 !important; height: auto !important; overflow: visible !important; }
+      #modal_anexo_acta { position: static !important; display: block !important; background: transparent !important; padding: 0 !important; overflow: visible !important; }
+      #modal_anexo_acta > div { max-height: none !important; border: none !important; box-shadow: none !important; width: 100% !important; max-width: 100% !important; }
+      #contenedor_anexo_print { overflow: visible !important; padding: 0 !important; }
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center text-white">
+
+  <!-- PANTALLA DE CARGA / TRANSICIÓN -->
+  <div id="page_transition_overlay" class="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center opacity-100">
+    <div class="cyber-glass-card p-8 sm:p-10 flex flex-col items-center gap-5 min-w-[260px] sm:min-w-[290px]">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute -inset-3 rounded-full border border-purple-500/30 animate-ping opacity-30"></div>
+        <img src="logo.png" alt="ProTech" class="h-28 sm:h-36 w-auto object-contain drop-shadow-lg relative z-10" onerror="this.style.display='none';">
+      </div>
+      <div class="text-center">
+        <p class="font-extrabold text-sm sm:text-base text-white tracking-wide">ProTech Cyber-OS</p>
+        <p class="font-tech-mono text-[10px] sm:text-xs uppercase tracking-widest text-purple-400 font-bold mt-1.5" id="transition_text">Mapeando Topología As-Built...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR DE NOTIFICACIONES CYBER-TOAST -->
+  <div id="toast_container" class="fixed top-4 right-4 z-[9990] flex flex-col gap-2.5 max-w-xs sm:max-w-sm w-full pointer-events-none px-2 sm:px-0"></div>
+
+  <!-- LIGHTBOX DE IMÁGENES Y ENCUADRES -->
+  <div id="modal_lightbox" onclick="cerrarLightbox()" class="fixed inset-0 bg-slate-950/95 z-[150] hidden flex flex-col justify-center items-center p-4 cursor-zoom-out">
+    <div class="relative max-w-4xl w-full flex flex-col items-center gap-3" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center w-full px-2 text-white text-xs font-tech-mono">
+        <span id="lightbox_titulo" class="font-bold tracking-wider uppercase text-emerald-300 truncate">Inspección Visual As-Built</span>
+        <button onclick="cerrarLightbox()" class="h-9 w-9 rounded-xl bg-white/10 hover:bg-rose-500/20 text-white hover:text-rose-400 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+      <div class="cyber-glass-card p-2 w-full flex items-center justify-center max-h-[82vh] overflow-hidden">
+        <img id="lightbox_img" src="" class="max-h-[76vh] w-auto rounded-lg object-contain">
+      </div>
+    </div>
+  </div>
+
+  <!-- VIDEO DE FONDO Y RETÍCULA TÉCNICA -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline preload="auto">
+      <source src="fondo-tech.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+  <div class="tech-grid-overlay"></div>
+
+  <div class="app-window flex w-full h-screen overflow-hidden relative z-10">
+
+    <!-- OVERLAY MÓVIL -->
+    <div id="mobile_menu_overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-950/80 z-40 hidden md:hidden transition-opacity"></div>
+
+    <!-- SIDEBAR NAVEGACIÓN COMPLETO -->
+    <aside id="sidebar_menu" class="fixed md:relative top-0 left-0 z-50 h-full w-72 flex-col justify-between border-r border-white/15 p-4 sm:p-5 flex bg-slate-950/95 md:bg-slate-950/55 shadow-2xl md:shadow-none -translate-x-full md:translate-x-0 flex-shrink-0">
+      <div class="space-y-4 overflow-y-auto max-h-[calc(100vh-115px)] pr-1 hide-scrollbar">
+        <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <img src="logo.png" alt="ProTech" class="h-9 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+              <div id="logo_fallback" style="display:none;" class="h-9 w-9 rounded-xl bg-blue-600 text-white font-bold text-sm items-center justify-center shadow-md">PS</div>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="font-extrabold text-[15px] text-white leading-tight">ProTech</h1>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-[8px] font-tech-mono text-emerald-300 font-bold">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>ONLINE
+                </span>
+              </div>
+              <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-0.5">Cyber-OS • v4.2</p>
+            </div>
+          </div>
+          <button onclick="toggleSidebar()" class="md:hidden text-white/70 hover:text-white p-1.5 rounded-lg hover:bg-white/10">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+
+        <nav class="space-y-3.5">
+          <div class="cyber-glass-card p-2.5">
+            <div class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-purple-300 tracking-wider px-2 py-1 mb-1 select-none">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-diagram-project"></i> Ingeniería & Campo</span>
+            </div>
+            <div class="space-y-1">
+              <button onclick="navegarA('inspecciones_index.html', 'Dashboard Principal')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-gauge-high"></i></div>
+                  <span class="truncate">Panel Principal</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_cliente.html', 'Datos del Cliente')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-white/80 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-address-card"></i></div>
+                  <span class="truncate">1. Datos del Cliente</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_cctv.html', 'CCTV & Audio')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-video"></i></div>
+                  <span class="truncate">2. CCTV & Audio</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_alarmas.html', 'Sistema de Alarmas')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-bell"></i></div>
+                  <span class="truncate">3. Alarmas</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_redes.html', 'Redes & Fibra')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-network-wired"></i></div>
+                  <span class="truncate">4. Redes & Fibra</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_cercos.html', 'Cercos Eléctricos')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-rose-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-bolt"></i></div>
+                  <span class="truncate">5. Cercos Eléctricos</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_acceso.html', 'Control de Acceso')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-fingerprint"></i></div>
+                  <span class="truncate">6. Control Acceso</span>
+                </div>
+              </button>
+              <button onclick="navegarA('topologia_general.html', 'Topología de Obra')" class="menu-link active w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-purple-600 text-white flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-sitemap"></i></div>
+                  <span class="truncate">Topología Dinámica Obra</span>
+                </div>
+                <span class="font-tech-mono text-[8px] px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-200 border border-purple-400/30 font-bold">AS-BUILT</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card p-2.5">
+            <div class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-white/60 tracking-wider px-2 py-1 mb-1 select-none">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-file-signature"></i> Cierre & Entrega</span>
+            </div>
+            <div class="space-y-1">
+              <button onclick="navegarA('inspeccion_equipos.html', 'Consolidado de Equipos')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-300 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-boxes-stacked"></i></div>
+                  <span class="truncate">Consolidado Equipos</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_materiales.html', 'Calculadora de Materiales')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-toolbox"></i></div>
+                  <span class="truncate">Calculadora Materiales</span>
+                </div>
+              </button>
+              <button onclick="navegarA('acta_entrega.html', 'Acta de Entrega')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-300 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-file-signature"></i></div>
+                  <span class="truncate">Acta Entrega-Recepción</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </nav>
+      </div>
+
+      <div class="cyber-glass-card p-3 flex items-center justify-between mt-3">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shadow-md flex-shrink-0 border border-blue-400/30">JP</div>
+          <div class="truncate">
+            <p class="text-[11px] font-bold text-white truncate">Juan Pablo Luna</p>
+            <p class="font-tech-mono text-[8px] text-blue-300 uppercase font-bold">Ing. Proyectos • Admin</p>
+          </div>
+        </div>
+        <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition flex-shrink-0" title="Cerrar Sesión">
+          <i class="fa-solid fa-power-off text-xs"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="flex-1 flex flex-col h-screen overflow-y-auto hide-scrollbar relative z-10">
+      
+      <!-- HEADER STICKY -->
+      <header class="border-b border-white/15 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 bg-slate-950/90 z-30 sticky top-0">
+        <div class="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+          <button onclick="toggleSidebar()" class="text-white p-2 sm:p-2.5 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 active:scale-95 transition flex-shrink-0" title="Alternar Menú">
+            <i class="fa-solid fa-bars text-xs sm:text-sm"></i>
+          </button>
+          <div class="truncate">
+            <span class="font-tech-mono text-[10px] sm:text-xs font-bold text-purple-300 uppercase tracking-wider block truncate">Ingeniería As-Built & Mapeo P2P</span>
+            <span id="header_cliente_nombre" class="text-[11px] text-white/70 font-medium truncate block">Sincronizando obra...</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button onclick="navegarA('inspecciones_index.html', 'Dashboard Principal')" class="px-2.5 py-2 sm:px-3.5 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-gauge-high text-blue-400"></i> <span class="hidden sm:inline">Panel</span>
+          </button>
+          <button onclick="abrirModalAnexoActa()" class="px-3 py-2 sm:px-4 rounded-xl btn-glass-action border-emerald-400/40 text-white text-xs font-bold transition flex items-center gap-1.5" title="Generar Informe Final As-Built">
+            <i class="fa-solid fa-file-contract text-emerald-400"></i> <span class="hidden sm:inline">Dossier As-Built</span><span class="sm:hidden">Dossier</span>
+          </button>
+          <button id="btn_guardar_topologia" onclick="guardarTopologiaObra()" class="hidden md:flex px-4 py-2 rounded-xl btn-cyber-primary text-white text-xs font-bold transition items-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i> <span>Guardar Topología</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- MAIN BODY -->
+      <main class="flex-1 p-3.5 sm:p-6 lg:p-8 relative space-y-5 z-10 pb-28 md:pb-16">
+        <div class="max-w-6xl mx-auto space-y-5">
+
+          <!-- ENCABEZADO DE CONSOLA -->
+          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div>
+              <div class="inline-flex items-center gap-2 text-[10px] font-tech-mono uppercase tracking-widest text-purple-400 font-bold mb-1">
+                <i class="fa-solid fa-sitemap animate-pulse"></i> ARQUITECTURA LÓGICA Y FÍSICA • SINCRONIZACIÓN BIDIRECCIONAL
+              </div>
+              <h2 class="font-extrabold text-xl sm:text-2xl text-white tracking-tight">
+                Explorador Jerárquico de Obra & Monitor NVR
+              </h2>
+            </div>
+            <div class="inline-flex items-center gap-2 self-start sm:self-auto cyber-glass-card px-3 py-1.5 border-white/20">
+              <span class="text-[9px] font-tech-mono uppercase font-bold text-purple-300">Ticket:</span>
+              <span id="label_id_ticket" class="text-xs font-tech-mono font-bold text-white"># INS-0000</span>
+            </div>
+          </div>
+
+          <!-- CINTA DE TELEMETRÍA AS-BUILT EN VIVO (4 KPIs) -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="cyber-glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 flex-shrink-0"><i class="fa-solid fa-video text-sm sm:text-base"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] uppercase font-bold text-white/60 font-tech-mono truncate">Canales de Video</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_topo_cams" class="text-lg sm:text-xl font-black text-white leading-none">0</p>
+                  <span id="kpi_topo_operativas" class="text-[9px] font-tech-mono text-emerald-300 truncate">0 Operativos</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cyber-glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 flex-shrink-0"><i class="fa-solid fa-network-wired text-sm sm:text-base"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] uppercase font-bold text-white/60 font-tech-mono truncate">Switches & Troncales</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_topo_switches" class="text-lg sm:text-xl font-black text-white leading-none">0</p>
+                  <span id="kpi_topo_fibra" class="text-[9px] font-tech-mono text-purple-300 truncate">0 Fibra</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cyber-glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-purple-300 flex-shrink-0"><i class="fa-solid fa-ethernet text-sm sm:text-base"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] uppercase font-bold text-white/60 font-tech-mono truncate">Red Datos LAN</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_topo_redes" class="text-lg sm:text-xl font-black text-white leading-none">0</p>
+                  <span id="kpi_topo_idfs" class="text-[9px] font-tech-mono text-indigo-300 truncate">0 IDFs</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cyber-glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 flex-shrink-0"><i class="fa-solid fa-tv text-sm sm:text-base"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] uppercase font-bold text-white/60 font-tech-mono truncate">Capturas NVR</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_topo_capturas" class="text-lg sm:text-xl font-black text-white leading-none">0 / 0</p>
+                  <span class="text-[9px] font-tech-mono text-emerald-300 truncate">encuadres</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PESTAÑAS (TABS) -->
+          <div class="flex items-center gap-2 border-b border-white/15 pb-2.5 overflow-x-auto hide-scrollbar">
+            <button id="tab_btn_cctv" onclick="cambiarPestanaTopologia('cctv')" class="tab-btn active-cctv text-xs">
+              <i class="fa-solid fa-video text-blue-400"></i> <span>1. Árbol & Matriz CCTV</span>
+            </button>
+            <button id="tab_btn_redes" onclick="cambiarPestanaTopologia('redes')" class="tab-btn inactive text-xs">
+              <i class="fa-solid fa-network-wired text-indigo-400"></i> <span>2. Topología Redes LAN</span>
+            </button>
+            <button id="tab_btn_mosaico" onclick="cambiarPestanaTopologia('mosaico')" class="tab-btn inactive text-xs">
+              <i class="fa-solid fa-tv text-emerald-400"></i> <span>3. Simulador Monitor NVR & Encuadres</span>
+            </button>
+          </div>
+
+          <!-- ==========================================
+               VISTA 1: CCTV & VIDEO
+               ========================================== -->
+          <div id="vista_topologia_cctv" class="space-y-6">
+            
+            <!-- ÁRBOL DE CONEXIONES INTERACTIVO -->
+            <div class="cyber-glass-card p-4 sm:p-6 space-y-4 border-l-4 border-l-blue-500">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+                <div>
+                  <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sitemap text-blue-400"></i> Árbol Jerárquico de Conexiones CCTV (As-Built)
+                  </h3>
+                  <p class="text-[10px] text-white/60 mt-0.5">Haz clic sobre cualquier nodo (NVR, Switch PoE o bloque BNC) para expandir o contraer sus ramas.</p>
+                </div>
+                <div class="flex items-center gap-2 self-start sm:self-auto">
+                  <button onclick="expandirTodoArbol(true)" class="text-[10px] font-tech-mono bg-white/10 text-blue-300 px-3 py-1.5 rounded-lg border border-white/20 font-bold hover:bg-white/20 transition">
+                    <i class="fa-solid fa-expand mr-1"></i>Expandir Todo
+                  </button>
+                  <button onclick="expandirTodoArbol(false)" class="text-[10px] font-tech-mono bg-white/10 text-white/80 px-3 py-1.5 rounded-lg border border-white/20 font-bold hover:bg-white/20 transition">
+                    <i class="fa-solid fa-compress mr-1"></i>Contraer Todo
+                  </button>
+                </div>
+              </div>
+              <div id="canvas_topologia_global" class="bg-slate-950/75 rounded-2xl p-3 sm:p-4 text-white font-tech-mono border border-white/15 shadow-inner text-left overflow-x-auto min-h-[260px]">
+                <span class="text-xs text-white/50 italic">Cargando árbol de hardware CCTV...</span>
+              </div>
+            </div>
+
+            <!-- GESTIÓN DE SWITCHES EN OBRA (CON SOPORTE DE FIBRA Y PUERTOS UPLINK) -->
+            <div class="cyber-glass-card p-4 sm:p-6 space-y-4 border-l-4 border-l-indigo-400">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+                <div>
+                  <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                    <i class="fa-solid fa-network-wired text-indigo-400"></i> Gestión de Switches PoE & Troncales de Fibra (CCTV)
+                  </h3>
+                  <p class="text-[10px] text-white/70 mt-0.5">Cualquier ajuste aquí actualiza automáticamente el Árbol, la Matriz y el módulo de CCTV.</p>
+                </div>
+                <button onclick="añadirSwitchObra()" class="px-4 py-2 rounded-xl btn-glass-action text-white text-xs font-bold shadow transition flex items-center gap-1.5 self-start sm:self-auto">
+                  <i class="fa-solid fa-plus text-indigo-400"></i> Añadir Switch en Obra
+                </button>
+              </div>
+              <div id="contenedor_switches_obra" class="space-y-3"></div>
+            </div>
+
+            <!-- MATRIZ DE CONEXIONES DE CÁMARAS EDITABLE -->
+            <div class="cyber-glass-card p-4 sm:p-6 space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+                <div>
+                  <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-blue-400"></i> Matriz de Conexiones: Red Física vs. Canal Lógico Grabador
+                  </h3>
+                  <p class="text-[10px] text-white/70 mt-0.5">Define a qué Switch/Puerto físico se conecta cada cámara y en qué Canal NVR/DVR se visualiza en el monitor.</p>
+                </div>
+                <div class="flex items-center gap-2 self-start sm:self-auto">
+                  <button onclick="marcarTodasOperativas()" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/30 font-tech-mono text-[10px] font-bold transition">
+                    <i class="fa-solid fa-check-double mr-1"></i>Marcar Todo Operativo
+                  </button>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto bg-slate-950/50 rounded-2xl border border-white/15 hide-scrollbar">
+                <table class="w-full text-left border-collapse text-xs min-w-[820px]">
+                  <thead>
+                    <tr class="bg-white/10 text-white font-tech-mono uppercase text-[10px] tracking-wider border-b border-white/15">
+                      <th class="py-3 px-3 sm:px-4">Tecnología</th>
+                      <th class="py-3 px-3 sm:px-4">Cámara / Modelo</th>
+                      <th class="py-3 px-3 sm:px-4">Ubicación Física</th>
+                      <th class="py-3 px-3 sm:px-4">Conectado a (Destino Red)</th>
+                      <th class="py-3 px-3 sm:px-4">Puerto Físico Switch / BNC</th>
+                      <th class="py-3 px-3 sm:px-4">Canal NVR / OSD (Monitor)</th>
+                      <th class="py-3 px-3 sm:px-4 text-center">Estado Obra</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabla_interconexiones_body" class="divide-y divide-white/10 text-white/90">
+                    <tr><td colspan="7" class="text-center py-8 text-white/50 italic">Sincronizando componentes CCTV...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==========================================
+               VISTA 2: REDES & DATOS (LAN)
+               ========================================== -->
+          <div id="vista_topologia_redes" class="space-y-6 hidden">
+            <div class="cyber-glass-card p-4 sm:p-6 space-y-4 border-l-4 border-l-indigo-400">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/15 pb-3">
+                <div>
+                  <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sitemap text-indigo-400"></i> Árbol Jerárquico de Redes & Cableado Estructurado
+                  </h3>
+                  <p class="text-[10px] text-white/60 mt-0.5">Distribución desde el Rack MDF Principal hacia los gabinetes IDF secundarios y tomas de datos.</p>
+                </div>
+                <span class="text-[10px] font-tech-mono bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-lg border border-indigo-400/30 font-bold self-start sm:self-auto">Infraestructura LAN</span>
+              </div>
+              <div id="canvas_topologia_redes" class="bg-slate-950/75 rounded-2xl p-3 sm:p-4 text-white font-tech-mono border border-white/15 shadow-inner text-left overflow-x-auto min-h-[240px]">
+                <span class="text-xs text-white/50 italic">Cargando topología dinámica de redes...</span>
+              </div>
+            </div>
+
+            <div class="cyber-glass-card p-4 sm:p-6 space-y-4">
+              <div class="flex items-center justify-between border-b border-white/15 pb-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                  <i class="fa-solid fa-ethernet text-indigo-400"></i> Matriz de Puntos y Enlaces de Red Levantados
+                </h3>
+                <span class="text-[10px] font-tech-mono text-indigo-300 font-bold bg-indigo-500/20 px-2.5 py-1 rounded-lg border border-indigo-400/30">Patch Panel & Tomas RJ-45</span>
+              </div>
+
+              <div class="overflow-x-auto bg-slate-950/50 rounded-2xl border border-white/15 hide-scrollbar">
+                <table class="w-full text-left border-collapse text-xs min-w-[640px]">
+                  <thead>
+                    <tr class="bg-white/10 text-white font-tech-mono uppercase text-[10px] tracking-wider border-b border-white/15">
+                      <th class="py-3 px-3 sm:px-4">Ruta / Identificador</th>
+                      <th class="py-3 px-3 sm:px-4">Nodo Origen (MDF / IDF)</th>
+                      <th class="py-3 px-3 sm:px-4">Puerto Switch / Patch</th>
+                      <th class="py-3 px-3 sm:px-4">Tipo Servicio / Categoría</th>
+                      <th class="py-3 px-3 sm:px-4 text-center">Metraje (+10%)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabla_puntos_red_body" class="divide-y divide-white/10 text-white/90">
+                    <tr><td colspan="5" class="text-center py-8 text-white/50 italic">Sincronizando puntos de red...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==========================================
+               VISTA 3: SIMULADOR MONITOR NVR CON CAPTURAS EDITABLES
+               ========================================== -->
+          <div id="vista_topologia_mosaico" class="space-y-6 hidden">
+            <div class="cyber-glass-card p-3.5 sm:p-6 space-y-4 border-l-4 border-l-emerald-500">
+              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-white/15 pb-3">
+                <div>
+                  <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                    <i class="fa-solid fa-tv text-emerald-400"></i> Monitor Virtual NVR/DVR & Validación de Encuadres
+                  </h3>
+                  <p class="text-[10px] text-white/70 mt-0.5">Ordenado automáticamente por número de Canal NVR/DVR. Sube la foto de la cámara instalada y la captura de video del monitor.</p>
+                </div>
+                
+                <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <span class="text-[10px] font-tech-mono text-white/60 font-bold uppercase mr-1">Vista:</span>
+                  <button id="btn_grid_1" onclick="cambiarCuadriculaMosaico('grid-cols-1', 'btn_grid_1')" class="grid-col-btn px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-mono font-bold text-white/80">1x1</button>
+                  <button id="btn_grid_2" onclick="cambiarCuadriculaMosaico('grid-cols-1 sm:grid-cols-2', 'btn_grid_2')" class="grid-col-btn px-2.5 py-1 rounded-lg bg-emerald-600/40 border border-emerald-400 text-[11px] font-mono font-bold text-emerald-200">2x2</button>
+                  <button id="btn_grid_3" onclick="cambiarCuadriculaMosaico('grid-cols-1 sm:grid-cols-2 lg:grid-cols-3', 'btn_grid_3')" class="grid-col-btn px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-mono font-bold text-white/80">3x3</button>
+                  <button id="btn_grid_4" onclick="cambiarCuadriculaMosaico('grid-cols-2 sm:grid-cols-3 lg:grid-cols-4', 'btn_grid_4')" class="grid-col-btn px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-mono font-bold text-white/80 hidden sm:inline-block">4x4</button>
+                  <button onclick="pantallaCompletaMosaico()" class="px-3 py-1 rounded-lg btn-glass-action text-[11px] font-bold text-white flex items-center gap-1.5" title="Pantalla Completa">
+                    <i class="fa-solid fa-expand text-[10px] text-emerald-400"></i> <span>Full Screen</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Marco de Monitor NVR -->
+              <div id="marco_monitor_virtual" class="bg-slate-950 border-2 sm:border-4 border-slate-800 rounded-2xl p-2.5 sm:p-4 shadow-2xl overflow-y-auto relative min-h-[420px]">
+                <div id="cuadricula_mosaico_camaras" class="grid gap-4 w-full h-full">
+                  <!-- Se llena dinámicamente ordenado por canal NVR -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+      <!-- BARRA INFERIOR TÁCTIL EXCLUSIVA PARA MÓVIL -->
+      <div id="mobile_bottom_dock" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-slate-950/95 border-t border-white/15 px-3 py-2.5 flex items-center gap-2.5 shadow-2xl">
+        <button onclick="abrirModalAnexoActa()" class="flex-1 py-2.5 px-3 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-file-contract text-emerald-400"></i>
+          <span>Dossier Final</span>
+        </button>
+        <button id="btn_guardar_topologia_movil" onclick="guardarTopologiaObra()" class="flex-1 py-2.5 px-3 rounded-xl btn-cyber-primary text-white text-xs font-extrabold flex items-center justify-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Guardar Obra</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: DOSSIER FINAL AS-BUILT PARA EL ACTA DE ENTREGA -->
+  <div id="modal_anexo_acta" class="fixed inset-0 z-[120] hidden flex justify-center items-center p-2 sm:p-4 bg-slate-950/90 overflow-y-auto">
+    <div class="w-full max-w-5xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] text-slate-900 border border-slate-200">
+      <div class="px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-900 text-white flex items-center justify-between gap-2 no-print">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0">
+            <i class="fa-solid fa-file-contract"></i>
+          </div>
+          <div class="min-w-0">
+            <h3 class="font-bold text-xs sm:text-sm text-white truncate">Dossier Técnico As-Built & Informe Final de Entrega</h3>
+            <p class="font-tech-mono text-[8px] sm:text-[9px] uppercase tracking-wider text-blue-300 font-bold truncate">Registro Fotográfico Físico, Encuadre NVR y Conectividad P2P</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button id="btn_exportar_anexo_pdf" onclick="imprimirOExportarAnexoPDF()" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow">
+            <i class="fa-solid fa-file-pdf"></i> <span>Descargar PDF</span>
+          </button>
+          <button onclick="window.print()" class="hidden sm:flex px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition items-center gap-1.5 border border-white/15">
+            <i class="fa-solid fa-print"></i> <span>Imprimir</span>
+          </button>
+          <button onclick="cerrarModalAnexoActa()" class="text-white/70 hover:text-rose-400 p-2 rounded-lg hover:bg-white/10 transition">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+      </div>
+      <div class="p-4 sm:p-8 overflow-y-auto flex-1 bg-white text-slate-800 hide-scrollbar" id="contenedor_anexo_print"></div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let urlParams = new URLSearchParams(window.location.search);
+    let ticketId = urlParams.get('id');
+
+    if (!ticketId || ticketId === "null" || ticketId === "undefined") {
+      ticketId = localStorage.getItem('protech_current_ticket_id') || '885d363a-44f2-4c66-aff5-c6c7586831d1';
+    } else {
+      localStorage.setItem('protech_current_ticket_id', ticketId);
+    }
+
+    let ticketInfoGeneral = {};
+    let datosGlobalesCCTV = { camaras: [], switches_cctv: [] };
+    let datosGlobalesRedes = { subnodos_idf: [], puntos_red: [], core_router_catalogo_id: 'No Requiere', core_ip_gateway: '', core_isp: '', core_modo_operacion: '' };
+    let mapeoDinamicoObra = {};
+    let capturasEnVivoNVR = {}; 
+    let estadoNodos = {};
+    let pestanaActiva = 'cctv';
+    let claseGridMosaico = 'grid-cols-1 sm:grid-cols-2';
+
+    // ==========================================
+    // 1. UTILIDADES UI, CYBER-TOAST & LIGHTBOX
+    // ==========================================
+    function mostrarToast(mensaje, tipo = 'info') {
+      const container = document.getElementById('toast_container');
+      if (!container) return;
+
+      const colores = {
+        success: 'border-emerald-400/50 text-emerald-300 bg-slate-900/95',
+        error: 'border-rose-400/50 text-rose-300 bg-slate-900/95',
+        info: 'border-purple-400/50 text-purple-300 bg-slate-900/95'
+      };
+      const iconos = {
+        success: 'fa-circle-check text-emerald-400',
+        error: 'fa-triangle-exclamation text-rose-400',
+        info: 'fa-circle-info text-purple-400'
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 ${colores[tipo] || colores.info}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${iconos[tipo] || iconos.info} text-sm flex-shrink-0"></i>
+        <span class="text-xs font-semibold text-white leading-snug">${mensaje}</span>
+      `;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-4');
+        setTimeout(() => toast.remove(), 300);
+      }, 3600);
+    }
+
+    function abrirLightboxDirecto(src, titulo = 'Vista Ampliada') {
+      if (!src) return;
+      document.getElementById('lightbox_img').src = src;
+      document.getElementById('lightbox_titulo').innerText = titulo;
+      document.getElementById('modal_lightbox').classList.remove('hidden');
+    }
+
+    function cerrarLightbox() {
+      document.getElementById('modal_lightbox').classList.add('hidden');
+      document.getElementById('lightbox_img').src = '';
+    }
+
+    function navegarA(pagina, moduloNombre = 'Módulo') {
+      const overlay = document.getElementById('page_transition_overlay');
+      const text = document.getElementById('transition_text');
+      let url = pagina;
+      if (ticketId && pagina !== 'index.html' && pagina !== 'catalogo.html') {
+        url += '?id=' + encodeURIComponent(ticketId);
+      }
+
+      if (overlay && text) {
+        overlay.classList.remove('hidden');
+        void overlay.offsetWidth;
+        overlay.classList.remove('opacity-0');
+        overlay.classList.add('opacity-100');
+        text.innerText = `Abriendo ${moduloNombre}...`;
+        setTimeout(() => { window.location.href = url; }, 350);
+      } else {
+        window.location.href = url;
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      if (window.innerWidth >= 768) {
+        sidebar.classList.toggle('collapsed');
+      } else {
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
+      }
+    }
+
+    // ==========================================
+    // 2. HELPERS LÓGICOS DE IDENTIFICACIÓN
+    // ==========================================
+    function obtenerKeyCamara(cam, index) {
+      return `cam_${cam.uid || index}`;
+    }
+
+    function obtenerCapturaNVR(cam, index) {
+      const keyUid = `cam_${cam.uid}`;
+      const keyIdx = `cam_${index}`;
+      return capturasEnVivoNVR[keyUid] || capturasEnVivoNVR[keyIdx] || null;
+    }
+
+    function guardarCapturaNVREnMemoria(cam, index, base64) {
+      const keyUid = `cam_${cam.uid || index}`;
+      const keyIdx = `cam_${index}`;
+      capturasEnVivoNVR[keyUid] = base64;
+      capturasEnVivoNVR[keyIdx] = base64;
+    }
+
+    function esCamaraAnaloga(cam) {
+      const tec = (cam.tipo_tecnologia || '').toLowerCase();
+      const desc = (cam.descripcion_catalogo || cam.descripcion || '').toLowerCase();
+      return tec.includes('análog') || tec.includes('analog') || 
+             tec.includes('bnc') || tec.includes('tvi') || 
+             tec.includes('cvi') || desc.includes('análog') || 
+             desc.includes('coaxial');
+    }
+
+    function extraerNumeroCanalNVR(cam, index) {
+      const key = obtenerKeyCamara(cam, index);
+      const analoga = esCamaraAnaloga(cam);
+      
+      const canalNVRGuardado = mapeoDinamicoObra[key]?.canal_nvr || cam.canal_nvr || '';
+      if (canalNVRGuardado) {
+        const match = canalNVRGuardado.match(/\d+/);
+        if (match) return parseInt(match[0], 10);
+      }
+
+      if (analoga) {
+        const puertoAsignado = mapeoDinamicoObra[key]?.puerto_canal || cam.puerto_canal || '';
+        const matchBNC = puertoAsignado.match(/\d+/);
+        if (matchBNC) return parseInt(matchBNC[0], 10);
+      }
+
+      return index + 1;
+    }
+
+    function obtenerIdentificadorRed(cam, index) {
+      const analoga = esCamaraAnaloga(cam);
+      const key = obtenerKeyCamara(cam, index);
+      const canalNVR = mapeoDinamicoObra[key]?.canal_nvr || cam.canal_nvr || '';
+
+      if (analoga) {
+        const canalTexto = canalNVR || mapeoDinamicoObra[key]?.puerto_canal || cam.puerto_canal || `Canal BNC #${index + 1}`;
+        return {
+          esIp: false,
+          etiqueta: canalTexto,
+          tipoBadge: 'bg-amber-500/20 text-amber-300 border-amber-400/30'
+        };
+      }
+
+      return {
+        esIp: true,
+        etiqueta: cam.ip && cam.ip.trim() !== '' ? cam.ip : `192.168.1.${101 + index}`,
+        tipoBadge: 'bg-blue-500/20 text-blue-300 border-blue-400/30'
+      };
+    }
+
+    function actualizarKPIsTopologia() {
+      const camaras = datosGlobalesCCTV.camaras || [];
+      const switches = datosGlobalesCCTV.switches_cctv || [];
+      const puntosRed = datosGlobalesRedes.puntos_red || datosGlobalesRedes.nodos || datosGlobalesRedes.puntos || [];
+      const subnodos = datosGlobalesRedes.subnodos_idf || [];
+
+      let operativas = 0;
+      let conCaptura = 0;
+
+      camaras.forEach((cam, idx) => {
+        const key = obtenerKeyCamara(cam, idx);
+        const est = mapeoDinamicoObra[key]?.estado || 'Propuesto';
+        if (est === 'Operativo') operativas++;
+        if (obtenerCapturaNVR(cam, idx)) conCaptura++;
+      });
+
+      const swFibra = switches.filter(s => (s.enlace_uplink || '').includes('Fibra')).length;
+
+      document.getElementById('kpi_topo_cams').innerText = camaras.length;
+      document.getElementById('kpi_topo_operativas').innerText = `${operativas} Operativos`;
+      document.getElementById('kpi_topo_switches').innerText = switches.length;
+      document.getElementById('kpi_topo_fibra').innerText = `${swFibra} Fibra`;
+      document.getElementById('kpi_topo_redes').innerText = puntosRed.length;
+      document.getElementById('kpi_topo_idfs').innerText = `${subnodos.length} IDFs`;
+      document.getElementById('kpi_topo_capturas').innerText = `${conCaptura} / ${camaras.length}`;
+    }
+
+    function cambiarPestanaTopologia(pestana) {
+      pestanaActiva = pestana;
+      const btnCctv = document.getElementById('tab_btn_cctv');
+      const btnRedes = document.getElementById('tab_btn_redes');
+      const btnMosaico = document.getElementById('tab_btn_mosaico');
+      const vistaCctv = document.getElementById('vista_topologia_cctv');
+      const vistaRedes = document.getElementById('vista_topologia_redes');
+      const vistaMosaico = document.getElementById('vista_topologia_mosaico');
+
+      btnCctv.className = "tab-btn inactive text-xs";
+      btnRedes.className = "tab-btn inactive text-xs";
+      btnMosaico.className = "tab-btn inactive text-xs";
+      vistaCctv.classList.add('hidden');
+      vistaRedes.classList.add('hidden');
+      vistaMosaico.classList.add('hidden');
+
+      if (pestana === 'cctv') {
+        btnCctv.className = "tab-btn active-cctv text-xs";
+        vistaCctv.classList.remove('hidden');
+      } else if (pestana === 'redes') {
+        btnRedes.className = "tab-btn active-redes text-xs";
+        vistaRedes.classList.remove('hidden');
+        renderizarTopologiaRedes();
+      } else if (pestana === 'mosaico') {
+        btnMosaico.className = "tab-btn active-mosaico text-xs";
+        vistaMosaico.classList.remove('hidden');
+        renderizarSimuladorMosaico();
+      }
+    }
+
+    // ==========================================
+    // 3. CARGA INICIAL DESDE SUPABASE
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.body.classList.add('session-checked');
+      const overlay = document.getElementById('page_transition_overlay');
+      if (overlay) {
+        setTimeout(() => {
+          overlay.classList.remove('opacity-100');
+          overlay.classList.add('opacity-0');
+          setTimeout(() => overlay.classList.add('hidden'), 380);
+        }, 350);
+      }
+
+      if (ticketId) {
+        document.getElementById('label_id_ticket').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+        await cargarDatosObra();
+      }
+    });
+
+    async function cargarDatosObra() {
+      if (!supabaseClient || !ticketId) return;
+
+      try {
+        const [resTicket, resCCTV, resRedes] = await Promise.all([
+          supabaseClient.from('tickets').select('*').eq('id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_cctv').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_redes').select('*').eq('ticket_id', ticketId).maybeSingle()
+        ]);
+
+        ticketInfoGeneral = resTicket.data || {};
+        const lblCliente = document.getElementById('header_cliente_nombre');
+        if (lblCliente) {
+          lblCliente.innerText = ticketInfoGeneral.cliente
+            ? `${ticketInfoGeneral.cliente} • ${ticketInfoGeneral.direccion || 'Quito'}`
+            : 'Proyecto sin cliente asignado';
+        }
+
+        datosGlobalesCCTV = resCCTV.data || { camaras: [], switches_cctv: [] };
+        if (!Array.isArray(datosGlobalesCCTV.camaras)) datosGlobalesCCTV.camaras = [];
+        if (!Array.isArray(datosGlobalesCCTV.switches_cctv)) datosGlobalesCCTV.switches_cctv = [];
+
+        datosGlobalesRedes = resRedes.data || { subnodos_idf: [], puntos_red: [] };
+        if (!Array.isArray(datosGlobalesRedes.subnodos_idf)) datosGlobalesRedes.subnodos_idf = [];
+        // Soporte multi-propiedad para puntos de red
+        if (!Array.isArray(datosGlobalesRedes.puntos_red)) {
+          datosGlobalesRedes.puntos_red = datosGlobalesRedes.nodos || datosGlobalesRedes.puntos || [];
+        }
+        
+        const topologiaGuardada = ticketInfoGeneral.topologia_data || {};
+        if (topologiaGuardada.mapeo_conexiones) {
+          mapeoDinamicoObra = topologiaGuardada.mapeo_conexiones;
+        }
+        if (topologiaGuardada.capturas_pantalla_nvr) {
+          capturasEnVivoNVR = topologiaGuardada.capturas_pantalla_nvr;
+        }
+        // Solo usar switches_obra_extra si inspeccion_cctv aún no tenía switches
+        if (datosGlobalesCCTV.switches_cctv.length === 0 && Array.isArray(topologiaGuardada.switches_obra_extra) && topologiaGuardada.switches_obra_extra.length > 0) {
+          datosGlobalesCCTV.switches_cctv = topologiaGuardada.switches_obra_extra;
+        }
+
+        estadoNodos['raiz_nvr'] = true;
+        estadoNodos['raiz_mdf'] = true;
+        renderizarTodo();
+
+      } catch (err) {
+        console.error("Error cargando datos de obra:", err);
+        mostrarToast("Error al sincronizar datos de la obra", "error");
+      }
+    }
+
+    function renderizarTodo() {
+      renderizarSwitchesObra();
+      renderizarMatrizCamaras();
+      renderizarArbolHardware();
+      renderizarTopologiaRedes();
+      actualizarKPIsTopologia();
+    }
+
+    // ==========================================
+    // 4. GESTIÓN DE SWITCHES EN OBRA (CON FIBRA Y CASCADA)
+    // ==========================================
+    function renderizarSwitchesObra() {
+      const container = document.getElementById('contenedor_switches_obra');
+      const switchesCCTV = datosGlobalesCCTV.switches_cctv || [];
+
+      if (switchesCCTV.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-5 text-white/50 text-xs font-medium bg-white/5 rounded-xl border border-dashed border-white/15">
+            <i class="fa-solid fa-network-wired mr-1.5 text-indigo-400"></i> Sin switches secundarios registrados. Todas las cámaras se conectan directo al NVR/DVR Principal.
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      switchesCCTV.forEach((sw, idx) => {
+        const esEnlaceFibra = (sw.enlace_uplink || '').includes('Fibra Óptica');
+
+        let opcionesUplink = `
+          <option value="NVR Principal (Directo)" ${!esEnlaceFibra && sw.enlace_uplink === 'NVR Principal (Directo)' ? 'selected' : ''}>NVR Principal (Core)</option>
+          <option value="Fibra Óptica Troncal" ${esEnlaceFibra ? 'selected' : ''}>🔗 Enlace de Fibra Óptica (Troncal)</option>
+        `;
+        switchesCCTV.forEach((otroSw, oIdx) => {
+          if (idx !== oIdx) {
+            opcionesUplink += `<option value="${otroSw.nombre}" ${!esEnlaceFibra && sw.enlace_uplink === otroSw.nombre ? 'selected' : ''}>Switch en Cascada: ${otroSw.nombre}</option>`;
+          }
+        });
+
+        let opcionesDestinoFibra = `<option value="NVR Principal (Core)" ${sw.fibra_destino === 'NVR Principal (Core)' ? 'selected' : ''}>NVR / DVR Principal (Core)</option>`;
+        switchesCCTV.forEach((otroSw, oIdx) => {
+          if (idx !== oIdx) {
+            opcionesDestinoFibra += `<option value="${otroSw.nombre}" ${sw.fibra_destino === otroSw.nombre ? 'selected' : ''}>Switch Destino: ${otroSw.nombre}</option>`;
+          }
+        });
+
+        container.innerHTML += `
+          <div class="cyber-glass-card p-4 flex flex-col gap-3 shadow-sm text-white border-l-4 border-l-indigo-400">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end w-full">
+              <div>
+                <label class="block text-[9px] font-tech-mono font-bold text-white/70 uppercase mb-1">Nombre Switch</label>
+                <input type="text" value="${sw.nombre || ''}" oninput="actualizarSwitchObra(${idx}, 'nombre', this.value)" class="cyber-input text-xs rounded-lg p-2 font-bold text-white w-full">
+              </div>
+              <div>
+                <label class="block text-[9px] font-tech-mono font-bold text-white/70 uppercase mb-1">Ubicación</label>
+                <input type="text" value="${sw.ubicacion || ''}" oninput="actualizarSwitchObra(${idx}, 'ubicacion', this.value)" class="cyber-input text-xs rounded-lg p-2 text-white w-full">
+              </div>
+              <div>
+                <label class="block text-[9px] font-tech-mono font-bold text-white/70 uppercase mb-1">Dirección IP</label>
+                <input type="text" value="${sw.ip || ''}" oninput="actualizarSwitchObra(${idx}, 'ip', this.value)" class="cyber-input text-xs font-tech-mono font-bold text-blue-300 rounded-lg p-2 w-full">
+              </div>
+              <div>
+                <label class="block text-[9px] font-tech-mono font-bold text-white/70 uppercase mb-1">Puerto Uplink</label>
+                <input type="text" value="${sw.puerto_uplink || 'Puerto Uplink #1'}" oninput="actualizarSwitchObra(${idx}, 'puerto_uplink', this.value)" class="cyber-input text-xs font-tech-mono text-indigo-300 rounded-lg p-2 w-full">
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="flex-1">
+                  <label class="block text-[9px] font-tech-mono font-bold text-white/70 uppercase mb-1">Conectado a (Uplink)</label>
+                  <select onchange="actualizarSwitchObra(${idx}, 'enlace_uplink', this.value)" class="cyber-input text-xs rounded-lg p-2 font-bold text-white bg-indigo-500/20 w-full">
+                    ${opcionesUplink}
+                  </select>
+                </div>
+                <button onclick="eliminarSwitchObra(${idx})" class="text-rose-300 hover:text-rose-200 p-2 rounded-lg bg-rose-500/20 border border-rose-400/30 text-xs font-bold transition flex-shrink-0 mb-0.5" title="Eliminar Switch">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+
+            ${esEnlaceFibra ? `
+              <div class="bg-purple-500/20 border border-purple-400/30 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label class="block text-[9px] font-tech-mono font-bold text-purple-200 uppercase mb-1"><i class="fa-solid fa-route mr-1"></i>Origen Troncal Fibra</label>
+                  <input type="text" value="${sw.nombre || ''}" readonly class="cyber-input text-xs rounded-lg p-2 font-bold text-white/80 w-full opacity-80 cursor-not-allowed">
+                </div>
+                <div>
+                  <label class="block text-[9px] font-tech-mono font-bold text-purple-200 uppercase mb-1"><i class="fa-solid fa-bullseye mr-1"></i>Hacia Nodo Destino Fibra</label>
+                  <select onchange="actualizarSwitchObra(${idx}, 'fibra_destino', this.value)" class="cyber-input text-xs rounded-lg p-2 font-bold text-white w-full">
+                    ${opcionesDestinoFibra}
+                  </select>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+    }
+
+    function añadirSwitchObra() {
+      if (!datosGlobalesCCTV.switches_cctv) datosGlobalesCCTV.switches_cctv = [];
+      const num = datosGlobalesCCTV.switches_cctv.length + 1;
+      datosGlobalesCCTV.switches_cctv.push({
+        uid: 'sw_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        nombre: `Switch #${num}`,
+        ubicacion: 'Rack Secundario',
+        ip: `192.168.1.${20 + num}`,
+        enlace_uplink: 'NVR Principal (Directo)',
+        puerto_uplink: `Puerto Uplink #${num}`,
+        fibra_origen: '',
+        fibra_destino: 'NVR Principal (Core)'
+      });
+      renderizarTodo();
+      mostrarToast(`Switch #${num} añadido a la topología`, "info");
+    }
+
+    function actualizarSwitchObra(idx, campo, valor) {
+      const sw = datosGlobalesCCTV.switches_cctv[idx];
+      if (!sw) return;
+
+      const nombreViejo = (sw.nombre || '').trim();
+      sw[campo] = valor;
+
+      // Si se renombra el switch, actualizar todas las cámaras y switches en cascada que apuntaban a él
+      if (campo === 'nombre' && nombreViejo) {
+        (datosGlobalesCCTV.camaras || []).forEach((cam, cIdx) => {
+          const key = obtenerKeyCamara(cam, cIdx);
+          const destActual = (mapeoDinamicoObra[key]?.destino || cam.destino || '').split('(')[0].trim();
+          if (destActual.toLowerCase() === nombreViejo.toLowerCase()) {
+            cam.destino = valor;
+            if (mapeoDinamicoObra[key]) mapeoDinamicoObra[key].destino = valor;
+          }
+        });
+        // Actualizar selectores de la matriz sin perder foco del input actual
+        renderizarMatrizCamaras();
+      }
+
+      if (campo === 'enlace_uplink' || campo === 'fibra_destino') {
+        renderizarSwitchesObra();
+        actualizarKPIsTopologia();
+      }
+      renderizarArbolHardware();
+    }
+
+    function eliminarSwitchObra(idx) {
+      datosGlobalesCCTV.switches_cctv.splice(idx, 1);
+      renderizarTodo();
+      mostrarToast("Switch removido de la topología", "info");
+    }
+
+    // ==========================================
+    // 5. MATRIZ DE CONEXIONES EDITABLE
+    // ==========================================
+    function marcarTodasOperativas() {
+      const camaras = datosGlobalesCCTV.camaras || [];
+      camaras.forEach((cam, idx) => {
+        const key = obtenerKeyCamara(cam, idx);
+        if (!mapeoDinamicoObra[key]) {
+          mapeoDinamicoObra[key] = { destino: cam.destino || 'NVR Principal (Puertos PoE Directos)' };
+        }
+        mapeoDinamicoObra[key].estado = 'Operativo';
+      });
+      renderizarMatrizCamaras();
+      actualizarKPIsTopologia();
+      mostrarToast("Todas las cámaras marcadas como Operativas", "success");
+    }
+
+    function renderizarMatrizCamaras() {
+      const camaras = datosGlobalesCCTV.camaras || [];
+      const switchesCCTV = datosGlobalesCCTV.switches_cctv || [];
+      const tbody = document.getElementById('tabla_interconexiones_body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      if (camaras.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-white/50 italic">No hay cámaras registradas en este ticket.</td></tr>`;
+        return;
+      }
+
+      camaras.forEach((cam, idx) => {
+        const key = obtenerKeyCamara(cam, idx);
+        const analoga = esCamaraAnaloga(cam);
+        const defaultDestino = analoga ? 'DVR / XVR Principal (Entrada BNC Directa)' : 'NVR Principal (Puertos PoE Directos)';
+
+        let destinoActual = mapeoDinamicoObra[key]?.destino || cam.destino || defaultDestino;
+        let destinoLimpio = destinoActual.split('(')[0].trim().toLowerCase();
+        let estadoActual = mapeoDinamicoObra[key]?.estado || 'Propuesto';
+        
+        let puertoFisicoActual = mapeoDinamicoObra[key]?.puerto_canal || cam.puerto_canal || (analoga ? `Canal BNC #${idx + 1}` : `Puerto PoE #${idx + 1}`);
+        let canalNVRActual = mapeoDinamicoObra[key]?.canal_nvr || cam.canal_nvr || (analoga ? puertoFisicoActual : `Canal IP #${idx + 1}`);
+
+        let esNvr = destinoLimpio.includes('nvr') || destinoLimpio.includes('dvr') || destinoLimpio.includes('directo') || destinoLimpio.includes('puertos poe');
+        let matchEnSwitch = !analoga && switchesCCTV.some(sw => destinoLimpio === (sw.nombre || '').trim().toLowerCase());
+
+        let opcionesDestino = `<option value="${defaultDestino}" ${esNvr && !matchEnSwitch ? 'selected' : ''}>${defaultDestino}</option>`;
+        if (!analoga) {
+          switchesCCTV.forEach(sw => {
+            let match = destinoLimpio === (sw.nombre || '').trim().toLowerCase();
+            opcionesDestino += `<option value="${sw.nombre}" ${match ? 'selected' : ''}>Switch: ${sw.nombre} (${sw.ubicacion || 'Obra'})</option>`;
+          });
+        }
+
+        const escapedKey = key.replace(/'/g, "\\'");
+
+        tbody.innerHTML += `
+          <tr class="hover:bg-white/5 transition border-b border-white/10 text-white/90">
+            <td class="py-3 px-3 sm:px-4 font-bold ${analoga ? 'text-amber-400' : 'text-blue-300'} whitespace-nowrap">
+              <i class="fa-solid ${analoga ? 'fa-tv' : 'fa-network-wired'} mr-1"></i>${cam.tipo_tecnologia || (analoga ? 'Análoga BNC' : 'IP PoE')}
+            </td>
+            <td class="py-3 px-3 sm:px-4 font-semibold text-white">${cam.descripcion_catalogo || cam.descripcion || 'Cámara'}</td>
+            <td class="py-3 px-3 sm:px-4 text-white/80">${cam.ubicacion || `Punto #${idx + 1}`}</td>
+            <td class="py-3 px-3 sm:px-4">
+              <select onchange="actualizarMapeo('${escapedKey}', 'destino', this.value, ${idx})" class="cyber-input text-xs rounded-lg p-1.5 font-bold text-white bg-blue-500/20 w-full min-w-[165px]">
+                ${opcionesDestino}
+              </select>
+            </td>
+            <td class="py-3 px-3 sm:px-4">
+              <input type="text" value="${puertoFisicoActual}" 
+                     placeholder="${analoga ? 'Ej. BNC #1' : 'Ej. PoE #2'}"
+                     onchange="actualizarMapeo('${escapedKey}', 'puerto_canal', this.value, ${idx})"
+                     class="cyber-input text-xs rounded-lg p-1.5 font-bold font-tech-mono ${analoga ? 'text-amber-300' : 'text-blue-300'} w-full min-w-[115px]">
+            </td>
+            <td class="py-3 px-3 sm:px-4">
+              <input type="text" value="${canalNVRActual}" 
+                     placeholder="Ej. Canal #1"
+                     onchange="actualizarMapeo('${escapedKey}', 'canal_nvr', this.value, ${idx})"
+                     class="cyber-input text-xs rounded-lg p-1.5 font-bold font-tech-mono ${analoga ? 'text-amber-300' : 'text-emerald-300'} w-full min-w-[120px]">
+            </td>
+            <td class="py-3 px-3 sm:px-4 text-center">
+              <select onchange="actualizarMapeo('${escapedKey}', 'estado', this.value, ${idx})" class="text-[11px] font-bold rounded-lg p-1.5 border outline-none ${estadoActual === 'Operativo' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : estadoActual === 'Cableado' ? 'bg-amber-500/20 text-amber-300 border-amber-400/30' : 'bg-slate-900 text-white/80 border-white/20'}">
+                <option value="Propuesto" ${estadoActual === 'Propuesto' ? 'selected' : ''}>Propuesto</option>
+                <option value="Cableado" ${estadoActual === 'Cableado' ? 'selected' : ''}>Cableado</option>
+                <option value="Operativo" ${estadoActual === 'Operativo' ? 'selected' : ''}>Operativo</option>
+              </select>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function actualizarMapeo(key, campo, valor, camIndex = null) {
+      if (!mapeoDinamicoObra[key]) {
+        mapeoDinamicoObra[key] = { destino: 'NVR Principal (Puertos PoE Directos)', estado: 'Propuesto' };
+      }
+      mapeoDinamicoObra[key][campo] = valor;
+
+      if (camIndex !== null && datosGlobalesCCTV.camaras[camIndex]) {
+        if (campo === 'puerto_canal') {
+          datosGlobalesCCTV.camaras[camIndex].puerto_canal = valor;
+        } else if (campo === 'canal_nvr') {
+          datosGlobalesCCTV.camaras[camIndex].canal_nvr = valor;
+        } else if (campo === 'destino') {
+          datosGlobalesCCTV.camaras[camIndex].destino = valor;
+        }
+      }
+
+      if (campo === 'estado') renderizarMatrizCamaras();
+      renderizarArbolHardware();
+      actualizarKPIsTopologia();
+      if (pestanaActiva === 'mosaico') renderizarSimuladorMosaico();
+    }
+
+    // ==========================================
+    // 6. ÁRBOL JERÁRQUICO DE HARDWARE CCTV (CON _idxGlobal SEGURO)
+    // ==========================================
+    function toggleNodo(idNodo) {
+      estadoNodos[idNodo] = estadoNodos[idNodo] === false ? true : false;
+      renderizarArbolHardware();
+      if (pestanaActiva === 'redes') renderizarTopologiaRedes();
+    }
+
+    function expandirTodoArbol(abrir) {
+      const switchesCCTV = datosGlobalesCCTV.switches_cctv || [];
+      estadoNodos['raiz_nvr'] = abrir;
+      estadoNodos['nvr_directos'] = abrir;
+      estadoNodos['nvr_analogos_bnc'] = abrir;
+      switchesCCTV.forEach((sw, idx) => {
+        estadoNodos[`sw_${(sw.nombre || `sw_${idx}`).replace(/\s+/g, '_')}`] = abrir;
+      });
+      renderizarArbolHardware();
+    }
+
+    function renderizarArbolHardware() {
+      const container = document.getElementById('canvas_topologia_global');
+      if (!container) return;
+
+      // Indexar cámaras con su _idxGlobal original antes de filtrar
+      const camarasConIdx = (datosGlobalesCCTV.camaras || []).map((c, idx) => ({ ...c, _idxGlobal: idx }));
+      const switchesCCTV = datosGlobalesCCTV.switches_cctv || [];
+      
+      const tieneSoloAnalogas = camarasConIdx.length > 0 && camarasConIdx.every(c => esCamaraAnaloga(c));
+      const nombreGrabadorDefault = tieneSoloAnalogas ? 'DVR / XVR Principal (Core)' : 'NVR Principal (Core)';
+      
+      const nvrNombre = datosGlobalesCCTV.nombre_nvr || nombreGrabadorDefault;
+      const nvrIp = datosGlobalesCCTV.ip_nvr || (tieneSoloAnalogas ? 'Stand-Alone BNC' : '192.168.1.100');
+      const numCams = camarasConIdx.length;
+
+      const switchesConectadosAlCore = switchesCCTV.filter(sw => {
+        const esFibra = (sw.enlace_uplink || '').includes('Fibra Óptica');
+        if (esFibra) {
+          const destino = (sw.fibra_destino || '').toLowerCase();
+          return !destino || destino.includes('core') || destino.includes('nvr') || destino.includes('dvr');
+        }
+        return !sw.enlace_uplink || sw.enlace_uplink.includes('NVR') || sw.enlace_uplink === 'NVR Principal (Directo)';
+      });
+
+      const raizAbierta = estadoNodos['raiz_nvr'] !== false;
+
+      function generarHTMLNodoSwitch(swObj, visitados = new Set()) {
+        const nombreSw = swObj.nombre || 'Switch';
+        if (visitados.has(nombreSw)) return ''; // Evita ciclos infinitos si dos switches se apuntan entre sí
+        visitados.add(nombreSw);
+
+        const idNodo = `sw_${nombreSw.replace(/\s+/g, '_')}`;
+        const estaAbierto = estadoNodos[idNodo] !== false;
+
+        const camsDeEsteSwitch = camarasConIdx.filter(cam => {
+          const key = obtenerKeyCamara(cam, cam._idxGlobal);
+          let destino = mapeoDinamicoObra[key]?.destino || cam.destino || '';
+          let destinoLimpio = destino.split('(')[0].trim().toLowerCase();
+          return destinoLimpio === nombreSw.trim().toLowerCase();
+        });
+
+        const switchesHijos = switchesCCTV.filter(sChild => {
+          if (sChild.nombre === nombreSw) return false;
+          const esFibra = (sChild.enlace_uplink || '').includes('Fibra Óptica');
+          if (esFibra) {
+            let destinoFibra = (sChild.fibra_destino || '').trim().toLowerCase();
+            return destinoFibra === nombreSw.trim().toLowerCase();
+          }
+          let uplinkLimpio = (sChild.enlace_uplink || '').split('(')[0].trim().toLowerCase();
+          return uplinkLimpio === nombreSw.trim().toLowerCase();
+        });
+
+        let contenidoHijosHTML = '';
+        if (estaAbierto) {
+          contenidoHijosHTML += `<div class="pl-3 sm:pl-6 border-l-2 border-indigo-500/30 ml-2 sm:ml-3 space-y-1.5 my-1.5">`;
+          
+          if (camsDeEsteSwitch.length > 0) {
+            camsDeEsteSwitch.forEach(cam => {
+              const gIdx = cam._idxGlobal;
+              const key = obtenerKeyCamara(cam, gIdx);
+              const puertoAsignado = mapeoDinamicoObra[key]?.puerto_canal || cam.puerto_canal || `PoE #${gIdx + 1}`;
+              const canalNvr = mapeoDinamicoObra[key]?.canal_nvr || cam.canal_nvr || `CH-${gIdx + 1}`;
+              const redInfo = obtenerIdentificadorRed(cam, gIdx);
+              
+              contenidoHijosHTML += `
+                <div class="flex items-center gap-2 py-1.5 px-3 rounded-xl bg-white/5 border border-white/10 text-[11px] shadow-sm flex-wrap text-white">
+                  <i class="fa-solid fa-camera text-blue-400"></i>
+                  <span class="font-bold text-white">${cam.descripcion_catalogo || cam.descripcion || 'Cámara IP'}</span>
+                  <span class="text-white/60 text-[10px]">(${cam.ubicacion || 'Sin ubicación'})</span>
+                  <div class="ml-auto flex items-center gap-1.5 flex-wrap">
+                    <span class="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded text-[9px] font-tech-mono border border-blue-400/30 font-bold"><i class="fa-solid fa-plug mr-1"></i>${puertoAsignado}</span>
+                    <span class="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded text-[9px] font-tech-mono border border-emerald-400/30 font-bold">${canalNvr}</span>
+                    <span class="px-2 py-0.5 rounded text-[9px] font-tech-mono border font-bold ${redInfo.tipoBadge}">${redInfo.etiqueta}</span>
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            contenidoHijosHTML += `<div class="text-[10px] text-white/45 italic py-1 pl-2">Sin cámaras asignadas a este switch</div>`;
+          }
+
+          switchesHijos.forEach(sHijo => {
+            contenidoHijosHTML += generarHTMLNodoSwitch(sHijo, new Set(visitados));
+          });
+
+          contenidoHijosHTML += `</div>`;
+        }
+
+        const esFibra = (swObj.enlace_uplink || '').includes('Fibra Óptica');
+        let textoUplink = swObj.enlace_uplink || 'Directo';
+        if (swObj.puerto_uplink) {
+          let puertoCorto = swObj.puerto_uplink.replace('Puerto Uplink ', 'P');
+          textoUplink += ` | ${puertoCorto}`;
+        }
+        
+        const badgeRutaFibra = esFibra 
+          ? `<span class="bg-purple-500/20 text-purple-300 px-2.5 py-0.5 rounded text-[9px] font-tech-mono border border-purple-400/30 font-bold"><i class="fa-solid fa-route mr-1"></i>Fibra: ${swObj.nombre} ➔ ${swObj.fibra_destino || 'Core'}</span>`
+          : `<span class="bg-white/10 text-white/80 px-2.5 py-0.5 rounded text-[9px] font-tech-mono border border-white/15">Uplink: ${textoUplink}</span>`;
+
+        return `
+          <div class="my-2">
+            <div onclick="toggleNodo('${idNodo}')" class="flex items-center gap-2.5 py-2 px-3.5 rounded-xl bg-white/5 border border-white/10 hover:border-indigo-400 hover:bg-white/10 cursor-pointer transition select-none shadow-sm text-white flex-wrap">
+              <i class="fa-solid fa-network-wired text-indigo-400 text-sm"></i>
+              <span class="font-bold text-indigo-300 text-xs">${nombreSw}</span>
+              <span class="text-[10px] text-white/60 font-tech-mono">IP: ${swObj.ip || 'N/A'} | Ub: ${swObj.ubicacion || 'Obra'}</span>
+              <div class="ml-auto flex items-center gap-2 flex-wrap">
+                ${badgeRutaFibra}
+                <span class="bg-emerald-500/20 text-emerald-300 text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-400/30 font-tech-mono font-bold">
+                  <i class="fa-solid fa-video mr-1"></i>${camsDeEsteSwitch.length} Cams
+                </span>
+                <i class="fa-solid fa-chevron-${estaAbierto ? 'down' : 'right'} text-[10px] text-white/50 ml-1"></i>
+              </div>
+            </div>
+            ${contenidoHijosHTML}
+          </div>
+        `;
+      }
+
+      const camsDirectasIP = camarasConIdx.filter(cam => {
+        const key = obtenerKeyCamara(cam, cam._idxGlobal);
+        let destino = mapeoDinamicoObra[key]?.destino || cam.destino || 'NVR Principal (Puertos PoE Directos)';
+        let destinoLimpio = destino.split('(')[0].trim().toLowerCase();
+        let esAnaloga = esCamaraAnaloga(cam);
+        let asignadaASwitch = switchesCCTV.some(sw => destinoLimpio === (sw.nombre || '').trim().toLowerCase());
+        return !esAnaloga && !asignadaASwitch;
+      });
+
+      const camsDirectasAnalogas = camarasConIdx.filter(cam => esCamaraAnaloga(cam));
+
+      const idNodoNvrDirectos = 'nvr_directos';
+      const nvrDirectosAbierto = estadoNodos[idNodoNvrDirectos] !== false;
+
+      const idNodoNvrAnalogas = 'nvr_analogos_bnc';
+      const nvrAnalogasAbierto = estadoNodos[idNodoNvrAnalogas] !== false;
+
+      let htmlDirectasHijas = '';
+      if (nvrDirectosAbierto) {
+        htmlDirectasHijas += `<div class="pl-3 sm:pl-6 border-l-2 border-blue-500/30 ml-2 sm:ml-3 space-y-1.5 my-1.5">`;
+        camsDirectasIP.forEach(cam => {
+          const gIdx = cam._idxGlobal;
+          const key = obtenerKeyCamara(cam, gIdx);
+          const puertoAsignado = mapeoDinamicoObra[key]?.puerto_canal || cam.puerto_canal || `PoE #${gIdx + 1}`;
+          const canalNvr = mapeoDinamicoObra[key]?.canal_nvr || cam.canal_nvr || `CH-${gIdx + 1}`;
+          const redInfo = obtenerIdentificadorRed(cam, gIdx);
+          
+          htmlDirectasHijas += `
+            <div class="flex items-center gap-2 py-1.5 px-3 rounded-xl bg-white/5 border border-white/10 text-[11px] shadow-sm flex-wrap text-white">
+              <i class="fa-solid fa-plug text-blue-400"></i>
+              <span class="font-bold text-white">${cam.descripcion_catalogo || cam.descripcion || 'Cámara IP'}</span>
+              <span class="text-white/60 text-[10px]">(${cam.ubicacion || 'Sin ubicación'})</span>
+              <div class="ml-auto flex items-center gap-1.5 flex-wrap">
+                <span class="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded text-[9px] font-tech-mono border border-blue-400/30 font-bold"><i class="fa-solid fa-plug mr-1"></i>${puertoAsignado}</span>
+                <span class="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded text-[9px] font-tech-mono border border-emerald-400/30 font-bold">${canalNvr}</span>
+                <span class="px-2 py-0.5 rounded text-[9px] font-tech-mono border font-bold ${redInfo.tipoBadge}">${redInfo.etiqueta}</span>
+              </div>
+            </div>
+          `;
+        });
+        htmlDirectasHijas += `</div>`;
+      }
+
+      let htmlAnalogasHijas = '';
+      if (nvrAnalogasAbierto) {
+        htmlAnalogasHijas += `<div class="pl-3 sm:pl-6 border-l-2 border-amber-500/30 ml-2 sm:ml-3 space-y-1.5 my-1.5">`;
+        camsDirectasAnalogas.forEach(cam => {
+          const gIdx = cam._idxGlobal;
+          const key = obtenerKeyCamara(cam, gIdx);
+          const canalAsignado = mapeoDinamicoObra[key]?.canal_nvr || mapeoDinamicoObra[key]?.puerto_canal || cam.canal_nvr || cam.puerto_canal || `Canal BNC #${gIdx + 1}`;
+
+          htmlAnalogasHijas += `
+            <div class="flex items-center gap-2 py-1.5 px-3 rounded-xl bg-white/5 border border-white/10 text-[11px] shadow-sm flex-wrap text-white">
+              <i class="fa-solid fa-video text-amber-400"></i>
+              <span class="font-bold text-white">${cam.descripcion_catalogo || cam.descripcion || 'Cámara Análoga'}</span>
+              <span class="text-white/60 text-[10px]">(${cam.ubicacion || 'Sin ubicación'})</span>
+              <div class="ml-auto flex items-center gap-1.5 flex-wrap">
+                <span class="bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded text-[9px] font-tech-mono border border-amber-400/30 font-bold flex items-center gap-1">
+                  <i class="fa-solid fa-tv text-[8px]"></i> ${canalAsignado}
+                </span>
+              </div>
+            </div>
+          `;
+        });
+        htmlAnalogasHijas += `</div>`;
+      }
+
+      let switchesArbolHTML = '';
+      switchesConectadosAlCore.forEach(sw => {
+        switchesArbolHTML += generarHTMLNodoSwitch(sw);
+      });
+
+      container.innerHTML = `
+        <div class="w-full space-y-2.5 text-xs">
+          <div onclick="toggleNodo('raiz_nvr')" class="flex items-center gap-3 py-3 px-4 rounded-2xl bg-gradient-to-r from-blue-950 to-slate-900 text-white cursor-pointer transition select-none shadow-md border border-blue-500/40 flex-wrap">
+            <i class="fa-solid fa-server text-blue-400 text-base"></i>
+            <span class="font-extrabold text-sm">${nvrNombre}</span>
+            <span class="text-[11px] text-blue-300 font-tech-mono">IP Core: ${nvrIp}</span>
+            <span class="ml-auto bg-blue-500/20 text-blue-200 text-[10px] px-3 py-1 rounded-full border border-blue-400/30 font-tech-mono font-bold">
+              ${switchesCCTV.length} Switches • ${numCams} Cámaras Totales
+            </span>
+            <i class="fa-solid fa-chevron-${raizAbierta ? 'down' : 'right'} text-xs text-blue-300 ml-1"></i>
+          </div>
+
+          ${raizAbierta ? `
+            <div class="pl-3 sm:pl-6 border-l-2 border-white/20 ml-2 sm:ml-4 space-y-2.5 my-2">
+              ${switchesArbolHTML}
+
+              ${camsDirectasIP.length > 0 ? `
+                <div class="my-2">
+                  <div onclick="toggleNodo('${idNodoNvrDirectos}')" class="flex items-center gap-2.5 py-2 px-3.5 rounded-xl bg-white/5 border border-white/10 hover:border-blue-400 hover:bg-white/10 cursor-pointer transition select-none shadow-sm text-white flex-wrap">
+                    <i class="fa-solid fa-microchip text-blue-400 text-sm"></i>
+                    <span class="font-bold text-blue-300 text-xs">Puertos PoE Integrados / Red Directa NVR</span>
+                    <span class="ml-auto bg-emerald-500/20 text-emerald-300 text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-400/30 font-tech-mono font-bold">
+                      <i class="fa-solid fa-video mr-1"></i>${camsDirectasIP.length} Cams IP
+                    </span>
+                    <i class="fa-solid fa-chevron-${nvrDirectosAbierto ? 'down' : 'right'} text-[10px] text-white/50 ml-1"></i>
+                  </div>
+                  ${htmlDirectasHijas}
+                </div>
+              ` : ''}
+
+              ${camsDirectasAnalogas.length > 0 ? `
+                <div class="my-2">
+                  <div onclick="toggleNodo('${idNodoNvrAnalogas}')" class="flex items-center gap-2.5 py-2 px-3.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-400 hover:bg-white/10 cursor-pointer transition select-none shadow-sm text-white flex-wrap">
+                    <i class="fa-solid fa-tv text-amber-400 text-sm"></i>
+                    <span class="font-bold text-amber-300 text-xs">Canales BNC / Entradas Análogas (DVR / XVR)</span>
+                    <span class="ml-auto bg-amber-500/20 text-amber-300 text-[10px] px-2.5 py-0.5 rounded-full border border-amber-400/30 font-tech-mono font-bold">
+                      <i class="fa-solid fa-tv mr-1"></i>${camsDirectasAnalogas.length} Canales BNC
+                    </span>
+                    <i class="fa-solid fa-chevron-${nvrAnalogasAbierto ? 'down' : 'right'} text-[10px] text-white/50 ml-1"></i>
+                  </div>
+                  ${htmlAnalogasHijas}
+                </div>
+              ` : ''}
+
+              ${numCams === 0 && switchesCCTV.length === 0 ? `
+                <div class="text-xs text-white/40 italic py-4 pl-2">No se han registrado cámaras ni switches todavía en el módulo de CCTV.</div>
+              ` : ''}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 7. TOPOLOGÍA DINÁMICA DE REDES LAN (ÁRBOL MDF -> IDF -> PUNTOS)
+    // ==========================================
+    function renderizarTopologiaRedes() {
+      const containerRedes = document.getElementById('canvas_topologia_redes');
+      const tbodyRedes = document.getElementById('tabla_puntos_red_body');
+      if (!containerRedes || !tbodyRedes) return;
+
+      const subnodos = datosGlobalesRedes.subnodos_idf || [];
+      const puntos = datosGlobalesRedes.puntos_red || datosGlobalesRedes.nodos || datosGlobalesRedes.puntos || [];
+      const mdfAbierto = estadoNodos['raiz_mdf'] !== false;
+
+      // Agrupar puntos por nodo origen
+      let htmlRamasIdf = '';
+      subnodos.forEach((idf, idx) => {
+        const nombreIdf = idf.nombre || idf.identificacion || `IDF #${idx + 1}`;
+        const ptsIdf = puntos.filter(p => (p.nodo_origen || '').trim().toLowerCase() === nombreIdf.trim().toLowerCase());
+        htmlRamasIdf += `
+          <div class="my-2">
+            <div class="flex items-center gap-2.5 py-2 px-3.5 rounded-xl bg-white/5 border border-indigo-400/30 text-white flex-wrap">
+              <i class="fa-solid fa-boxes-stacked text-indigo-400"></i>
+              <span class="font-bold text-indigo-300 text-xs">${nombreIdf}</span>
+              <span class="text-[10px] text-white/60">${idf.ubicacion || ''}</span>
+              <span class="ml-auto bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full text-[10px] font-tech-mono font-bold border border-indigo-400/30">${ptsIdf.length} Tomas</span>
+            </div>
+            ${ptsIdf.length > 0 ? `
+              <div class="pl-4 sm:pl-6 border-l-2 border-indigo-500/30 ml-3 space-y-1.5 my-1.5">
+                ${ptsIdf.map((pt, pIdx) => `
+                  <div class="flex items-center gap-2 py-1.5 px-3 rounded-xl bg-white/5 border border-white/10 text-[11px] flex-wrap">
+                    <i class="fa-solid fa-ethernet text-emerald-400"></i>
+                    <span class="font-bold text-white">${pt.ruta || pt.ubicacion || `Punto #${pIdx + 1}`}</span>
+                    <span class="ml-auto text-[10px] font-tech-mono text-indigo-300 bg-indigo-500/15 px-2 py-0.5 rounded border border-indigo-400/20">${pt.puerto_switch || `Boca #${pIdx + 1}`} • ${pt.metros_10 || pt.distancia_m || 0} m</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+
+      const puntosDirectosMdf = puntos.filter(p => {
+        const orig = (p.nodo_origen || 'MDF Principal').trim().toLowerCase();
+        return !subnodos.some(idf => (idf.nombre || '').trim().toLowerCase() === orig);
+      });
+
+      containerRedes.innerHTML = `
+        <div class="w-full space-y-2.5 text-xs">
+          <div onclick="toggleNodo('raiz_mdf')" class="flex items-center gap-3 py-3 px-4 rounded-2xl bg-gradient-to-r from-indigo-950 to-slate-900 border border-indigo-500/40 cursor-pointer select-none flex-wrap">
+            <i class="fa-solid fa-server text-indigo-400 text-base"></i>
+            <span class="font-extrabold text-sm">MDF Principal / Rack Core (${datosGlobalesRedes.ubicacion_rack || 'Cuarto de Comunicaciones'})</span>
+            <span class="ml-auto text-[10px] font-tech-mono bg-indigo-500/20 text-indigo-200 px-3 py-1 rounded-full border border-indigo-400/30 font-bold">
+              ${subnodos.length} IDFs • ${puntos.length} Puntos de Datos
+            </span>
+            <i class="fa-solid fa-chevron-${mdfAbierto ? 'down' : 'right'} text-xs text-indigo-300"></i>
+          </div>
+          ${mdfAbierto ? `
+            <div class="pl-3 sm:pl-6 border-l-2 border-indigo-500/30 ml-3 space-y-2 my-2">
+              ${htmlRamasIdf}${puntosDirectosMdf.map((pt, pIdx) => `
+                <div class="flex items-center gap-2 py-1.5 px-3 rounded-xl bg-white/5 border border-white/10 text-[11px] flex-wrap">
+                  <i class="fa-solid fa-ethernet text-indigo-400"></i>
+                  <span class="font-bold text-white">${pt.ruta || pt.ubicacion || pt.descripcion || `Punto #${pIdx + 1}`}</span>
+                  <span class="text-white/60 text-[10px]">(${pt.tipo_servicio || pt.categoria_cable || 'Datos LAN Cat6'})</span>
+                  <span class="ml-auto text-[10px] font-tech-mono text-indigo-300 bg-indigo-500/15 px-2 py-0.5 rounded border border-indigo-400/20">${pt.puerto_switch || `Boca #${pIdx + 1}`} • ${pt.metros_10 || pt.distancia_m || 0} m</span>
+                </div>
+              `).join('')}
+              ${puntos.length === 0 && subnodos.length === 0 ? `<div class="text-xs text-white/40 italic py-3 pl-2">Sin puntos de red registrados en este ticket.</div>` : ''}
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      tbodyRedes.innerHTML = '';
+      if (puntos.length === 0) {
+        tbodyRedes.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-white/50 italic">No hay puntos de red registrados.</td></tr>`;
+        return;
+      }
+
+      puntos.forEach((pt, i) => {
+        tbodyRedes.innerHTML += `
+          <tr class="hover:bg-white/5 transition border-b border-white/10 text-white/90">
+            <td class="py-3 px-3 sm:px-4 font-bold text-white">${pt.ruta || pt.ubicacion || `Punto #${i + 1}`}</td>
+            <td class="py-3 px-3 sm:px-4 font-semibold text-indigo-300">${pt.nodo_origen || 'MDF Principal'}</td>
+            <td class="py-3 px-3 sm:px-4 font-tech-mono font-bold text-indigo-300">${pt.puerto_switch || `Boca #${i + 1}`}</td>
+            <td class="py-3 px-3 sm:px-4 text-white/80 font-medium">${pt.tipo_servicio || pt.categoria_cable || 'Datos LAN Cat6'}</td>
+            <td class="py-3 px-3 sm:px-4 text-center font-tech-mono font-bold text-emerald-300">${pt.metros_10 || pt.distancia_m || 0} m</td>
+          </tr>
+        `;
+      });
+    }
+
+    // ========================================================
+    // 8. SIMULADOR DE MOSAICO NVR: ORDENADO POR CANAL NVR
+    // ========================================================
+    function cambiarCuadriculaMosaico(claseGrid, btnId = null) {
+      claseGridMosaico = claseGrid;
+      document.querySelectorAll('.grid-col-btn').forEach(b => {
+        b.className = "grid-col-btn px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[11px] font-mono font-bold text-white/80";
+      });
+      if (btnId) {
+        const activeBtn = document.getElementById(btnId);
+        if (activeBtn) {
+          activeBtn.className = "grid-col-btn px-2.5 py-1 rounded-lg bg-emerald-600/40 border border-emerald-400 text-[11px] font-mono font-bold text-emerald-200";
+        }
+      }
+      renderizarSimuladorMosaico();
+    }
+
+    function pantallaCompletaMosaico() {
+      const marco = document.getElementById('marco_monitor_virtual');
+      if (!document.fullscreenElement) {
+        marco.requestFullscreen().catch(err => mostrarToast("Pantalla completa no disponible: " + err.message, "error"));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    async function subirCapturaPantallaNVR(idxOriginal, inputElement) {
+      const file = inputElement.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxW = 1024;
+          const scale = Math.min(1, maxW / img.width);
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          const base64Comprimido = canvas.toDataURL('image/jpeg', 0.80);
+          const cam = datosGlobalesCCTV.camaras[idxOriginal] || {};
+          guardarCapturaNVREnMemoria(cam, idxOriginal, base64Comprimido);
+
+          renderizarSimuladorMosaico();
+          actualizarKPIsTopologia();
+          mostrarToast("Captura de encuadre NVR cargada", "success");
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function subirFotoCamaraInstalada(idxOriginal, inputElement) {
+      const file = inputElement.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxW = 1024;
+          const scale = Math.min(1, maxW / img.width);
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          const base64Comprimido = canvas.toDataURL('image/jpeg', 0.80);
+          
+          if (datosGlobalesCCTV.camaras && datosGlobalesCCTV.camaras[idxOriginal]) {
+            datosGlobalesCCTV.camaras[idxOriginal].foto_instalada_final = base64Comprimido;
+          }
+          renderizarSimuladorMosaico();
+          mostrarToast("Fotografía As-Built de cámara actualizada", "success");
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderizarSimuladorMosaico() {
+      const container = document.getElementById('cuadricula_mosaico_camaras');
+      if (!container) return;
+
+      const camaras = datosGlobalesCCTV.camaras || [];
+      container.className = `grid gap-4 w-full h-full ${claseGridMosaico}`;
+
+      if (camaras.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full flex flex-col items-center justify-center p-12 text-slate-500 font-mono">
+            <i class="fa-solid fa-video-slash text-4xl mb-3"></i>
+            <p>No hay canales de video registrados en este proyecto.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const camarasConMetadata = camaras.map((cam, idx) => ({
+        cam,
+        idxOriginal: idx,
+        canalNum: extraerNumeroCanalNVR(cam, idx)
+      }));
+
+      camarasConMetadata.sort((a, b) => a.canalNum - b.canalNum);
+
+      const fechaHoraActual = new Date().toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' });
+
+      container.innerHTML = camarasConMetadata.map(({ cam, idxOriginal, canalNum }) => {
+        const key = obtenerKeyCamara(cam, idxOriginal);
+        const puertoFisico = mapeoDinamicoObra[key]?.puerto_canal || cam.puerto_canal || `P#${idxOriginal + 1}`;
+        const canalNVRTexto = mapeoDinamicoObra[key]?.canal_nvr || cam.canal_nvr || `Canal #${canalNum}`;
+        
+        const canalOSDNumero = String(canalNum).padStart(2, '0');
+        const ubicacionNombre = (cam.ubicacion || `Canal ${canalOSDNumero}`).replace(/'/g, "\\'");
+
+        const redInfo = obtenerIdentificadorRed(cam, idxOriginal);
+        const fotoStreamNVR = obtenerCapturaNVR(cam, idxOriginal);
+        const fotoInstaladaFisica = cam.foto_instalada_final || cam.foto_base64 || null;
+
+        return `
+          <div class="bg-slate-900/90 rounded-2xl border border-white/15 p-3 flex flex-col gap-2.5 shadow-lg">
+            
+            <!-- Cabecera de Canal -->
+            <div class="flex items-center justify-between pb-1.5 border-b border-white/10">
+              <span class="font-bold text-xs text-white flex items-center gap-2 truncate">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                <span class="truncate">CH${canalOSDNumero} • ${cam.descripcion_catalogo || cam.descripcion || 'Cámara'}</span>
+              </span>
+              <span class="font-tech-mono text-[10px] font-bold px-2 py-0.5 rounded border flex-shrink-0 ${redInfo.tipoBadge}">${redInfo.etiqueta}</span>
+            </div>
+
+            <!-- Monitor Encuadre NVR -->
+            <div class="relative bg-black rounded-xl overflow-hidden border border-slate-800 aspect-video shadow-inner group">
+              ${fotoStreamNVR 
+                ? `<img src="${fotoStreamNVR}" onclick="abrirLightboxDirecto(this.src, 'CH${canalOSDNumero} - ${ubicacionNombre} (Encuadre NVR)')" class="w-full h-full object-cover cursor-zoom-in">` 
+                : `<div class="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-500">
+                     <i class="fa-solid fa-tv text-2xl mb-1 text-slate-700"></i>
+                     <span class="text-[10px] font-mono">Sin Captura de Video NVR</span>
+                   </div>`
+              }
+              
+              <div class="osd-overlay">
+                <div class="flex items-center justify-between text-[10px] bg-black/45 px-2 py-0.5 rounded">
+                  <span class="font-bold flex items-center gap-1.5 text-emerald-400 truncate">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse flex-shrink-0"></span>
+                    <span class="truncate">REC ● CH${canalOSDNumero} - ${cam.ubicacion || ''}</span>
+                  </span>
+                  <span class="text-white text-[9px] font-bold flex-shrink-0 ml-2">${fechaHoraActual}</span>
+                </div>
+                <div class="flex items-center justify-between text-[9px] text-slate-300">
+                  <span class="bg-black/75 px-1.5 py-0.5 rounded font-mono ${redInfo.esIp ? 'text-sky-300' : 'text-amber-300'}">
+                    ${canalNVRTexto} | ${puertoFisico}
+                  </span>
+                  <span class="bg-black/75 px-1.5 py-0.5 rounded uppercase font-bold text-amber-300">${cam.tipo_tecnologia || 'CCTV'}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Miniatura de la Cámara Montada (Dossier Físico) -->
+            <div class="flex items-center gap-3 bg-white/5 p-2 rounded-xl border border-white/10">
+              <div class="w-16 h-12 rounded-lg bg-black overflow-hidden flex-shrink-0 border border-white/15">
+                ${fotoInstaladaFisica 
+                  ? `<img src="${fotoInstaladaFisica}" onclick="abrirLightboxDirecto(this.src, '${ubicacionNombre} - Montaje Físico')" class="w-full h-full object-cover cursor-zoom-in">` 
+                  : `<div class="w-full h-full flex items-center justify-center text-slate-600"><i class="fa-solid fa-camera"></i></div>`
+                }
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[10px] font-bold text-white uppercase tracking-wider truncate">Montaje en Sitio: ${cam.ubicacion || ''}</p>
+                <p class="text-[9px] ${cam.foto_instalada_final ? 'text-emerald-300 font-bold' : 'text-white/60'} truncate">
+                  ${cam.foto_instalada_final ? '✓ Foto Final As-Built Cargada' : (cam.foto_base64 ? '• Foto de Relevamiento Inicial' : '○ Sin foto de montaje')}
+                </p>
+              </div>
+            </div>
+
+            <!-- Botonera de Acciones -->
+            <div class="space-y-1.5 pt-1 border-t border-white/10">
+              <div class="grid grid-cols-2 gap-2">
+                <label class="btn-glass-action p-2 rounded-xl text-center text-[10px] font-bold text-white cursor-pointer transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-camera text-blue-400"></i>
+                  <span>Foto Cámara</span>
+                  <input type="file" accept="image/*" capture="environment" class="hidden" onchange="subirFotoCamaraInstalada(${idxOriginal}, this)">
+                </label>
+
+                <label class="btn-glass-action p-2 rounded-xl text-center text-[10px] font-bold text-white cursor-pointer transition flex items-center justify-center gap-1.5">
+                  <i class="fa-regular fa-images text-indigo-300"></i>
+                  <span>Desde Galería</span>
+                  <input type="file" accept="image/*" class="hidden" onchange="subirFotoCamaraInstalada(${idxOriginal}, this)">
+                </label>
+              </div>
+
+              <label class="btn-glass-action w-full border-emerald-400/40 p-2 rounded-xl text-center text-[10px] font-bold text-emerald-200 cursor-pointer transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-tv text-emerald-400"></i>
+                <span>Subir Captura de Encuadre NVR / Monitor</span>
+                <input type="file" accept="image/*" class="hidden" onchange="subirCapturaPantallaNVR(${idxOriginal}, this)">
+              </label>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ========================================================
+    // 9. DOSSIER FINAL AS-BUILT (PARA EL ACTA DE ENTREGA)
+    // ========================================================
+    function construirEstructuraAnexoActa() {
+      const camaras = datosGlobalesCCTV.camaras || [];
+      const switchesCCTV = datosGlobalesCCTV.switches_cctv || [];
+      const subnodos = datosGlobalesRedes.subnodos_idf || [];
+      const puntosRed = datosGlobalesRedes.puntos_red || datosGlobalesRedes.nodos || datosGlobalesRedes.puntos || [];
+
+      const tieneAnalogas = camaras.some(c => esCamaraAnaloga(c));
+      const coreNombre = datosGlobalesCCTV.nombre_nvr || (tieneAnalogas ? 'DVR / XVR Central Grabador' : 'NVR Grabador Core IP');
+      const coreIp = datosGlobalesCCTV.ip_nvr || '192.168.1.100';
+
+      const tablaP2PCCTV = camaras.map((c, i) => {
+        const key = obtenerKeyCamara(c, i);
+        let destino = mapeoDinamicoObra[key]?.destino || c.destino || 'NVR Principal (Puertos PoE Directos)';
+        let estado = mapeoDinamicoObra[key]?.estado || 'Operativo';
+        let puertoFisico = mapeoDinamicoObra[key]?.puerto_canal || c.puerto_canal || `Puerto #${i + 1}`;
+        let canalNVR = mapeoDinamicoObra[key]?.canal_nvr || c.canal_nvr || `Canal #${i + 1}`;
+        
+        const redInfo = obtenerIdentificadorRed(c, i);
+        let medio = redInfo.esIp ? 'UTP Cat6 100% Cobre' : 'Coaxial / Balun UTP';
+        
+        let capturaStream = obtenerCapturaNVR(c, i);
+        let fotoFisicaFinal = c.foto_instalada_final || c.foto_base64 || null;
+
+        return {
+          id: `CAM-${String(i + 1).padStart(2, '0')}`,
+          descripcion: c.descripcion_catalogo || c.descripcion || `Cámara #${i + 1}`,
+          ubicacion: c.ubicacion || 'Punto no especificado',
+          equipo_destino: destino,
+          puerto_conexion: puertoFisico,
+          canal_nvr: canalNVR,
+          ip: redInfo.etiqueta,
+          es_ip: redInfo.esIp,
+          foto_montada: fotoFisicaFinal,
+          captura_nvr: capturaStream,
+          medio_transmision: medio,
+          estado_entrega: estado
+        };
+      });
+
+      const tablaP2PRedes = puntosRed.map((p, i) => ({
+        id: `DAT-${String(i + 1).padStart(2, '0')}`,
+        destino: p.ruta || p.ubicacion || 'Toma RJ-45 Usuario',
+        rack_origen: p.nodo_origen || 'MDF Core Principal',
+        puerto_patch: p.puerto_switch || `Boca #${i + 1}`,
+        ip_asignada: p.ip_estatica || 'DHCP Reservado',
+        servicio: p.tipo_servicio || p.categoria_cable || 'Datos Gigabit Cat6',
+        longitud_estimada: `${p.metros_10 || p.distancia_m || 0} m`
+      }));
+
+      const tablaSwitches = switchesCCTV.map((sw, i) => ({
+        nombre: sw.nombre || `Switch #${i+1}`,
+        ubicacion: sw.ubicacion || 'Rack de Telecomunicaciones',
+        ip: sw.ip || `192.168.1.${20 + i}`,
+        puerto_uplink: sw.puerto_uplink || 'P#1',
+        destino_uplink: sw.enlace_uplink || 'NVR Principal',
+        fibra_destino: sw.fibra_destino || '',
+        medio_troncal: (sw.enlace_uplink || '').includes('Fibra') ? 'Fibra Óptica Troncal' : 'Cable UTP Cat6 Gigabit'
+      }));
+
+      return {
+        ticket_id: ticketId,
+        cliente: ticketInfoGeneral.cliente || 'Cliente General',
+        direccion: ticketInfoGeneral.direccion || 'Ubicación no registrada',
+        fecha_emision: new Date().toLocaleDateString('es-EC', { dateStyle: 'long' }),
+        core: {
+          nombre: coreNombre,
+          ip: coreIp,
+          total_camaras: camaras.length,
+          total_redes: puntosRed.length
+        },
+        switches: tablaSwitches,
+        idfs: subnodos,
+        cctv_p2p: tablaP2PCCTV,
+        redes_p2p: tablaP2PRedes
+      };
+    }
+
+    function abrirModalAnexoActa() {
+      const modal = document.getElementById('modal_anexo_acta');
+      const contenedor = document.getElementById('contenedor_anexo_print');
+      const anexo = construirEstructuraAnexoActa();
+
+      let bloquesCamarasDossierHTML = anexo.cctv_p2p.map(c => `
+        <div class="border border-slate-300 rounded-2xl p-4 bg-slate-50 shadow-sm flex flex-col justify-between pdf-avoid-break">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200 mb-3">
+            <div>
+              <span class="font-mono text-xs font-bold text-blue-700">${c.id}</span>
+              <h5 class="font-extrabold text-sm text-slate-900 leading-tight">${c.descripcion}</h5>
+              <p class="text-[11px] text-slate-600 font-medium">${c.ubicacion}</p>
+            </div>
+            <div class="text-right font-mono text-xs">
+              <span class="bg-blue-100 text-blue-900 border border-blue-200 px-2 py-0.5 rounded font-bold">${c.canal_nvr}</span>
+              <p class="${c.es_ip ? 'text-emerald-700' : 'text-amber-700'} font-bold mt-1">${c.ip}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div>
+              <span class="font-mono text-[9px] uppercase tracking-wider text-slate-600 font-bold block mb-1">
+                <i class="fa-solid fa-camera mr-1"></i> Cámara Montada en Sitio:
+              </span>
+              <div class="w-full h-36 rounded-xl bg-slate-200 border border-slate-300 overflow-hidden flex items-center justify-center">
+                ${c.foto_montada 
+                  ? `<img src="${c.foto_montada}" class="w-full h-full object-contain bg-slate-900">` 
+                  : `<span class="text-slate-400 text-xs italic">Sin foto de montaje</span>`
+                }
+              </div>
+            </div>
+
+            <div>
+              <span class="font-mono text-[9px] uppercase tracking-wider text-slate-600 font-bold block mb-1">
+                <i class="fa-solid fa-tv mr-1"></i> Encuadre en Vivo (NVR/DVR):
+              </span>
+              <div class="w-full h-36 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center">
+                ${c.captura_nvr 
+                  ? `<img src="${c.captura_nvr}" class="w-full h-full object-contain">` 
+                  : `<span class="text-slate-500 text-xs italic">Sin captura de video</span>`
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-200 flex items-center justify-between text-[10px] font-mono text-slate-700">
+            <span>Red: <strong>${c.equipo_destino} (${c.puerto_conexion})</strong></span>
+            <span>Estado: <strong class="text-emerald-700 uppercase">${c.estado_entrega}</strong></span>
+          </div>
+        </div>
+      `).join('');
+
+      let filasRedesP2P = anexo.redes_p2p.map(r => `
+        <tr class="border-b border-slate-200 text-xs pdf-avoid-break">
+          <td class="p-2 font-mono font-bold text-indigo-800">${r.id}</td>
+          <td class="p-2 font-medium text-slate-900">${r.destino}</td>
+          <td class="p-2 text-slate-700">${r.rack_origen}</td>
+          <td class="p-2 font-mono font-bold text-blue-900 bg-blue-50/50">${r.puerto_patch}</td>
+          <td class="p-2 font-mono text-emerald-800 font-bold">${r.ip_asignada}</td>
+          <td class="p-2 text-slate-600 text-[11px]">${r.servicio}</td>
+          <td class="p-2 text-center font-mono font-bold text-slate-800">${r.longitud_estimada}</td>
+        </tr>
+      `).join('');
+      if (!filasRedesP2P) filasRedesP2P = `<tr><td colspan="7" class="p-3 text-center text-slate-400 italic">Sin puntos estructurados LAN registrados.</td></tr>`;
+
+      contenedor.innerHTML = `
+        <div class="border-b-2 border-slate-900 pb-4 mb-6 flex justify-between items-start pdf-avoid-break">
+          <div class="flex items-center gap-4">
+            <img src="logo.png" alt="ProTech" class="h-12 w-auto object-contain" onerror="this.style.display='none';">
+            <div>
+              <h1 class="font-black text-xl text-slate-900 tracking-tight">PROTECH SECURITY</h1>
+              <p class="font-mono text-[10px] uppercase tracking-wider text-blue-700 font-bold">Informe Técnico As-Built: Dossier de Cámaras & Encuadres en Vivo</p>
+              <p class="text-xs text-slate-500 mt-0.5">contacto@protechsecurityec.com • Quito, Ecuador</p>
+            </div>
+          </div>
+          <div class="text-right font-mono text-xs">
+            <span class="inline-block bg-slate-900 text-white font-bold px-2.5 py-1 rounded">TICKET #${ticketId.substring(0,8).toUpperCase()}</span>
+            <p class="text-slate-500 text-[10px] mt-1">${anexo.fecha_emision}</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pdf-avoid-break">
+          <div>
+            <p class="text-slate-400 font-bold uppercase text-[9px]">Cliente / Obra:</p>
+            <p class="font-extrabold text-slate-900 text-sm">${anexo.cliente}</p>
+            <p class="text-slate-600 mt-1"><i class="fa-solid fa-location-dot mr-1"></i> ${anexo.direccion}</p>
+          </div>
+          <div class="sm:text-right font-mono text-xs">
+            <p class="text-slate-400 font-bold uppercase text-[9px]">Core de Grabación / Borde:</p>
+            <p class="font-bold text-slate-900">${anexo.core.nombre}</p>
+            <p class="text-emerald-700 font-bold mt-0.5"><i class="fa-solid fa-network-wired mr-1"></i> IP Core: ${anexo.core.ip}</p>
+          </div>
+        </div>
+
+        <div class="mb-8">
+          <h3 class="font-extrabold text-xs uppercase text-slate-900 border-b-2 border-slate-900 pb-1.5 mb-4 flex items-center justify-between">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-camera-retro text-blue-700"></i> 1. Dossier de Cámaras Instaladas y Validación de Encuadre NVR</span>
+            <span class="font-mono text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-bold">${anexo.core.total_camaras} Puntos de Video</span>
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            ${bloquesCamarasDossierHTML || '<p class="text-xs text-slate-400 italic">Sin cámaras registradas.</p>'}
+          </div>
+        </div>
+
+        <div class="mb-8 pdf-avoid-break">
+          <h3 class="font-extrabold text-xs uppercase text-slate-900 border-b-2 border-slate-900 pb-1.5 mb-3 flex items-center justify-between">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-ethernet text-indigo-700"></i> 2. Mapeo de Puntos de Red LAN (Patch Panel & Conectividad)</span>
+            <span class="font-mono text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-700">${anexo.core.total_redes} Tomas de Red</span>
+          </h3>
+          <div class="border border-slate-200 rounded-xl overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-100 font-mono text-[9px] uppercase text-slate-700 border-b">
+                <tr>
+                  <th class="p-2">ID</th>
+                  <th class="p-2">Destino / Toma</th>
+                  <th class="p-2">Rack Origen</th>
+                  <th class="p-2">Puerto Patch Panel</th>
+                  <th class="p-2">IP Asignada / Segmento</th>
+                  <th class="p-2">Tipo Servicio</th>
+                  <th class="p-2 text-center">Longitud</th>
+                </tr>
+              </thead>
+              <tbody>${filasRedesP2P}</tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="pt-10 border-t border-slate-300 grid grid-cols-2 gap-8 text-center text-xs pdf-avoid-break">
+          <div>
+            <div class="border-b border-slate-400 w-48 mx-auto mb-2"></div>
+            <p class="font-bold text-slate-900">Ing. Juan Pablo Luna</p>
+            <p class="text-[10px] text-slate-500 font-mono">Responsable Técnico / ProTech Security</p>
+          </div>
+          <div>
+            <div class="border-b border-slate-400 w-48 mx-auto mb-2"></div>
+            <p class="font-bold text-slate-900">${anexo.cliente}</p>
+            <p class="text-[10px] text-slate-500 font-mono">Conformidad As-Built de Entrega</p>
+          </div>
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+    }
+
+    function cerrarModalAnexoActa() {
+      document.getElementById('modal_anexo_acta').classList.add('hidden');
+    }
+
+    async function imprimirOExportarAnexoPDF() {
+      const elemento = document.getElementById('contenedor_anexo_print');
+      const btn = document.getElementById('btn_exportar_anexo_pdf');
+      if (!elemento) return;
+
+      const orig = btn ? btn.innerHTML : '';
+      if (btn) { btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generando PDF...`; btn.disabled = true; }
+
+      try {
+        const opciones = {
+          margin: [8, 8, 8, 8],
+          filename: `Dossier_Final_AsBuilt_${ticketId.substring(0,8).toUpperCase()}.pdf`,
+          image: { type: 'jpeg', quality: 0.96 },
+          pagebreak: { mode: ['css', 'legacy'], avoid: '.pdf-avoid-break' },
+          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        await html2pdf().from(elemento).set(opciones).save();
+        mostrarToast("Dossier PDF As-Built descargado exitosamente", "success");
+      } catch (e) {
+        console.error(e);
+        mostrarToast("Error generando PDF: " + e.message, "error");
+      } finally {
+        if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+      }
+    }
+
+    // ========================================================
+    // 10. PERSISTENCIA BIDIRECCIONAL COMPLETA (TICKETS + CCTV)
+    // ========================================================
+    async function guardarTopologiaObra() {
+      if (!supabaseClient || !ticketId) {
+        mostrarToast("No hay un ticket activo para guardar", "error");
+        return;
+      }
+
+      const btnDesktop = document.getElementById('btn_guardar_topologia');
+      const btnMovil = document.getElementById('btn_guardar_topologia_movil');
+      const origDesk = btnDesktop ? btnDesktop.innerHTML : '';
+      const origMob = btnMovil ? btnMovil.innerHTML : '';
+      const textoCargando = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Sincronizando...`;
+
+      if (btnDesktop) { btnDesktop.innerHTML = textoCargando; btnDesktop.disabled = true; }
+      if (btnMovil) { btnMovil.innerHTML = textoCargando; btnMovil.disabled = true; }
+
+      try {
+        const estructuraAnexo = construirEstructuraAnexoActa();
+
+        // Sincronizar campos de cámaras para inspeccion_cctv
+        if (datosGlobalesCCTV.camaras && Array.isArray(datosGlobalesCCTV.camaras)) {
+          datosGlobalesCCTV.camaras.forEach((c, i) => {
+            const key = obtenerKeyCamara(c, i);
+            if (mapeoDinamicoObra[key]?.puerto_canal) {
+              c.puerto_canal = mapeoDinamicoObra[key].puerto_canal;
+            }
+            if (mapeoDinamicoObra[key]?.canal_nvr) {
+              c.canal_nvr = mapeoDinamicoObra[key].canal_nvr;
+            }
+            if (mapeoDinamicoObra[key]?.destino) {
+              c.destino = mapeoDinamicoObra[key].destino;
+            }
+          });
+        }
+
+        const payloadTicket = {
+          mapeo_conexiones: mapeoDinamicoObra,
+          capturas_pantalla_nvr: capturasEnVivoNVR,
+          switches_obra_extra: datosGlobalesCCTV.switches_cctv || [],
+          anexo_acta_entrega: estructuraAnexo,
+          updated_at: new Date().toISOString()
+        };
+
+        // Verificar si existe fila en inspeccion_cctv para hacer update o insert limpio
+        const { data: cctvExistente } = await supabaseClient
+          .from('inspeccion_cctv')
+          .select('ticket_id')
+          .eq('ticket_id', ticketId)
+          .maybeSingle();
+
+        const payloadCCTVSync = {
+          camaras: datosGlobalesCCTV.camaras || [],
+          switches_cctv: datosGlobalesCCTV.switches_cctv || [],
+          total_camaras: (datosGlobalesCCTV.camaras || []).length,
+          updated_at: new Date().toISOString()
+        };
+
+        const promesas = [
+          supabaseClient.from('tickets').update({ topologia_data: payloadTicket }).eq('id', ticketId)
+        ];
+
+        if (cctvExistente && cctvExistente.ticket_id) {
+          promesas.push(supabaseClient.from('inspeccion_cctv').update(payloadCCTVSync).eq('ticket_id', ticketId));
+        } else {
+          promesas.push(supabaseClient.from('inspeccion_cctv').insert([{ ticket_id: ticketId, ...payloadCCTVSync }]));
+        }
+
+        const [resTk, resCctv] = await Promise.all(promesas);
+
+        if (resTk.error) throw resTk.error;
+        if (resCctv.error) throw resCctv.error;
+
+        mostrarToast("Topología, Switches y Canales NVR sincronizados", "success");
+
+        const textoExito = `<i class="fa-solid fa-check text-emerald-300 mr-1"></i> ¡Sincronizado!`;
+        if (btnDesktop) btnDesktop.innerHTML = textoExito;
+        if (btnMovil) btnMovil.innerHTML = textoExito;
+
+        setTimeout(() => {
+          if (btnDesktop) { btnDesktop.innerHTML = origDesk; btnDesktop.disabled = false; }
+          if (btnMovil) { btnMovil.innerHTML = origMob; btnMovil.disabled = false; }
+        }, 1500);
+
+      } catch (err) {
+        console.error("Error al guardar topología:", err);
+        mostrarToast("Error al guardar: " + err.message, "error");
+        if (btnDesktop) { btnDesktop.innerHTML = origDesk; btnDesktop.disabled = false; }
+        if (btnMovil) { btnMovil.innerHTML = origMob; btnMovil.disabled = false; }
+      }
+    }
+  </script>
+</body>
+</html>

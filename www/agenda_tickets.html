@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>ProTech Security — Agenda y Tickets</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Moderna y Técnica -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Motor Offline-First -->
+  <script src="protech-offline.js"></script>
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO Y MICRO-RETÍCULA CAD (GPU SAFE)
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.14), transparent 60%),
+        linear-gradient(rgba(2, 6, 23, 0.65), rgba(2, 6, 23, 0.8));
+    }
+    .tech-grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+    }
+
+    .app-window {
+      height: 100dvh;
+      width: 100vw;
+    }
+
+    #sidebar_menu {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @media (min-width: 768px) {
+      #sidebar_menu.collapsed {
+        margin-left: -18rem;
+      }
+    }
+
+    /* ========================================================
+       2. TARJETAS Y BOTONES CYBER-GLASS (GPU SAFE)
+       ======================================================== */
+    .glass-card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.82) 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.08),
+        inset -1px -1px 3px rgba(0, 0, 0, 0.5),
+        0 12px 28px -6px rgba(0, 0, 0, 0.55) !important;
+      border-radius: 1.25rem;
+      transition: border-color 0.22s ease, transform 0.18s ease, box-shadow 0.22s ease;
+      position: relative;
+      color: #ffffff;
+    }
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 12%;
+      right: 12%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.5), transparent);
+      pointer-events: none;
+    }
+    .glass-card:hover {
+      border-color: rgba(59, 130, 246, 0.48) !important;
+    }
+
+    .corner-telemetry::after {
+      content: "";
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid rgba(59, 130, 246, 0.45);
+      border-bottom: 2px solid rgba(59, 130, 246, 0.45);
+      pointer-events: none;
+    }
+
+    .btn-glass-action {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.92) 0%, rgba(51, 65, 85, 0.88) 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+      border-radius: 0.875rem;
+      transition: all 0.18s ease;
+      color: #ffffff;
+    }
+    .btn-glass-action:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(51, 65, 85, 0.98) 0%, rgba(71, 85, 105, 0.92) 100%) !important;
+      border-color: rgba(59, 130, 246, 0.65) !important;
+      transform: translateY(-1px);
+    }
+    .btn-glass-action:active:not(:disabled) { transform: scale(0.97); }
+
+    .btn-cyber-primary {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+      border: 1px solid rgba(147, 197, 253, 0.4) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 16px rgba(37, 99, 235, 0.4) !important;
+      border-radius: 0.875rem;
+      color: #ffffff !important;
+      transition: all 0.18s ease;
+    }
+    .btn-cyber-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 20px rgba(37, 99, 235, 0.55) !important;
+      transform: translateY(-1px);
+    }
+
+    .btn-glass-danger {
+      background: linear-gradient(135deg, rgba(159, 18, 57, 0.4) 0%, rgba(225, 29, 72, 0.3) 100%) !important;
+      border: 1px solid rgba(244, 63, 94, 0.4) !important;
+      color: #fecdd3 !important;
+      transition: all 0.2s ease;
+    }
+    .btn-glass-danger:hover {
+      background: linear-gradient(135deg, rgba(159, 18, 57, 0.75) 0%, rgba(225, 29, 72, 0.65) 100%) !important;
+      border-color: rgba(244, 63, 94, 0.8) !important;
+      color: #ffffff !important;
+    }
+
+    .glass-input {
+      background: rgba(15, 23, 42, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #ffffff !important;
+      box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.45) !important;
+      transition: all 0.2s;
+    }
+    .glass-input::placeholder { color: rgba(255, 255, 255, 0.45); }
+    .glass-input:focus {
+      background: rgba(30, 41, 59, 0.98) !important;
+      border-color: rgba(59, 130, 246, 0.85) !important;
+      outline: none;
+    }
+    .glass-input option { background: #0f172a; color: #ffffff; }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .font-tech-head { font-family: var(--tech-sans); }
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 0.75rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.3rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: linear-gradient(90deg, rgba(37, 99, 235, 0.45) 0%, rgba(37, 99, 235, 0.2) 100%); 
+      color: #ffffff; 
+      border: 1px solid rgba(59, 130, 246, 0.65);
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+
+    .filtro-btn.active {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important; 
+      color: white !important;
+      border-color: rgba(147, 197, 253, 0.6) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 6px 14px rgba(37, 99, 235, 0.4) !important;
+    }
+
+    .collapse-content {
+      max-height: 420px;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out;
+      opacity: 1;
+    }
+    .collapse-content.collapsed { max-height: 0; opacity: 0; }
+    .collapse-icon { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapsed-btn .collapse-icon { transform: rotate(-90deg); }
+
+    #page_transition_overlay {
+      transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center overflow-hidden text-white">
+
+  <!-- PANTALLA DE CARGA / TRANSICIÓN -->
+  <div id="page_transition_overlay" class="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center opacity-100">
+    <div class="glass-card p-8 sm:p-10 flex flex-col items-center gap-5 min-w-[270px]">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute -inset-3 rounded-full border border-blue-500/30 animate-ping opacity-30"></div>
+        <img src="logo.png" alt="ProTech" class="h-28 sm:h-36 w-auto object-contain drop-shadow-lg relative z-10" onerror="this.style.display='none';">
+      </div>
+      <div class="text-center">
+        <p class="font-tech-head font-extrabold text-sm sm:text-base text-white tracking-wide">ProTech Cyber-OS</p>
+        <p class="font-tech-mono text-[10px] sm:text-xs uppercase tracking-widest text-blue-400 font-bold mt-1.5" id="transition_text">Cargando Agenda & Tickets...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIDEO DE FONDO Y RETÍCULA TÉCNICA -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline preload="auto">
+      <source src="fondo-tech.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+  <div class="tech-grid-overlay"></div>
+
+  <!-- EL CUERPO ÚNICO -->
+  <div id="seccion_dashboard" class="app-window flex w-full relative z-10 overflow-hidden">
+
+    <div id="mobile_menu_overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-950/80 z-40 hidden md:hidden transition-opacity"></div>
+
+    <!-- BARRA LATERAL -->
+    <aside id="sidebar_menu" class="fixed md:relative top-0 left-0 z-50 h-full w-72 flex-col justify-between border-r border-white/15 p-4 sm:p-5 flex bg-slate-950/95 md:bg-slate-950/55 shadow-2xl md:shadow-none -translate-x-full md:translate-x-0 flex-shrink-0">
+      
+      <div class="space-y-4 overflow-y-auto max-h-[calc(100vh-115px)] pr-1 hide-scrollbar">
+        
+        <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <img src="logo.png" alt="ProTech" class="h-9 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+              <div id="logo_fallback" style="display:none;" class="h-9 w-9 rounded-xl bg-blue-600 text-white font-bold text-sm items-center justify-center">PS</div>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="font-tech-head font-extrabold text-[15px] text-white leading-tight">ProTech</h1>
+                <span id="protech_net_status_badge" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-[8px] font-tech-mono text-emerald-300 font-bold">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>ONLINE
+                </span>
+              </div>
+              <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-0.5">Cyber-OS • v4.2</p>
+            </div>
+          </div>
+          <button onclick="toggleSidebar()" class="md:hidden text-white/70 hover:text-rose-400 transition p-1.5 bg-white/10 rounded-lg">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+
+        <nav class="space-y-3 font-semibold text-xs">
+          <div>
+            <button onclick="navegarA('index.html', 'Centro de Operaciones')" class="glass-card flex w-full items-center gap-3.5 px-3.5 py-2.5 text-white transition relative overflow-hidden group">
+              <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"></div>
+              <i class="fa-solid fa-layer-group w-4 text-center text-sm text-blue-400"></i>
+              <span class="font-bold text-[11px] uppercase tracking-wider">Centro Operaciones</span>
+            </button>
+          </div>
+
+          <div class="glass-card p-2.5">
+            <div onclick="toggleArea('sec_operativa', this)" class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-blue-300 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px]"></i>
+            </div>
+            <div id="sec_operativa" class="collapse-content space-y-1 mt-2">
+              <button onclick="navegarA('agenda_tickets.html', 'Agenda')" class="menu-link active w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
+                <span>Agenda & Tickets</span>
+              </button>
+              <button onclick="navegarA('inspecciones_index.html', 'Módulo Inspección')" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-list"></i></div>
+                <span>Inspección en Sitio</span>
+              </button>
+              <button onclick="navegarA('orden_trabajo.html', 'Órdenes de Trabajo')" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                <span>Órdenes de Trabajo</span>
+              </button>
+              <button onclick="navegarA('bandeja_operativa.html', 'Monitor de OTs')" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-orange-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-list-check"></i></div>
+                <span>Monitor General OTs</span>
+              </button>
+              <button onclick="navegarA('topologia_general.html', 'Topología As-Built')" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-purple-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-sitemap"></i></div>
+                <span>Topología As-Built</span>
+              </button>
+              <button onclick="navegarA('acta_entrega.html', 'Actas de Entrega')" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-signature"></i></div>
+                <span>Acta de Entrega</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="menu_area_comercial" class="glass-card p-2.5">
+            <div onclick="toggleArea('sec_comercial', this)" class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-purple-300 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-store"></i> Área Comercial</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px]"></i>
+            </div>
+            <div id="sec_comercial" class="collapse-content space-y-1 mt-2">
+              <button onclick="navegarA('proforma.html', 'Generador Proformas')" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-purple-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <span>Generador Proformas</span>
+              </button>
+              <button onclick="navegarA('catalogo.html', 'Catálogo Oficial')" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+                <span>Catálogo de Precios</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="menu_area_financiera" class="glass-card p-2.5">
+            <div onclick="toggleArea('sec_financiera', this)" class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-emerald-300 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-vault"></i> Área Financiera</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px]"></i>
+            </div>
+            <div id="sec_financiera" class="collapse-content space-y-1 mt-2">
+              <button onclick="navegarA('finanzas.html', 'Caja y Cartera')" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-cash-register"></i></div>
+                <span>Caja & Cartera</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="menu_item_usuarios" class="glass-card p-2.5">
+            <div onclick="toggleArea('sec_admin', this)" class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-rose-300 tracking-wider p-1 cursor-pointer select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-users-gear"></i> Administración</span>
+              <i class="fa-solid fa-chevron-down collapse-icon text-[10px]"></i>
+            </div>
+            <div id="sec_admin" class="collapse-content space-y-1 mt-2">
+              <button onclick="navegarA('usuarios.html', 'Administración de Roles')" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-rose-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-users-gear"></i></div>
+                <span>Personal & Roles (RBAC)</span>
+              </button>
+            </div>
+          </div>
+
+        </nav>
+      </div>
+
+      <div class="glass-card p-3 flex items-center justify-between mt-3">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shadow-md flex-shrink-0">JP</div>
+          <div class="truncate">
+            <p id="user_display_name" class="text-[11px] font-bold text-white truncate">Juan Pablo Luna</p>
+            <p id="user_role_badge" class="font-tech-mono text-[8px] text-blue-300 uppercase font-bold">Ing. Proyectos • Admin</p>
+          </div>
+        </div>
+        <button onclick="cerrarSesion()" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition flex-shrink-0" title="Cerrar Sesión">
+          <i class="fa-solid fa-power-off text-xs"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ÁREA DE CONTENIDO PRINCIPAL -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+      
+      <!-- HEADER STICKY CON BUSCADOR FUNCIONAL EN MÓVIL Y PC -->
+      <header class="border-b border-white/15 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 bg-slate-950/90 z-20 flex-shrink-0">
+        <div class="flex items-center gap-2.5 sm:gap-3.5 flex-1 min-w-0">
+          <button onclick="toggleSidebar()" class="text-white p-2 sm:p-2.5 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 active:scale-95 transition focus:outline-none flex-shrink-0">
+            <i class="fa-solid fa-bars text-xs sm:text-sm text-blue-400"></i>
+          </button>
+          
+          <div class="relative flex-1 max-w-xs sm:max-w-sm">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 text-xs z-10"></i>
+            <input type="text" id="input_buscador" oninput="filtrarTickets()" placeholder="Buscar cliente, sector o motivo..." class="glass-input w-full text-xs pl-8 pr-7 py-2 rounded-xl font-medium relative z-10">
+            <button id="btn_limpiar_busqueda" onclick="limpiarBusqueda()" class="hidden absolute right-2.5 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white text-xs z-20">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button onclick="sincronizarTimeline(true)" class="px-3 py-2 rounded-xl btn-glass-action text-white text-[11px] font-bold transition flex items-center gap-1.5" title="Actualizar Agenda">
+            <i class="fa-solid fa-arrows-rotate text-blue-400"></i>
+            <span class="hidden md:inline">Sincronizar</span>
+          </button>
+          <button onclick="navegarA('bandeja_operativa.html', 'Monitor Kanban')" class="px-3 py-2 rounded-xl btn-glass-action text-white text-[11px] font-bold hidden sm:flex items-center gap-1.5" title="Ver Tablero Kanban">
+            <i class="fa-solid fa-list-check text-amber-400"></i>
+            <span class="hidden lg:inline">Tablero Kanban</span>
+          </button>
+          <button onclick="abrirModalTicket()" class="px-3.5 sm:px-4 py-2 rounded-xl btn-cyber-primary text-white text-[11px] font-bold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-plus"></i>
+            <span class="hidden sm:inline">Nuevo Ticket / Visita</span>
+            <span class="inline sm:hidden">Nuevo</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- TIMELINE DE TICKETS -->
+      <main class="flex-1 p-3.5 sm:p-6 md:p-8 overflow-y-auto hide-scrollbar relative z-10 pb-24">
+        <div class="max-w-5xl mx-auto space-y-6">
+          
+          <!-- ENCABEZADO -->
+          <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <div class="inline-flex items-center gap-2 text-[10px] font-tech-mono uppercase tracking-widest text-blue-400 font-bold mb-1">
+                <i class="fa-solid fa-headset animate-pulse"></i> DESPACHO & CRONOGRAMA DE CAMPO • HELPDESK
+              </div>
+              <h2 class="font-tech-head font-extrabold text-xl sm:text-2xl text-white tracking-tight">
+                Agenda Técnica de Visitas & Relevamientos
+              </h2>
+            </div>
+
+            <!-- FILTROS RÁPIDOS TÁCTICOS -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
+              <button onclick="cambiarFiltro('todos', this)" class="filtro-btn active btn-glass-action px-3 py-1.5 rounded-xl text-[10px] font-tech-mono font-bold text-white transition whitespace-nowrap">Activos</button>
+              <button onclick="cambiarFiltro('hoy', this)" class="filtro-btn btn-glass-action px-3 py-1.5 rounded-xl text-[10px] font-tech-mono font-bold text-white/80 transition whitespace-nowrap">Hoy / Mañana</button>
+              <button onclick="cambiarFiltro('urgente', this)" class="filtro-btn btn-glass-action px-3 py-1.5 rounded-xl text-[10px] font-tech-mono font-bold text-white/80 transition whitespace-nowrap">Sin Fecha</button>
+              <button onclick="cambiarFiltro('vencido', this)" class="filtro-btn btn-glass-action px-3 py-1.5 rounded-xl text-[10px] font-tech-mono font-bold text-white/80 transition whitespace-nowrap">Atrasados</button>
+              <button onclick="cambiarFiltro('cotizados', this)" class="filtro-btn btn-glass-action px-3 py-1.5 rounded-xl text-[10px] font-tech-mono font-bold text-white/80 transition whitespace-nowrap">Cotizados / Obra</button>
+            </div>
+          </div>
+
+          <!-- 4 TARJETAS KPI DE TELEMETRÍA EN VIVO -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-blue-500/20 border border-blue-400/30 text-blue-300 flex items-center justify-center text-sm sm:text-base flex-shrink-0">
+                <i class="fa-solid fa-calendar-check"></i>
+              </div>
+              <div>
+                <p class="text-[9px] font-tech-mono uppercase font-bold text-white/60">Visitas Activas</p>
+                <p id="kpi_tk_activos" class="text-lg sm:text-xl font-black text-white leading-tight">0</p>
+              </div>
+            </div>
+
+            <div class="glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 flex items-center justify-center text-sm sm:text-base flex-shrink-0">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+              <div>
+                <p class="text-[9px] font-tech-mono uppercase font-bold text-white/60">Hoy / Mañana</p>
+                <p id="kpi_tk_hoy" class="text-lg sm:text-xl font-black text-emerald-300 leading-tight">0</p>
+              </div>
+            </div>
+
+            <div class="glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-amber-500/20 border border-amber-400/30 text-amber-300 flex items-center justify-center text-sm sm:text-base flex-shrink-0">
+                <i class="fa-regular fa-clock"></i>
+              </div>
+              <div>
+                <p class="text-[9px] font-tech-mono uppercase font-bold text-white/60">Sin Agendar</p>
+                <p id="kpi_tk_sin_fecha" class="text-lg sm:text-xl font-black text-amber-300 leading-tight">0</p>
+              </div>
+            </div>
+
+            <div class="glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-rose-500/20 border border-rose-400/30 text-rose-300 flex items-center justify-center text-sm sm:text-base flex-shrink-0">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div>
+                <p class="text-[9px] font-tech-mono uppercase font-bold text-white/60">Atrasados</p>
+                <p id="kpi_tk_vencidos" class="text-lg sm:text-xl font-black text-rose-300 leading-tight">0</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- LÍNEA DE TIEMPO VERTICAL -->
+          <div class="relative border-l-2 border-blue-400/40 ml-3 sm:ml-6 pl-4 sm:pl-8 space-y-8 pb-12" id="timeline_contenedor">
+            <div class="text-center py-10 text-white/60 font-medium">
+              <i class="fa-solid fa-spinner fa-spin text-2xl mb-3 block text-blue-400"></i> Sincronizando agenda...
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- MODAL UNIFICADO: CREAR O EDITAR / REPROGRAMAR TICKET -->
+  <div id="modal_nuevo_ticket" onclick="cerrarModalTicket()" class="fixed inset-0 z-[80] hidden flex justify-center items-end sm:items-center p-0 sm:p-4 transition-opacity bg-slate-950/85">
+    <div onclick="event.stopPropagation()" class="glass-card w-full sm:max-w-lg p-5 sm:p-7 transform transition-transform translate-y-full sm:translate-y-0 duration-300 rounded-t-3xl sm:rounded-3xl bg-slate-900 border-white/25 shadow-2xl max-h-[92vh] overflow-y-auto hide-scrollbar" id="modal_ticket_content">
+      
+      <div class="flex justify-between items-center mb-5 border-b border-white/15 pb-3.5">
+        <div>
+          <h3 id="modal_tk_titulo" class="font-tech-head text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
+            <i class="fa-solid fa-bolt text-blue-400"></i> Apertura Rápida de Ticket
+          </h3>
+          <p id="modal_tk_subtitulo" class="text-[10px] font-tech-mono uppercase text-white/60 mt-0.5">Notificación interna exclusiva a tu correo • Sin envío automático al cliente</p>
+        </div>
+        <button type="button" onclick="cerrarModalTicket()" class="text-white/80 hover:text-rose-400 transition p-2 bg-white/10 rounded-xl border border-white/20">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <form id="form_crear_ticket" onsubmit="guardarTicket(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="tk_edit_id" value="">
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block font-tech-mono text-[9px] uppercase font-bold text-white/75 mb-1">Cliente / Razón Social <span class="text-rose-400">*</span></label>
+            <input type="text" id="tk_cliente" required placeholder="Ej. Condominio El Bosque" class="glass-input w-full rounded-xl px-3.5 py-2.5 outline-none font-semibold text-white">
+          </div>
+          <div>
+            <label class="block font-tech-mono text-[9px] uppercase font-bold text-white/75 mb-1">C.I. / RUC (Opc.)</label>
+            <input type="text" id="tk_ruc" maxlength="13" placeholder="1713637120001" class="glass-input w-full rounded-xl px-3.5 py-2.5 outline-none font-tech-mono text-blue-300">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-tech-mono text-[9px] uppercase font-bold text-white/75 mb-1 flex items-center gap-1.5">
+              <i class="fa-solid fa-phone text-emerald-400"></i> Teléfono de Contacto <span class="text-rose-400">*</span>
+            </label>
+            <input type="tel" id="tk_telefono" required placeholder="0991234567" class="glass-input w-full rounded-xl px-3.5 py-2.5 outline-none font-semibold text-white">
+          </div>
+          <div>
+            <label class="block font-tech-mono text-[9px] uppercase font-bold text-white/75 mb-1">Modalidad de Visita</label>
+            <select id="tk_modalidad" class="glass-input w-full rounded-xl px-3 py-2.5 outline-none font-medium text-white">
+              <option value="nueva">Instalación Nueva (Proyecto)</option>
+              <option value="mantenimiento">Mantenimiento Preventivo</option>
+              <option value="ampliacion">Ampliación de Sistema</option>
+              <option value="migracion">Diagnóstico / Correctivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="font-tech-mono text-[9px] uppercase font-bold text-white/75 flex items-center gap-1.5">
+              <i class="fa-solid fa-map-location-dot text-blue-400"></i> Dirección / Referencia o Link Google Maps
+            </label>
+            <button type="button" id="btn_gps_modal" onclick="capturarGPSModal()" class="text-[9px] font-tech-mono bg-indigo-500/20 hover:bg-indigo-500/35 text-indigo-300 px-2 py-0.5 rounded border border-indigo-400/30 font-bold transition">
+              <i class="fa-solid fa-location-crosshairs mr-1"></i>Fijar mi GPS
+            </button>
+          </div>
+          <input type="text" id="tk_direccion" placeholder="Sector, calle o enlace de Google Maps (o confirmar luego por llamada)..." class="glass-input w-full rounded-xl px-3.5 py-2.5 outline-none font-medium text-white">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-tech-mono text-[9px] uppercase font-bold text-white/75 mb-1">Fecha Programada</label>
+            <input type="date" id="tk_fecha" class="glass-input w-full rounded-xl px-3.5 py-2.5 outline-none font-semibold text-white font-tech-mono">
+          </div>
+          <div>
+            <label class="block font-tech-mono text-[9px] uppercase font-bold text-white/75 mb-1">Hora Estimada</label>
+            <input type="time" id="tk_hora" class="glass-input w-full rounded-xl px-3.5 py-2.5 outline-none font-semibold text-white font-tech-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-tech-mono text-[9px] uppercase font-bold text-white/75 mb-1">Motivo / Requerimiento Técnico <span class="text-rose-400">*</span></label>
+          <textarea id="tk_motivo" required rows="3" placeholder="Describa los equipos requeridos (ej. 8 cámaras IP, cerco eléctrico, biométrico) o el fallo a revisar..." class="glass-input w-full rounded-xl px-3.5 py-2.5 outline-none font-medium text-white resize-none"></textarea>
+        </div>
+
+        <div class="pt-2 flex items-center gap-2.5">
+          <button type="button" onclick="cerrarModalTicket()" class="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition">
+            Cancelar
+          </button>
+          <button id="btn_guardar_tk" type="submit" class="flex-1 btn-cyber-primary text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> <span id="lbl_btn_guardar_tk">Guardar Ticket en Agenda</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRMAR ELIMINACIÓN DE TICKET / CITA -->
+  <div id="modal_eliminar_ticket" onclick="cerrarModalEliminarTicket()" class="fixed inset-0 z-[90] hidden flex justify-center items-center p-4 bg-slate-950/85">
+    <div onclick="event.stopPropagation()" class="glass-card w-full max-w-sm p-6 bg-slate-900 border-rose-500/30 shadow-2xl text-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-400/30 flex items-center justify-center mx-auto text-2xl shadow-inner">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <div>
+        <h3 class="font-tech-head font-extrabold text-base text-white">¿Eliminar esta cita / ticket?</h3>
+        <p id="modal_eliminar_detalle" class="text-xs text-white/70 mt-1 font-medium">Esta acción quitará el ticket de la agenda de forma permanente.</p>
+      </div>
+      <div class="flex items-center gap-3 pt-2">
+        <button type="button" onclick="cerrarModalEliminarTicket()" class="flex-1 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition">
+          Cancelar
+        </button>
+        <button type="button" id="btn_confirmar_eliminar_tk" onclick="eliminarTicketConfirmado()" class="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-md flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-trash-can text-xs"></i> <span>Eliminar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast_container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-xs sm:max-w-sm w-full pointer-events-none px-2 sm:px-0"></div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+    window.supabaseClient = supabaseClient;
+
+    let perfilUsuarioActual = null;
+    let ticketsGlobales = [];
+    let filtroActual = 'todos';
+    let ticketIdAEliminar = null;
+    let debounceTimersNotas = {};
+
+    // ==========================================
+    // 1. UTILIDADES GENERALES, GOOGLE CALENDAR & CYBER-TOAST
+    // ==========================================
+    function mostrarToast(mensaje, tipo = 'success') {
+      const container = document.getElementById('toast_container');
+      if (!container) return;
+
+      const colores = {
+        success: 'border-emerald-400/50 text-emerald-300 bg-slate-900/95',
+        error: 'border-rose-400/50 text-rose-300 bg-slate-900/95',
+        info: 'border-blue-400/50 text-blue-300 bg-slate-900/95'
+      };
+      const iconos = {
+        success: 'fa-circle-check text-emerald-400',
+        error: 'fa-triangle-exclamation text-rose-400',
+        info: 'fa-circle-info text-blue-400'
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl text-xs font-semibold text-white transform transition-all duration-300 translate-y-2 opacity-0 ${colores[tipo] || colores.success}`;
+      toast.innerHTML = `<i class="fa-solid ${iconos[tipo] || iconos.success} text-sm flex-shrink-0"></i> <span>${mensaje}</span>`;
+      container.appendChild(toast);
+      
+      requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-4');
+        setTimeout(() => toast.remove(), 300);
+      }, 3600);
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      if (window.innerWidth >= 768) {
+        sidebar.classList.toggle('collapsed');
+      } else {
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
+      }
+    }
+
+    function toggleArea(idContent, headerElement) {
+      const content = document.getElementById(idContent);
+      if (content) {
+        content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed-btn');
+      }
+    }
+
+    function obtenerFechaLocal(date = new Date()) {
+      const offset = date.getTimezoneOffset() * 60000;
+      return (new Date(date - offset)).toISOString().split('T')[0];
+    }
+
+    function formatearFechaHora(fechaStr, horaStr) {
+      if (!fechaStr) return null;
+      const d = new Date(fechaStr + 'T12:00:00');
+      const opciones = { weekday: 'short', day: 'numeric', month: 'short' };
+      const base = d.toLocaleDateString('es-ES', opciones);
+      const hora = horaStr ? ` • ${horaStr.substring(0,5)}` : '';
+      return `${base}${hora}`.toUpperCase();
+    }
+
+    // Genera enlace directo a Google Calendar con huso horario de Ecuador (America/Guayaquil)
+    function construirUrlGoogleCalendar(tk) {
+      const shortId = 'INS-' + (tk.id ? tk.id.substring(0, 6).toUpperCase() : '0000');
+      const titulo = `[${shortId}] Visita Técnica ProTech — ${tk.cliente || 'Cliente'}`;
+
+      const fechaBase = tk.fecha_programada || obtenerFechaLocal(new Date());
+      const horaBase = (tk.hora_programada ? tk.hora_programada.substring(0, 5) : '10:00');
+      const [yyyy, mm, dd] = fechaBase.split('-');
+      const [hh, min] = horaBase.split(':');
+
+      const horaFinNum = (parseInt(hh, 10) + 1) % 24;
+      const hhFin = String(horaFinNum).padStart(2, '0');
+
+      const startStr = `${yyyy}${mm}${dd}T${hh}${min}00`;
+      const endStr = `${yyyy}${mm}${dd}T${hhFin}${min}00`;
+
+      const detalles =
+        `Cliente: ${tk.cliente || 'N/A'}\n` +
+        `Teléfono: ${tk.telefono || 'N/A'}\n` +
+        `C.I./RUC: ${tk.ruc || 'N/A'}\n` +
+        `Modalidad: ${(tk.modalidad || 'nueva').toUpperCase()}\n` +
+        `Requerimiento: ${tk.motivo || 'Relevamiento técnico en sitio'}\n` +
+        (tk.notas_rapidas ? `Notas de campo: ${tk.notas_rapidas}\n` : '');
+
+      const ubicacion = tk.direccion || 'Quito, Ecuador';
+
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+             `&text=${encodeURIComponent(titulo)}` +
+             `&dates=${startStr}/${endStr}` +
+             `&ctz=America/Guayaquil` +
+             `&details=${encodeURIComponent(detalles)}` +
+             `&location=${encodeURIComponent(ubicacion)}`;
+    }
+
+    function tieneUbicacionConfirmada(direccion) {
+      if (!direccion || direccion.trim().length < 6) return false;
+      const d = direccion.toLowerCase();
+      if (d.includes('pendiente') || d.includes('confirmar') || d.includes('por definir')) return false;
+      return true;
+    }
+
+    function tienePinMapsExacto(direccion) {
+      if (!direccion) return false;
+      const d = direccion.toLowerCase();
+      return d.includes('http') || d.includes('maps') || /[-+]?\d+\.\d+\s*,\s*[-+]?\d+\.\d+/.test(d);
+    }
+
+    function navegarA(pagina, moduloNombre = 'Módulo') {
+      const overlay = document.getElementById('page_transition_overlay');
+      const text = document.getElementById('transition_text');
+      
+      if (overlay && text) {
+        overlay.classList.remove('hidden');
+        void overlay.offsetWidth;
+        overlay.classList.remove('opacity-0');
+        overlay.classList.add('opacity-100');
+        text.innerText = `Abriendo ${moduloNombre}...`;
+        setTimeout(() => { window.location.href = pagina; }, 350);
+      } else {
+        window.location.href = pagina;
+      }
+    }
+
+    function limpiarBusqueda() {
+      const input = document.getElementById('input_buscador');
+      if (input) {
+        input.value = '';
+        filtrarTickets();
+        input.focus();
+      }
+    }
+
+    // ==========================================
+    // 2. INICIALIZACIÓN ROBUSTA (CON O SIN AUTH + OFFLINE)
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      await verificarSesionActiva();
+    });
+
+    async function verificarSesionActiva() {
+      try {
+        if (supabaseClient) {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (session && session.user) {
+            await cargarPerfil(session.user);
+          }
+        }
+      } catch (err) {
+        console.warn("Modo directo / sin sesión Auth:", err);
+      } finally {
+        await sincronizarTimeline(false);
+        finalizarCargaVista();
+      }
+    }
+
+    function finalizarCargaVista() {
+      document.body.classList.add('session-checked');
+      setTimeout(() => {
+        const overlay = document.getElementById('page_transition_overlay');
+        if (overlay) {
+          overlay.classList.remove('opacity-100');
+          overlay.classList.add('opacity-0');
+          setTimeout(() => overlay.classList.add('hidden'), 380);
+        }
+      }, 300);
+    }
+
+    async function cargarPerfil(user) {
+      try {
+        let { data: perfil } = await supabaseClient.from('perfiles').select('*').eq('id', user.id).maybeSingle();
+        if (!perfil) return;
+        perfilUsuarioActual = perfil;
+
+        document.getElementById('user_display_name').textContent = perfil.nombre || perfil.email.split('@')[0];
+        const rolLimpio = (perfil.rol || '').trim().toLowerCase();
+        const esAdmin = rolLimpio === 'admin' || rolLimpio === 'administrador';
+        document.getElementById('user_role_badge').textContent = esAdmin ? 'Administrador' : 'Técnico Campo';
+      } catch (err) {}
+    }
+
+    async function cerrarSesion() {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+      window.location.href = 'index.html';
+    }
+
+    // ==========================================
+    // 3. MODAL DE CREACIÓN Y EDICIÓN / REPROGRAMACIÓN + GPS
+    // ==========================================
+    function abrirModalTicket(ticketEditar = null) {
+      const modal = document.getElementById('modal_nuevo_ticket');
+      const content = document.getElementById('modal_ticket_content');
+      const titulo = document.getElementById('modal_tk_titulo');
+      const lblBtn = document.getElementById('lbl_btn_guardar_tk');
+
+      document.getElementById('form_crear_ticket').reset();
+
+      if (ticketEditar) {
+        document.getElementById('tk_edit_id').value = ticketEditar.id;
+        document.getElementById('tk_cliente').value = ticketEditar.cliente || '';
+        document.getElementById('tk_ruc').value = ticketEditar.ruc || '';
+        document.getElementById('tk_telefono').value = ticketEditar.telefono || '';
+        document.getElementById('tk_modalidad').value = ticketEditar.modalidad || 'nueva';
+        document.getElementById('tk_direccion').value = ticketEditar.direccion || '';
+        document.getElementById('tk_fecha').value = ticketEditar.fecha_programada || '';
+        document.getElementById('tk_hora').value = ticketEditar.hora_programada ? ticketEditar.hora_programada.substring(0, 5) : '10:00';
+        document.getElementById('tk_motivo').value = ticketEditar.motivo || '';
+
+        titulo.innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-400"></i> Confirmar Datos / Reprogramar Visita`;
+        lblBtn.textContent = 'Guardar Cambios del Ticket';
+      } else {
+        document.getElementById('tk_edit_id').value = '';
+        const manana = new Date();
+        manana.setDate(manana.getDate() + 1);
+        document.getElementById('tk_fecha').value = obtenerFechaLocal(manana);
+        document.getElementById('tk_hora').value = "10:00";
+
+        titulo.innerHTML = `<i class="fa-solid fa-bolt text-blue-400"></i> Apertura Rápida de Ticket`;
+        lblBtn.textContent = 'Guardar Ticket en Agenda';
+      }
+
+      modal.classList.remove('hidden');
+      setTimeout(() => { content.classList.remove('translate-y-full'); }, 10);
+    }
+
+    function abrirEdicionTicketPorId(tkId) {
+      const tk = ticketsGlobales.find(t => String(t.id) === String(tkId));
+      if (tk) abrirModalTicket(tk);
+    }
+
+    function cerrarModalTicket() {
+      const modal = document.getElementById('modal_nuevo_ticket');
+      const content = document.getElementById('modal_ticket_content');
+      content.classList.add('translate-y-full');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        document.getElementById('form_crear_ticket').reset();
+        document.getElementById('tk_edit_id').value = '';
+      }, 280);
+    }
+
+    function capturarGPSModal() {
+      if (!navigator.geolocation) {
+        mostrarToast("Tu navegador no soporta GPS", "error");
+        return;
+      }
+      const btn = document.getElementById('btn_gps_modal');
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> GPS...`;
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude.toFixed(6);
+          const lng = pos.coords.longitude.toFixed(6);
+          const inputDir = document.getElementById('tk_direccion');
+          const actual = inputDir.value.trim();
+          inputDir.value = actual ? `${actual} (${lat}, ${lng})` : `https://maps.google.com/?q=${lat},${lng}`;
+          btn.innerHTML = orig;
+          mostrarToast("Coordenadas GPS añadidas", "success");
+        },
+        () => {
+          btn.innerHTML = orig;
+          mostrarToast("No se pudo obtener ubicación GPS", "error");
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
+
+    // ==========================================
+    // 4. GUARDAR / EDITAR Y NOTIFICAR CON SDK OFICIAL
+    // ==========================================
+    async function guardarTicket(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn_guardar_tk');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Procesando...`;
+      btn.disabled = true;
+
+      const editId = document.getElementById('tk_edit_id').value.trim();
+      const objTicket = {
+        cliente: document.getElementById('tk_cliente').value.trim(),
+        ruc: document.getElementById('tk_ruc').value.trim(),
+        telefono: document.getElementById('tk_telefono').value.trim(),
+        modalidad: document.getElementById('tk_modalidad').value,
+        direccion: document.getElementById('tk_direccion').value.trim(),
+        motivo: document.getElementById('tk_motivo').value.trim(),
+        fecha_programada: document.getElementById('tk_fecha').value || null,
+        hora_programada: document.getElementById('tk_hora').value || null
+      };
+
+      try {
+        let ticketGuardado = null;
+        const esEdicion = Boolean(editId);
+
+        if (esEdicion) {
+          const { data, error } = await supabaseClient
+            .from('tickets')
+            .update(objTicket)
+            .eq('id', editId)
+            .select()
+            .single();
+          if (error) throw error;
+          ticketGuardado = data;
+        } else {
+          objTicket.estado = 'pendiente';
+          objTicket.tecnico_responsable = 'Juan Pablo Luna';
+          objTicket.notas_rapidas = '';
+          const { data, error } = await supabaseClient
+            .from('tickets')
+            .insert([objTicket])
+            .select()
+            .single();
+          if (error) throw error;
+          ticketGuardado = data;
+        }
+
+        // LLAMADA OFICIAL IDÉNTICA A PROFORMAS E INSPECCIÓN
+        let correoOK = false;
+        if (navigator.onLine && supabaseClient && ticketGuardado) {
+          btn.innerHTML = `<i class="fa-solid fa-envelope fa-fade"></i> Notificando...`;
+          const shortCodigo = 'INS-' + ticketGuardado.id.toString().substring(0, 6).toUpperCase();
+          const fechaBonita = formatearFechaHora(ticketGuardado.fecha_programada, ticketGuardado.hora_programada) || 'SIN FECHA (LLAMAR PARA AGENDAR)';
+          const gcalUrl = construirUrlGoogleCalendar(ticketGuardado);
+
+          try {
+            const { error: emailErr } = await supabaseClient.functions.invoke('enviar-correo-ticket', {
+              body: {
+                tipoEvento: esEdicion ? 'REPROGRAMACION' : 'NUEVO_TICKET',
+                codigoTicket: shortCodigo,
+                ticketId: ticketGuardado.id,
+                cliente: ticketGuardado.cliente,
+                ruc: ticketGuardado.ruc || 'No especificado',
+                telefono: ticketGuardado.telefono,
+                direccion: ticketGuardado.direccion || 'Pendiente confirmar ubicación por llamada',
+                fechaHora: fechaBonita,
+                modalidad: ticketGuardado.modalidad || 'nueva',
+                motivo: ticketGuardado.motivo,
+                tecnico: ticketGuardado.tecnico_responsable || 'Ing. Juan Pablo Luna',
+                urlGoogleCalendar: gcalUrl,
+                correoDestino: 'jpluna@protechsecurityec.com'
+              }
+            });
+            if (!emailErr) correoOK = true;
+          } catch (eMail) {
+            console.warn("Aviso en notificación de correo de ticket:", eMail);
+          }
+        }
+
+        cerrarModalTicket();
+        mostrarToast(
+          esEdicion
+            ? `Cita actualizada ${correoOK ? 'y notificada por correo ✓' : 'con éxito'}`
+            : `Nuevo ticket registrado ${correoOK ? 'y notificado a tu correo ✓' : 'exitosamente'}`,
+          "success"
+        );
+        await sincronizarTimeline(false);
+
+      } catch (err) {
+        console.error(err);
+        mostrarToast("Error al guardar ticket: " + (err.message || ''), "error");
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    function pedirConfirmacionEliminarTicket(tkId, clienteNombre, refCodigo) {
+      ticketIdAEliminar = tkId;
+      const modal = document.getElementById('modal_eliminar_ticket');
+      const detalle = document.getElementById('modal_eliminar_detalle');
+      detalle.innerHTML = `¿Deseas eliminar la cita de <strong>${clienteNombre || 'este cliente'}</strong> (<span class="font-mono text-amber-300 font-bold">${refCodigo}</span>)? Esta acción no se puede deshacer.`;
+      modal.classList.remove('hidden');
+    }
+
+    function cerrarModalEliminarTicket() {
+      ticketIdAEliminar = null;
+      document.getElementById('modal_eliminar_ticket').classList.add('hidden');
+    }
+
+    async function eliminarTicketConfirmado() {
+      if (!ticketIdAEliminar || !supabaseClient) return;
+      const btn = document.getElementById('btn_confirmar_eliminar_tk');
+      const textoOrig = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Borrando...`;
+      btn.disabled = true;
+
+      try {
+        const { error } = await supabaseClient.from('tickets').delete().eq('id', ticketIdAEliminar);
+        if (error) throw error;
+
+        ticketsGlobales = ticketsGlobales.filter(t => t.id !== ticketIdAEliminar);
+        actualizarKPIsAgenda();
+        renderizarTimeline(ticketsGlobales);
+
+        mostrarToast("Cita / Ticket eliminado con éxito", "success");
+        cerrarModalEliminarTicket();
+      } catch (err) {
+        console.error("Error al eliminar ticket:", err);
+        mostrarToast("No se pudo eliminar: " + (err.message || 'Error en servidor'), "error");
+      } finally {
+        btn.innerHTML = textoOrig;
+        btn.disabled = false;
+      }
+    }
+
+    // ==========================================
+    // 5. NOTAS RÁPIDAS CON DEBOUNCE
+    // ==========================================
+    function actualizarNotaTicketConDebounce(tkId, nuevaNota, statusSpanId) {
+      const tkLocal = ticketsGlobales.find(t => String(t.id) === String(tkId));
+      if (tkLocal) tkLocal.notas_rapidas = nuevaNota;
+
+      const statusEl = document.getElementById(statusSpanId);
+      if (statusEl) {
+        statusEl.textContent = 'Escribiendo...';
+        statusEl.className = 'text-[9px] font-tech-mono text-amber-300';
+      }
+
+      if (debounceTimersNotas[tkId]) clearTimeout(debounceTimersNotas[tkId]);
+
+      debounceTimersNotas[tkId] = setTimeout(async () => {
+        try {
+          if (navigator.onLine && supabaseClient) {
+            await supabaseClient.from('tickets').update({ notas_rapidas: nuevaNota }).eq('id', tkId);
+          } else if (typeof ProTechOffline !== 'undefined') {
+            await ProTechOffline.guardarModulo(supabaseClient, 'tickets', 'id', tkId, { notas_rapidas: nuevaNota });
+          }
+          if (statusEl) {
+            statusEl.textContent = '✓ Nota guardada';
+            statusEl.className = 'text-[9px] font-tech-mono text-emerald-400';
+          }
+        } catch (err) {
+          console.error("Error guardando nota:", err);
+        }
+      }, 650);
+    }
+
+    // ==========================================
+    // 6. INICIAR RELEVAMIENTO FIJANDO TICKET ID
+    // ==========================================
+    async function convertirARelevamiento(btn, tkId) {
+      const card = btn.closest('.glass-card');
+      if (card) {
+        card.style.transform = "scale(0.98)";
+        card.style.opacity = "0.8";
+      }
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Abriendo...`;
+
+      try {
+        localStorage.setItem('protech_current_ticket_id', tkId);
+        if (navigator.onLine && supabaseClient) {
+          await supabaseClient.from('tickets').update({ estado: 'inspeccion' }).eq('id', tkId);
+        }
+        navegarA(`inspecciones_index.html?id=${encodeURIComponent(tkId)}`, 'Panel de Inspección');
+      } catch (err) {
+        navegarA(`inspecciones_index.html?id=${encodeURIComponent(tkId)}`, 'Panel de Inspección');
+      }
+    }
+
+    function cambiarFiltro(tipo, btnElement) {
+      filtroActual = tipo;
+      document.querySelectorAll('.filtro-btn').forEach(btn => btn.classList.remove('active'));
+      if (btnElement) btnElement.classList.add('active');
+      renderizarTimeline(ticketsGlobales);
+    }
+
+    function filtrarTickets() {
+      const q = document.getElementById('input_buscador')?.value || '';
+      const btnClear = document.getElementById('btn_limpiar_busqueda');
+      if (btnClear) btnClear.classList.toggle('hidden', !q);
+      renderizarTimeline(ticketsGlobales);
+    }
+
+    // ==========================================
+    // 7. SINCRONIZACIÓN DE TIMELINE Y KPIs EN VIVO
+    // ==========================================
+    async function sincronizarTimeline(mostrarNotif = false) {
+      const container = document.getElementById('timeline_contenedor');
+      container.innerHTML = `<div class="text-center py-10 text-white/60 font-medium"><i class="fa-solid fa-spinner fa-spin text-2xl mb-3 block text-blue-400"></i> Sincronizando agenda con Supabase...</div>`;
+      
+      try {
+        let tickets = [];
+        if (navigator.onLine && supabaseClient) {
+          const { data, error } = await supabaseClient
+            .from('tickets')
+            .select('*')
+            .order('fecha_programada', { ascending: true, nullsFirst: true });
+          
+          if (error) throw error;
+          tickets = data || [];
+          if (typeof ProTechOffline !== 'undefined') {
+            await ProTechOffline.guardarCacheLocal('agenda_tickets_list', 'all', tickets);
+          }
+        } else if (typeof ProTechOffline !== 'undefined') {
+          tickets = (await ProTechOffline.leerCacheLocal('agenda_tickets_list', 'all')) || [];
+        }
+
+        ticketsGlobales = tickets;
+        actualizarKPIsAgenda();
+        renderizarTimeline(ticketsGlobales);
+
+        if (mostrarNotif) mostrarToast("Agenda sincronizada", "info");
+
+      } catch (err) {
+        console.error("Error sincronizando timeline:", err);
+        container.innerHTML = `<div class="text-center py-10 text-rose-400 font-medium"><i class="fa-solid fa-triangle-exclamation mb-2 block text-3xl"></i> Error al cargar la agenda de tickets.</div>`;
+      }
+    }
+
+    function esTicketActivoAgenda(tk) {
+      const est = (tk.estado || 'pendiente').toLowerCase().trim();
+      return est === 'pendiente' || est === 'inspeccion' || est === 'relevamiento' || est === '';
+    }
+
+    function actualizarKPIsAgenda() {
+      const hoy = obtenerFechaLocal(new Date());
+      const dManana = new Date(); dManana.setDate(dManana.getDate() + 1);
+      const manana = obtenerFechaLocal(dManana);
+
+      const activos = ticketsGlobales.filter(esTicketActivoAgenda);
+      const hoyManana = activos.filter(tk => tk.fecha_programada === hoy || tk.fecha_programada === manana).length;
+      const sinFecha = activos.filter(tk => !tk.fecha_programada).length;
+      const vencidos = activos.filter(tk => tk.fecha_programada && tk.fecha_programada < hoy).length;
+
+      document.getElementById('kpi_tk_activos').textContent = activos.length;
+      document.getElementById('kpi_tk_hoy').textContent = hoyManana;
+      document.getElementById('kpi_tk_sin_fecha').textContent = sinFecha;
+      document.getElementById('kpi_tk_vencidos').textContent = vencidos;
+    }
+
+    function renderizarTimeline(listaTickets) {
+      const container = document.getElementById('timeline_contenedor');
+      const textoBusqueda = (document.getElementById('input_buscador')?.value || '').trim().toLowerCase();
+
+      const hoy = obtenerFechaLocal(new Date());
+      const dManana = new Date(); dManana.setDate(dManana.getDate() + 1);
+      const manana = obtenerFechaLocal(dManana);
+
+      let ticketsFiltrados = listaTickets.filter(tk => {
+        const matchTexto = !textoBusqueda ||
+          (tk.cliente || '').toLowerCase().includes(textoBusqueda) ||
+          (tk.motivo || '').toLowerCase().includes(textoBusqueda) ||
+          (tk.direccion || '').toLowerCase().includes(textoBusqueda) ||
+          (tk.id || '').toLowerCase().includes(textoBusqueda);
+        if (!matchTexto) return false;
+
+        const activo = esTicketActivoAgenda(tk);
+        const esVencido = tk.fecha_programada && tk.fecha_programada < hoy;
+
+        if (filtroActual === 'cotizados') return !activo;
+        if (!activo) return false;
+
+        if (filtroActual === 'hoy') return tk.fecha_programada === hoy || tk.fecha_programada === manana;
+        if (filtroActual === 'urgente') return !tk.fecha_programada;
+        if (filtroActual === 'vencido') return esVencido;
+        return true;
+      });
+
+      container.innerHTML = '';
+      if (ticketsFiltrados.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 text-white/60 font-medium glass-card border-dashed mx-2 sm:mx-6">
+            <i class="fa-regular fa-calendar-check text-3xl mb-3 block text-blue-400"></i>
+            No se encontraron visitas programadas bajo este filtro.
+          </div>`;
+        return;
+      }
+
+      const grupos = {
+        vencidos: { titulo: "⚠️ Visitas Atrasadas / Por Reprogramar", color: "bg-rose-500 ring-rose-400/40 shadow-[0_0_12px_#f43f5e]", items: [] },
+        hoy_manana: { titulo: "⚡ Agenda Inmediata (Hoy / Mañana)", color: "bg-emerald-400 ring-emerald-400/40 shadow-[0_0_12px_#10b981]", items: [] },
+        urgente: { titulo: "📌 Prioridad: Pendientes de Confirmar Fecha / Hora", color: "bg-amber-400 ring-amber-400/40 shadow-[0_0_12px_#fbbf24]", items: [] },
+        futuro: { titulo: "📅 Próximas Visitas Programadas", color: "bg-blue-400 ring-blue-400/40 shadow-[0_0_12px_#38bdf8]", items: [] }
+      };
+
+      ticketsFiltrados.forEach(tk => {
+        let cat = 'futuro';
+        let fechaTexto = formatearFechaHora(tk.fecha_programada, tk.hora_programada);
+
+        if (tk.fecha_programada && tk.fecha_programada < hoy) {
+          cat = 'vencidos';
+          fechaTexto = `ATRASADO (${tk.fecha_programada})`;
+        } else if (!tk.fecha_programada) {
+          cat = 'urgente';
+          fechaTexto = null;
+        } else if (tk.fecha_programada === hoy) {
+          cat = 'hoy_manana';
+          fechaTexto = `HOY • ${tk.hora_programada ? tk.hora_programada.substring(0,5) : 'Por confirmar'}`;
+        } else if (tk.fecha_programada === manana) {
+          cat = 'hoy_manana';
+          fechaTexto = `MAÑANA • ${tk.hora_programada ? tk.hora_programada.substring(0,5) : 'Por confirmar'}`;
+        }
+
+        grupos[cat].items.push({ ...tk, fechaTexto });
+      });
+
+      Object.keys(grupos).forEach(key => {
+        const grupo = grupos[key];
+        if (grupo.items.length === 0) return;
+
+        let htmlGrupo = `
+          <div class="relative">
+            <div class="absolute -left-[23px] sm:-left-[39px] top-1 h-3.5 w-3.5 rounded-full ${grupo.color} ring-4 z-10"></div>
+            <h3 class="font-tech-mono text-xs font-bold text-white uppercase tracking-widest mb-4 flex items-center justify-between">
+              <span>${grupo.titulo}</span>
+              <span class="text-[10px] bg-white/10 px-2 py-0.5 rounded text-white/70">${grupo.items.length}</span>
+            </h3>
+            <div class="space-y-4">
+        `;
+
+        grupo.items.forEach(tk => {
+          const shortId = 'INS-' + tk.id.substring(0,6).toUpperCase();
+          const telLimpio = tk.telefono ? tk.telefono.replace(/\D/g, '') : '';
+          const waNum = telLimpio.startsWith('0') ? '593' + telLimpio.substring(1) : telLimpio;
+          const clienteSafe = (tk.cliente || '').replace(/'/g, "\\'");
+          const notaSafe = (tk.notas_rapidas || '').replace(/"/g, '&quot;');
+          const statusNotaId = `nota_st_${tk.id.substring(0,8)}`;
+          const enInspeccion = (tk.estado || '').toLowerCase() === 'inspeccion';
+
+          const ubicacionOk = tieneUbicacionConfirmada(tk.direccion);
+          const pinExacto = tienePinMapsExacto(tk.direccion);
+          const gcalLink = construirUrlGoogleCalendar(tk);
+
+          htmlGrupo += `
+            <div class="glass-card p-4 sm:p-5 rounded-2xl relative border-l-4 ${enInspeccion ? 'border-l-emerald-400' : (!ubicacionOk ? 'border-l-amber-400' : 'border-l-blue-500')}">
+              <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-2 flex-wrap">
+                    <span class="font-tech-mono text-[10px] font-black uppercase bg-white/10 text-blue-300 px-2 py-0.5 rounded border border-white/20">${shortId}</span>
+                    
+                    ${tk.fechaTexto
+                      ? `<span class="font-tech-mono text-[10px] font-bold text-blue-200 bg-blue-500/20 px-2.5 py-0.5 rounded border border-blue-400/30"><i class="fa-regular fa-clock mr-1"></i>${tk.fechaTexto}</span>`
+                      : `<span class="font-tech-mono text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded border border-amber-400/30">Sin Fecha Asignada</span>`}
+
+                    ${!ubicacionOk
+                      ? `<span class="font-tech-mono text-[9px] font-bold text-amber-200 bg-amber-500/25 px-2 py-0.5 rounded border border-amber-400/40"><i class="fa-solid fa-phone-volume mr-1"></i>Llamar: Falta Ubicación</span>`
+                      : (!pinExacto ? `<span class="font-tech-mono text-[9px] font-bold text-sky-200 bg-sky-500/15 px-2 py-0.5 rounded border border-sky-400/30">Sin Pin Maps</span>` : `<span class="font-tech-mono text-[9px] font-bold text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-400/30"><i class="fa-solid fa-location-check mr-1"></i>Pin Maps OK</span>`)}
+
+                    ${enInspeccion ? `<span class="font-tech-mono text-[9px] font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-400/30">EN RELEVAMIENTO</span>` : ''}
+
+                    <div class="flex items-center gap-1.5 ml-auto">
+                      <button type="button" onclick="abrirEdicionTicketPorId('${tk.id}')" class="btn-glass-action p-1.5 px-2.5 rounded-lg text-[10px] font-tech-mono font-bold flex items-center gap-1 text-blue-300" title="Confirmar dirección o reprogramar fecha/hora">
+                        <i class="fa-solid fa-pen-to-square"></i> <span class="hidden sm:inline">Editar / Confirmar</span>
+                      </button>
+                      <button type="button" onclick="pedirConfirmacionEliminarTicket('${tk.id}', '${clienteSafe}', '${shortId}')" class="btn-glass-danger p-1.5 px-2 rounded-lg text-[10px] font-tech-mono font-bold flex items-center gap-1" title="Eliminar ticket">
+                        <i class="fa-solid fa-trash-can"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <h4 class="font-tech-head font-extrabold text-base sm:text-lg text-white leading-snug break-words">${tk.cliente || 'Cliente sin nombre'}</h4>
+                  ${tk.direccion
+                    ? `<p class="text-[11px] text-blue-300/85 font-medium mt-0.5 truncate"><i class="fa-solid fa-location-dot mr-1"></i>${tk.direccion}</p>`
+                    : `<p class="text-[11px] text-amber-300/90 font-semibold mt-0.5"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Ubicación pendiente — Llamar al ${tk.telefono || 'cliente'} para pedir pin de Maps</p>`}
+                  <p class="text-xs text-white/80 mt-2 font-medium leading-relaxed break-words">${tk.motivo || 'Sin descripción de requerimiento.'}</p>
+
+                  <div class="mt-3">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="text-[9px] font-tech-mono uppercase text-white/50 font-bold">Bitácora rápida de validación / campo:</span>
+                      <span id="${statusNotaId}" class="text-[9px] font-tech-mono text-white/40">Auto-guardado</span>
+                    </div>
+                    <input type="text" value="${notaSafe}" oninput="actualizarNotaTicketConDebounce('${tk.id}', this.value, '${statusNotaId}')" placeholder="Añadir nota rápida (ej. ya llamé, me enviará ubicación por WA)..." class="glass-input w-full rounded-xl px-3 py-2 text-[11px] font-medium text-white outline-none transition">
+                  </div>
+                </div>
+
+                <!-- ACCIONES RÁPIDAS (LLAMAR PRIMERO + GOOGLE CALENDAR + MAPA + WA MANUAL) -->
+                <div class="flex flex-col gap-2 w-full md:w-60 pt-3 md:pt-0 border-t border-white/15 md:border-0 flex-shrink-0">
+                  <div class="grid grid-cols-2 gap-1.5 w-full">
+                    <a href="${waNum ? 'tel:+'+waNum : '#'}" class="flex items-center justify-center gap-1.5 text-[10px] font-bold text-emerald-300 btn-glass-action px-2 py-2 transition border-emerald-400/40" title="Llamar para confirmar ubicación y hora">
+                      <i class="fa-solid fa-phone-volume text-xs"></i> Llamar (${tk.telefono || 'S/N'})
+                    </a>
+                    <a href="${waNum ? `https://wa.me/${waNum}` : '#'}" target="_blank" class="flex items-center justify-center gap-1.5 text-[10px] font-bold text-white/90 btn-glass-action px-2 py-2 transition" title="Abrir chat de WhatsApp manualmente">
+                      <i class="fa-brands fa-whatsapp text-emerald-400 text-sm"></i> Chat WA
+                    </a>
+                    <a href="${gcalLink}" target="_blank" class="flex items-center justify-center gap-1.5 text-[10px] font-bold text-amber-300 btn-glass-action px-2 py-2 transition" title="Agendar cita en tu Google Calendar">
+                      <i class="fa-regular fa-calendar-plus text-xs"></i> Google Calendar
+                    </a>
+                    <a href="${tk.direccion ? (tk.direccion.includes('http') ? tk.direccion : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tk.direccion)}`) : '#'}" target="_blank" class="flex items-center justify-center gap-1.5 text-[10px] font-bold text-sky-300 btn-glass-action px-2 py-2 transition" title="${tk.direccion || 'Sin ubicación'}">
+                      <i class="fa-solid fa-location-dot text-xs"></i> Ver Mapa
+                    </a>
+                  </div>
+
+                  <button onclick="convertirARelevamiento(this, '${tk.id}')" class="w-full text-[11px] font-bold text-white btn-cyber-primary px-4 py-2.5 transition flex items-center justify-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-bolt text-amber-300"></i>
+                    <span>${enInspeccion ? 'Continuar Relevamiento' : 'Iniciar Relevamiento'}</span>
+                  </button>
+
+                  <a href="proforma.html?id=${tk.id}" onclick="localStorage.setItem('protech_current_ticket_id', '${tk.id}')" class="w-full text-[10px] font-bold text-purple-200 btn-glass-action px-3 py-2 transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-file-invoice-dollar text-purple-400"></i>
+                    <span>Ir a Proforma Directa</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        htmlGrupo += `</div></div>`;
+        container.innerHTML += htmlGrupo;
+      });
+    }
+  </script>
+</body>
+</html>

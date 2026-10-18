@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cercos Eléctricos Perimetrales — ProTech Security</title>
+  
+  <meta name="theme-color" content="#020617">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Técnica Homologada -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO NÍDIDO
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    /* ========================================================
+       2. TARJETAS Y CRISTAL CÓNCAVO (Homologado)
+       ======================================================== */
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        inset 5px 5px 12px rgba(0, 0, 0, 0.4), 
+        inset -5px -5px 12px rgba(255, 255, 255, 0.12),
+        0 25px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-glass-action {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 3px 3px 8px rgba(0, 0, 0, 0.25), 
+        inset -3px -3px 8px rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(0, 0, 0, 0.25);
+      border-radius: 1rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #ffffff;
+    }
+
+    .btn-glass-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.35), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.12),
+        0 15px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cyber-input, .glass-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+    .cyber-input option, .glass-input option {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: rgba(255, 255, 255, 0.22); 
+      color: #ffffff; 
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+  </style>
+</head>
+<body class="flex items-center justify-center text-white session-checked">
+
+  <!-- VIDEO DE FONDO NÍDIDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL -->
+  <aside id="sidebar_menu" class="absolute md:relative top-0 left-0 z-50 h-full w-72 flex flex-col justify-between border-r border-white/15 p-5 transition-all duration-300 ease-in-out bg-slate-950/80 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none shadow-2xl md:shadow-none -translate-x-full md:translate-x-0 flex-shrink-0">
+    
+    <div class="space-y-4 overflow-y-auto pr-1 hide-scrollbar flex-1">
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+            <div id="logo_fallback" style="display:none;" class="h-10 w-10 rounded-xl bg-slate-900 text-white font-bold text-base items-center justify-center">PS</div>
+          </div>
+          <div>
+            <h1 class="font-bold text-[15px] text-white leading-tight">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-rose-400 font-bold">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="space-y-3">
+        <div class="cyber-glass-card p-2.5">
+          <div class="w-full flex items-center justify-center font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1.5 mb-2 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-clipboard-list"></i> Módulo Inspección</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="navegarA('inspecciones_index.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-gauge-high"></i></div>
+              Panel Principal
+            </button>
+            <button onclick="navegarA('inspeccion_cliente.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-white/80 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-address-card"></i></div>
+              1. Datos del Cliente
+            </button>
+            <button onclick="navegarA('inspeccion_cctv.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-video"></i></div>
+              2. CCTV & Audio
+            </button>
+            <button onclick="navegarA('inspeccion_alarmas.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-bell"></i></div>
+              3. Alarmas & Zonificación
+            </button>
+            <button onclick="navegarA('inspeccion_redes.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-network-wired"></i></div>
+              4. Redes, Fibra & Topología
+            </button>
+            <button onclick="navegarA('inspeccion_cercos.html')" class="menu-link active w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-rose-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-bolt"></i></div>
+              5. Cercos Eléctricos
+            </button>
+            <button onclick="navegarA('inspeccion_acceso.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-fingerprint"></i></div>
+              6. Control Acceso
+            </button>
+          </div>
+        </div>
+
+        <div class="cyber-glass-card p-2.5">
+          <div class="w-full flex items-center justify-center font-tech-mono text-[10px] uppercase font-bold text-white/70 tracking-wider p-1.5 mb-2 select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-file-invoice"></i> Resumen</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="navegarA('inspeccion_equipos.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-300 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+              Consolidado Equipos
+            </button>
+            <button onclick="navegarA('inspeccion_materiales.html')" class="menu-link w-full text-left">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-toolbox"></i></div>
+              Calculadora Materiales
+            </button>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="cyber-glass-card p-3.5 flex items-center justify-between shadow-sm relative z-10 flex-shrink-0 mt-3">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-bold text-xs shadow-md">JP</div>
+        <div class="truncate">
+          <p class="text-[11px] font-bold text-white truncate">Juan Pablo Luna Paredes</p>
+          <p class="font-tech-mono text-[9px] text-rose-400 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition" title="Cerrar Sesión">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden">
+    
+    <header class="border-b border-white/15 px-6 py-4 flex items-center justify-between flex-shrink-0 z-30 bg-slate-950/30 backdrop-blur-md">
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white p-2 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 transition">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="hidden md:flex relative w-72">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 text-xs"></i>
+          <input type="text" placeholder="Buscar energizador, poste, aislador..." class="cyber-input w-full text-xs pl-8 pr-3 py-2.5 rounded-xl font-medium outline-none">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2.5">
+        <button onclick="window.location.href='index.html'" class="px-3 py-2 rounded-xl cyber-glass-card text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm hidden sm:flex" title="Salir al Portal">
+          <i class="fa-solid fa-arrow-right-from-bracket text-blue-400"></i>
+          <span class="hidden md:inline">Salir</span>
+        </button>
+
+        <button onclick="window.location.href='catalogo.html'" class="px-3 py-2 rounded-xl btn-glass-action text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm" title="Catálogo Oficial">
+          <i class="fa-solid fa-book-open text-indigo-400"></i>
+          <span class="hidden md:inline">Catálogo</span>
+        </button>
+
+        <button onclick="navegarA('inspecciones_index.html')" class="px-3 py-2 rounded-xl cyber-glass-card text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 transition shadow-sm" title="Panel Principal">
+          <i class="fa-solid fa-gauge-high text-blue-400"></i>
+          <span class="hidden sm:inline">Panel</span>
+        </button>
+
+        <button id="btn_guardar_cloud" onclick="guardarModuloCercos()" class="px-4 py-2 rounded-xl btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white text-xs sm:text-[11px] font-bold flex items-center gap-1.5 shadow-md transition" title="Guardar Cerco Eléctrico">
+          <i class="fa-solid fa-floppy-disk text-emerald-400"></i>
+          <span class="hidden sm:inline">Guardar</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ÁREA DE CONTENIDO -->
+    <main class="flex-1 overflow-y-auto hide-scrollbar p-6 relative space-y-6 z-10">
+      <div class="max-w-6xl mx-auto space-y-6">
+
+        <!-- TÍTULO PRINCIPAL Y TICKET -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="font-tech-head font-extrabold text-[24px] text-white tracking-tight flex items-center gap-3">
+              <i class="fa-solid fa-bolt text-rose-400 drop-shadow-md"></i> Cerco Eléctrico & Seguridad Perimetral
+            </h2>
+            <p class="font-tech-mono text-[10px] uppercase tracking-wider text-white/70 mt-1.5">
+              PASO 5 • ENERGIZADOR, CÁLCULO DE PERÍMETRO, POSTERÍA, AISLADORES Y PUESTA A TIERRA
+            </p>
+          </div>
+          <div class="inline-flex items-center gap-2 cyber-glass-card px-3 py-1.5 border-white/20">
+            <span class="text-[9px] font-tech-mono uppercase font-bold text-rose-300">Ticket Vinculado:</span>
+            <span id="label_id_ticket" class="text-xs font-tech-mono font-bold text-white"># INS-0000</span>
+          </div>
+        </div>
+
+        <!-- 1. ENERGIZADOR, ESTRUCTURA & MÓDULOS DE COMUNICACIÓN -->
+        <div class="cyber-glass-card p-6 space-y-5">
+          <div class="flex items-center justify-between border-b border-white/15 pb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+              <i class="fa-solid fa-plug-circle-bolt text-rose-400"></i> Energizador, Estructura & Módulos de Comunicación
+            </h3>
+            <span class="text-[10px] font-tech-mono text-rose-300 font-bold bg-rose-500/20 border border-rose-400/30 px-2.5 py-1 rounded">CORE CONTROL</span>
+          </div>
+
+          <!-- Panel Energizador Principal -->
+          <div class="cyber-glass-card p-4 space-y-3.5 bg-white/5">
+            <h4 class="text-[11px] font-bold text-rose-300 uppercase tracking-wide flex items-center gap-1.5">
+              <i class="fa-solid fa-bolt"></i> Panel Energizador Principal & Ubicación
+            </h4>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-white">
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Acción Energizador</label>
+                <select id="cerco_accion_energizador" class="cyber-input w-full rounded-lg p-2.5 font-medium">
+                  <option value="Instalación Nueva" style="background:#0f172a; color:#fff;">Instalación Nueva</option>
+                  <option value="Mantenimiento" style="background:#0f172a; color:#fff;">Mantenimiento</option>
+                  <option value="Reparación" style="background:#0f172a; color:#fff;">Reparación</option>
+                  <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo de Energizador (Catálogo)</label>
+                <select id="cerco_energizador_catalogo" class="cyber-input w-full rounded-lg p-2.5 font-medium">
+                  <option value="" style="background:#0f172a; color:#fff;">Cargando catálogo...</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cantidad de Energizadores</label>
+                <input type="number" id="cerco_cant_energizadores" min="1" value="1" class="cyber-input w-full rounded-lg p-2.5 font-tech-mono font-bold outline-none">
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación Física del Energizador</label>
+                <input type="text" id="cerco_ubicacion_energizador" placeholder="Ej. Garita Principal / Bodega / Cuarto Técnico" class="cyber-input w-full rounded-lg p-2.5 font-medium outline-none">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-amber-300 mb-1 flex items-center gap-1">
+                  <i class="fa-solid fa-plug text-amber-400"></i> Toma Eléctrica 110V
+                </label>
+                <select id="cerco_condicion_electrica" class="cyber-input w-full rounded-lg p-2.5 font-medium bg-amber-500/25 border-amber-400/30">
+                  <option value="Toma 110V disponible con Tierra" style="background:#0f172a; color:#fff;">Toma 110V disponible con Tierra</option>
+                  <option value="Toma 110V disponible sin Tierra" style="background:#0f172a; color:#fff;">Toma 110V disponible sin Tierra</option>
+                  <option value="Requiere nueva extensión eléctrica" style="background:#0f172a; color:#fff;">Requiere nueva extensión eléctrica</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Módulo de Comunicación -->
+          <div class="cyber-glass-card p-4 space-y-3.5 bg-white/5">
+            <h4 class="text-[11px] font-bold text-indigo-300 uppercase tracking-wide flex items-center gap-1.5">
+              <i class="fa-solid fa-wifi"></i> Módulo de Comunicación & Control Remoto (Ethernet / Wi-Fi / App)
+            </h4>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-white">
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Acción Módulo</label>
+                <select id="cerco_accion_modulo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                  <option value="Instalación Nueva" style="background:#0f172a; color:#fff;">Instalación Nueva</option>
+                  <option value="Existente" style="background:#0f172a; color:#fff;">Existente</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo de Módulo Red (Catálogo)</label>
+                <select id="cerco_modulo_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cantidad de Módulos</label>
+                <input type="number" id="cerco_cant_modulos" min="0" value="1" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+          </div>
+
+          <!-- MOTOR DE CÁLCULO PERIMETRAL AUTOMÁTICO -->
+          <div class="cyber-glass-card p-4 space-y-3.5 bg-emerald-500/10 border border-emerald-400/30">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h4 class="text-[11px] font-bold text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-calculator"></i> Dimensionamiento Perimetral & Geometría del Muro
+              </h4>
+              <span id="badge_total_lineas_m" class="text-[10px] font-tech-mono font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-400/30">
+                0 m lineales totales de alambre
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs text-white">
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Perímetro Total (Metros)</label>
+                <div class="flex items-center gap-1">
+                  <input type="number" id="cerco_perimetro_m" min="0" value="0" oninput="recalcularCercoAutomatico()" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-black text-blue-300 text-sm outline-none">
+                  <span class="text-[10px] font-bold text-white/70">m</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Número de Líneas / Hilos</label>
+                <select id="cerco_num_lineas" onchange="recalcularCercoAutomatico()" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold">
+                  <option value="4" style="background:#0f172a; color:#fff;">4 Líneas (Económico / Residencial)</option>
+                  <option value="5" style="background:#0f172a; color:#fff;">5 Líneas</option>
+                  <option value="6" selected style="background:#0f172a; color:#fff;">6 Líneas (Estándar Seguridad)</option>
+                  <option value="8" style="background:#0f172a; color:#fff;">8 Líneas (Industrial / Alto Riesgo)</option>
+                  <option value="10" style="background:#0f172a; color:#fff;">10 Líneas</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Vértices / Quiebres del Muro (Esquinas)</label>
+                <input type="number" id="cerco_num_esquinas" min="2" value="4" oninput="recalcularCercoAutomatico()" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none" title="Cada quiebre o esquina requiere postes templadores dobles">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Tipo de Superficie del Muro</label>
+                <select id="cerco_tipo_superficie" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="Muro Ladrillo / Hormigón Recto" style="background:#0f172a; color:#fff;">Muro Ladrillo / Hormigón Recto</option>
+                  <option value="Cerramiento Malla Electrosoldada" style="background:#0f172a; color:#fff;">Cerramiento Malla Electrosoldada</option>
+                  <option value="Muro de Adobe / Irregular" style="background:#0f172a; color:#fff;">Muro de Adobe / Irregular</option>
+                  <option value="Reja Metálica" style="background:#0f172a; color:#fff;">Reja Metálica</option>
+                </select>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Presentación de Alambre (Catálogo - Rollos)</label>
+                <select id="cerco_alambre_catalogo" onchange="recalcularCercoAutomatico()" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="" style="background:#0f172a; color:#fff;">Cargando catálogo...</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Rendimiento por Rollo (m)</label>
+                <input type="number" id="cerco_rendimiento_rollo_m" min="100" value="500" oninput="recalcularCercoAutomatico()" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-emerald-300 mb-1">Cant. Rollos Alambre (Auto/Edit)</label>
+                <input type="number" id="cerco_cant_rollos" min="1" value="1" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-black text-emerald-300 bg-emerald-500/20 outline-none">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. POSTERÍA, AISLADORES & ACCESORIOS PERIMETRALES -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                <i class="fa-solid fa-bars-staggered text-blue-400"></i> Postería, Aisladores & Accesorios Perimetrales
+              </h3>
+              <p class="text-[10px] text-white/70 mt-0.5">Calculados automáticamente con base en el perímetro (refuerzos de tensión cada 20m), esquinas, separación intermedios (3.7m) y número de hilos.</p>
+            </div>
+            <button type="button" onclick="recalcularCercoAutomatico(true)" class="px-3 py-1.5 rounded-xl btn-glass-action text-white text-xs font-bold transition shadow-sm flex items-center gap-1.5 self-start sm:self-auto">
+              <i class="fa-solid fa-arrows-rotate text-blue-400"></i> <span>Recalcular Todo</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs text-white">
+            <!-- Poste Templador -->
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Poste Templador (Catálogo)</label>
+                <select id="cerco_poste_templador_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="" style="background:#0f172a; color:#fff;">Seleccionar Ítem</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="cerco_cant_postes_templadores" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+
+            <!-- Poste Intermedio -->
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Poste Intermedio (Catálogo)</label>
+                <select id="cerco_poste_intermedio_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="" style="background:#0f172a; color:#fff;">Seleccionar Ítem</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="cerco_cant_postes_intermedios" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+
+            <!-- Aislador -->
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Aislador (Catálogo)</label>
+                <select id="cerco_aislador_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="" style="background:#0f172a; color:#fff;">Seleccionar Ítem</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="cerco_cant_aisladores" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+
+            <!-- Tensor -->
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Tensor / Templador (Catálogo)</label>
+                <select id="cerco_tensor_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="" style="background:#0f172a; color:#fff;">Seleccionar Ítem</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="cerco_cant_tensores" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+
+            <!-- Letrero Advertencia -->
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Letrero Advertencia (Catálogo)</label>
+                <select id="cerco_letrero_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="" style="background:#0f172a; color:#fff;">Seleccionar Ítem</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="cerco_cant_letreros" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+
+            <!-- Anillo de Seguridad / Argollas -->
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Anillo de Seguridad (Catálogo)</label>
+                <select id="cerco_anillo_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="" style="background:#0f172a; color:#fff;">Seleccionar Ítem</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="cerco_cant_anillos" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+
+            <!-- Cable Bujía -->
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cable Bujía / Doble Aislamiento (Catálogo)</label>
+                <select id="cerco_cable_bujia_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="" style="background:#0f172a; color:#fff;">Seleccionar Ítem</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Metros</label>
+                <input type="number" id="cerco_metros_cable_bujia" min="0" value="15" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+
+            <!-- Tapas para Tubos -->
+            <div class="sm:col-span-2 grid grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Tapas para Tubos / Postes (Catálogo)</label>
+                <select id="cerco_tapas_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="" style="background:#0f172a; color:#fff;">Seleccionar Ítem</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Cant.</label>
+                <input type="number" id="cerco_cant_tapas" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. PUESTA A TIERRA DEDICADA & SIRENAS / RESPALDO -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="border-b border-white/15 pb-3 flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+              <i class="fa-solid fa-earth-americas text-blue-400"></i> Puesta a Tierra Dedicada, Sirenas & Respaldo
+            </h3>
+            <span class="text-[10px] font-tech-mono text-blue-300 font-bold bg-blue-500/20 border border-blue-400/30 px-2 py-0.5 rounded">PROTECCIÓN RETORNO</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs text-white">
+            <!-- Sirena Exterior 30W -->
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Sirena Exterior 30W para Cerco</label>
+              <select id="cerco_sirena_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+              </select>
+            </div>
+
+            <!-- Batería Respaldo 12V -->
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Batería de Respaldo 12V</label>
+              <select id="cerco_bateria_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="Existente / No Requiere" style="background:#0f172a; color:#fff;">Existente / No Requiere</option>
+              </select>
+            </div>
+
+            <!-- Varilla Cooperweld Tierra -->
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Varilla de Puesta a Tierra (Cooperweld)</label>
+              <select id="cerco_varilla_tierra_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+              </select>
+            </div>
+
+            <!-- Cantidad de Varillas de Tierra -->
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Cantidad de Varillas Tierra</label>
+              <input type="number" id="cerco_cant_varillas_tierra" min="0" value="1" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+            </div>
+
+            <!-- Químico / Gel Acondicionador -->
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Gel Acondicionador / Bentonita</label>
+              <select id="cerco_gel_tierra_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium">
+                <option value="No Requiere" style="background:#0f172a; color:#fff;">No Requiere</option>
+              </select>
+            </div>
+
+            <!-- Cable Conductor de Tierra desnudo -->
+            <div class="sm:col-span-2">
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Cable Desnudo / Tierra Retorno (Metros)</label>
+              <input type="number" id="cerco_metros_cable_tierra" min="0" value="10" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. REGISTRO FOTOGRÁFICO DE PERÍMETRO Y MURO -->
+        <div class="cyber-glass-card p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-white/15 pb-3">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                <i class="fa-solid fa-camera text-blue-400"></i> Registro Fotográfico del Perímetro & Muros
+              </h3>
+              <p class="text-[10px] text-white/70 mt-0.5">Captura evidencia del estado del muro, vegetación cercana, curvas o desniveles.</p>
+            </div>
+            <button type="button" onclick="abrirSelectorFotoCerco()" class="px-4 py-2 rounded-xl btn-glass-action text-white text-xs font-bold transition shadow-sm flex items-center gap-1.5">
+              <i class="fa-solid fa-camera text-blue-400"></i> <span>Adjuntar Foto de Muro</span>
+            </button>
+          </div>
+
+          <div id="fotos_cerco_grid" class="flex flex-wrap items-center gap-3">
+            <!-- Galería de fotos dinámica de cercos -->
+          </div>
+        </div>
+
+        <!-- BOTONERA INFERIOR HOMOLOGADA -->
+        <div class="cyber-glass-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <button onclick="navegarA('inspecciones_index.html')" class="w-full sm:w-auto px-5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-arrow-left text-blue-400"></i> Volver al Dashboard
+          </button>
+          <button onclick="guardarYSalir()" class="w-full sm:w-auto px-7 py-2.5 rounded-xl btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white text-xs font-bold transition shadow-md flex items-center justify-center gap-2">
+            <i class="fa-solid fa-floppy-disk text-emerald-400"></i> <span>Guardar & Volver al Panel</span>
+          </button>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const ticketId = urlParams.get('id');
+
+    let inventarioCatalogo = [];
+    let listaFotosCerco = [];
+
+    function navegarA(pagina) {
+      let url = pagina;
+      if (ticketId) url += '?id=' + ticketId;
+      window.location.href = url;
+    }
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    // ==========================================
+    // CARGA DE CATÁLOGO DESDE SUPABASE
+    // ==========================================
+    async function cargarCatalogoPrecios() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('catalogo_precios')
+          .select('*')
+          .order('descripcion');
+
+        if (error) throw error;
+        inventarioCatalogo = data || [];
+        poblarSelectoresCatalogo();
+      } catch (err) {
+        console.error("Error al cargar catalogo_precios:", err);
+      }
+    }
+
+    function poblarSelectoresCatalogo() {
+      const energizadores = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const c = (i.categoria || '').toLowerCase();
+        return (d.includes('energizador') || d.includes('electrificador') || c.includes('cerco')) && !d.includes('aislador') && !d.includes('poste');
+      });
+      llenarSelect('cerco_energizador_catalogo', energizadores, 'Seleccionar Energizador');
+
+      const modulosRed = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return (d.includes('modulo') || d.includes('módulo')) && (d.includes('ethernet') || d.includes('wifi') || d.includes('ip') || d.includes('app') || d.includes('cerco'));
+      });
+      llenarSelect('cerco_modulo_catalogo', modulosRed, 'No Requiere', true);
+
+      const alambres = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('alambre') || d.includes('rollo alambre') || d.includes('acerado') || d.includes('galvanizado');
+      });
+      llenarSelect('cerco_alambre_catalogo', alambres, 'Seleccionar presentación de rollo...');
+
+      const pTempladores = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return (d.includes('poste') || d.includes('tubo')) && (d.includes('templador') || d.includes('esquinero') || d.includes('paso'));
+      });
+      llenarSelect('cerco_poste_templador_catalogo', pTempladores, 'Seleccionar Poste Templador');
+
+      const pIntermedios = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return (d.includes('poste') || d.includes('tubo')) && (d.includes('intermedio') || d.includes('linea') || d.includes('recto'));
+      });
+      llenarSelect('cerco_poste_intermedio_catalogo', pIntermedios, 'Seleccionar Poste Intermedio');
+
+      const aisladores = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('aislador'));
+      llenarSelect('cerco_aislador_catalogo', aisladores, 'Seleccionar Aislador');
+
+      const tensores = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('tensor') || d.includes('resorte') || d.includes('templador alambre');
+      });
+      llenarSelect('cerco_tensor_catalogo', tensores, 'Seleccionar Tensor');
+
+      const letreros = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('letrero') || (i.descripcion || '').toLowerCase().includes('aviso'));
+      llenarSelect('cerco_letrero_catalogo', letreros, 'Seleccionar Letrero');
+
+      const anillos = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('anillo') || (i.descripcion || '').toLowerCase().includes('argolla'));
+      llenarSelect('cerco_anillo_catalogo', anillos, 'Seleccionar Anillo');
+
+      const bujias = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('bujia') || d.includes('bujía') || d.includes('alta tension') || d.includes('alta tensión');
+      });
+      llenarSelect('cerco_cable_bujia_catalogo', bujias, 'Seleccionar Cable Bujía');
+
+      const tapas = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('tapa') && (i.descripcion || '').toLowerCase().includes('tubo'));
+      llenarSelect('cerco_tapas_catalogo', tapas, 'Seleccionar Tapa');
+
+      const sirenas = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('sirena'));
+      llenarSelect('cerco_sirena_catalogo', sirenas, 'No Requiere', true);
+
+      const baterias = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('bateria') || (i.descripcion || '').toLowerCase().includes('batería'));
+      llenarSelect('cerco_bateria_catalogo', baterias, 'Existente / No Requiere', true);
+
+      const varillas = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('varilla') || (i.descripcion || '').toLowerCase().includes('cooperweld'));
+      llenarSelect('cerco_varilla_tierra_catalogo', varillas, 'No Requiere', true);
+
+      const geles = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('gel') || (i.descripcion || '').toLowerCase().includes('bentonita') || (i.descripcion || '').toLowerCase().includes('tierra'));
+      llenarSelect('cerco_gel_tierra_catalogo', geles, 'No Requiere', true);
+    }
+
+    function llenarSelect(elementId, items, placeholder, incluirNoRequiere = false) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.innerHTML = '';
+
+      if (incluirNoRequiere) {
+        el.innerHTML += `<option value="No Requiere" style="background:#0f172a; color:#fff;">${placeholder}</option>`;
+      } else {
+        el.innerHTML += `<option value="" style="background:#0f172a; color:#fff;">${placeholder}</option>`;
+      }
+
+      items.forEach(item => {
+        const precio = item.pvp_sugerido ? ` ($${Number(item.pvp_sugerido).toFixed(2)})` : '';
+        el.innerHTML += `<option value="${item.id}" data-pvp="${item.pvp_sugerido || 0}" data-desc="${item.descripcion}" style="background:#0f172a; color:#fff;">${item.descripcion}${precio}</option>`;
+      });
+    }
+
+    // ==========================================
+    // MOTOR DE CÁLCULO PERIMETRAL AUTOMÁTICO
+    // ==========================================
+    function recalcularCercoAutomatico(forzar = false) {
+      const perimetro = parseFloat(document.getElementById('cerco_perimetro_m').value) || 0;
+      const numLineas = parseInt(document.getElementById('cerco_num_lineas').value) || 6;
+      const numEsquinas = parseInt(document.getElementById('cerco_num_esquinas').value) || 4;
+      const rendimientoRollo = parseFloat(document.getElementById('cerco_rendimiento_rollo_m').value) || 500;
+
+      const totalMetrosAlambre = Math.ceil((perimetro * numLineas) * 1.08);
+      document.getElementById('badge_total_lineas_m').innerText = `${totalMetrosAlambre} m lineales totales de alambre (${numLineas} líneas)`;
+
+      const cantRollos = Math.max(1, Math.ceil(totalMetrosAlambre / rendimientoRollo));
+      document.getElementById('cerco_cant_rollos').value = perimetro > 0 ? cantRollos : 0;
+
+      const quiebresTension = Math.floor(perimetro / 20); 
+      const postesTempladores = perimetro > 0 ? Math.max(2, (numEsquinas * 2) + (quiebresTension * 2)) : 0;
+      document.getElementById('cerco_cant_postes_templadores').value = postesTempladores;
+
+      const totalPostesEstimados = Math.ceil(perimetro / 3.7);
+      const postesIntermedios = Math.max(0, totalPostesEstimados - postesTempladores);
+      document.getElementById('cerco_cant_postes_intermedios').value = perimetro > 0 ? postesIntermedios : 0;
+
+      const totalPostes = (perimetro > 0) ? (postesTempladores + postesIntermedios) : 0;
+      document.getElementById('cerco_cant_tapas').value = totalPostes;
+
+      const totalAisladores = totalPostes * numLineas;
+      document.getElementById('cerco_cant_aisladores').value = totalAisladores;
+
+      const cantTensores = postesTempladores * numLineas;
+      document.getElementById('cerco_cant_tensores').value = perimetro > 0 ? cantTensores : 0;
+
+      const cantLetreros = Math.max(2, Math.ceil(perimetro / 10));
+      document.getElementById('cerco_cant_letreros').value = perimetro > 0 ? cantLetreros : 0;
+
+      document.getElementById('cerco_cant_anillos').value = perimetro > 0 ? (numEsquinas * numLineas) : 0;
+    }
+
+    // ==========================================
+    // GESTIÓN FOTOGRÁFICA DUAL (CÁMARA / GALERÍA)
+    // ==========================================
+    function abrirSelectorFotoCerco() {
+      document.getElementById('modal_origen_foto').classList.remove('hidden');
+    }
+
+    function cerrarSelectorFotoCerco() {
+      document.getElementById('modal_origen_foto').classList.add('hidden');
+      document.getElementById('input_camara_directa').value = '';
+      document.getElementById('input_galeria_directa').value = '';
+    }
+
+    function procesarFotoCercoDesdeModal(e) {
+      cerrarSelectorFotoCerco();
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const maxDim = 1280;
+          let w = img.width;
+          let h = img.height;
+          if (w > h && w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+          else if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+
+          const base64 = canvas.toDataURL('image/jpeg', 0.75);
+          listaFotosCerco.push({
+            id: 'foto_' + Date.now(),
+            base64: base64,
+            fecha: new Date().toLocaleTimeString()
+          });
+          renderizarFotosCerco();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function eliminarFotoCerco(id) {
+      listaFotosCerco = listaFotosCerco.filter(f => f.id !== id);
+      renderizarFotosCerco();
+    }
+
+    function renderizarFotosCerco() {
+      const grid = document.getElementById('fotos_cerco_grid');
+      if (listaFotosCerco.length === 0) {
+        grid.innerHTML = `<span class="text-[11px] text-white/50 italic">No se han registrado fotografías del muro perimetral.</span>`;
+        return;
+      }
+
+      grid.innerHTML = '';
+      listaFotosCerco.forEach((f, idx) => {
+        const div = document.createElement('div');
+        div.className = 'relative group';
+        div.innerHTML = `
+          <img src="${f.base64}" onclick="abrirLightboxCerco('${f.base64}', 'Foto Muro #${idx+1}')" class="h-16 w-16 rounded-xl object-cover border-2 border-blue-400 shadow-sm cursor-zoom-in hover:brightness-105 transition">
+          <button type="button" onclick="eliminarFotoCerco('${f.id}')" class="absolute -top-1.5 -right-1.5 bg-rose-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    function abrirLightboxCerco(base64, titulo) {
+      document.getElementById('lightbox_img').src = base64;
+      document.getElementById('lightbox_titulo').innerText = titulo || 'Evidencia Muro Cerco';
+      document.getElementById('modal_lightbox').classList.remove('hidden');
+    }
+
+    function cerrarLightbox() {
+      document.getElementById('modal_lightbox').classList.add('hidden');
+      document.getElementById('lightbox_img').src = '';
+    }
+
+    // ==========================================
+    // PERSISTENCIA EN SUPABASE
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.body.classList.add('session-checked');
+      if (ticketId) {
+        document.getElementById('label_id_ticket').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+      } else {
+        document.getElementById('label_id_ticket').innerText = "# NUEVO";
+      }
+
+      await cargarCatalogoPrecios();
+
+      if (supabaseClient && ticketId) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('inspeccion_cercos')
+            .select('*')
+            .eq('ticket_id', ticketId)
+            .single();
+
+          if (data && !error) {
+            document.getElementById('cerco_accion_energizador').value = data.accion_energizador || 'Instalación Nueva';
+            document.getElementById('cerco_energizador_catalogo').value = data.energizador_catalogo_id || '';
+            document.getElementById('cerco_cant_energizadores').value = data.cant_energizadores || 1;
+            document.getElementById('cerco_ubicacion_energizador').value = data.ubicacion_energizador || '';
+            document.getElementById('cerco_condicion_electrica').value = data.condicion_electrica || 'Toma 110V disponible con Tierra';
+
+            document.getElementById('cerco_accion_modulo').value = data.accion_modulo || 'No Requiere';
+            document.getElementById('cerco_modulo_catalogo').value = data.modulo_catalogo_id || 'No Requiere';
+            document.getElementById('cerco_cant_modulos').value = data.cant_modulos || 1;
+
+            document.getElementById('cerco_perimetro_m').value = data.perimetro_m || 0;
+            document.getElementById('cerco_num_lineas').value = data.num_lineas || '6';
+            document.getElementById('cerco_num_esquinas').value = data.num_esquinas || 4;
+            document.getElementById('cerco_tipo_superficie').value = data.tipo_superficie || 'Muro Ladrillo / Hormigón Recto';
+            document.getElementById('cerco_alambre_catalogo').value = data.alambre_catalogo_id || '';
+            document.getElementById('cerco_rendimiento_rollo_m').value = data.rendimiento_rollo_m || 500;
+            document.getElementById('cerco_cant_rollos').value = data.cant_rollos || 1;
+
+            document.getElementById('cerco_poste_templador_catalogo').value = data.poste_templador_catalogo_id || '';
+            document.getElementById('cerco_cant_postes_templadores').value = data.cant_postes_templadores || 0;
+            document.getElementById('cerco_poste_intermedio_catalogo').value = data.poste_intermedio_catalogo_id || '';
+            document.getElementById('cerco_cant_postes_intermedios').value = data.cant_postes_intermedios || 0;
+
+            document.getElementById('cerco_aislador_catalogo').value = data.aislador_catalogo_id || '';
+            document.getElementById('cerco_cant_aisladores').value = data.cant_aisladores || 0;
+            document.getElementById('cerco_tensor_catalogo').value = data.tensor_catalogo_id || '';
+            document.getElementById('cerco_cant_tensores').value = data.cant_tensores || 0;
+
+            document.getElementById('cerco_letrero_catalogo').value = data.letrero_catalogo_id || '';
+            document.getElementById('cerco_cant_letreros').value = data.cant_letreros || 0;
+            document.getElementById('cerco_anillo_catalogo').value = data.anillo_catalogo_id || '';
+            document.getElementById('cerco_cant_anillos').value = data.cant_anillos || 0;
+
+            document.getElementById('cerco_cable_bujia_catalogo').value = data.cable_bujia_catalogo_id || '';
+            document.getElementById('cerco_metros_cable_bujia').value = data.metros_cable_bujia || 15;
+            document.getElementById('cerco_tapas_catalogo').value = data.tapas_catalogo_id || '';
+            document.getElementById('cerco_cant_tapas').value = data.cant_tapas || 0;
+
+            document.getElementById('cerco_sirena_catalogo').value = data.sirena_catalogo_id || 'No Requiere';
+            document.getElementById('cerco_bateria_catalogo').value = data.bateria_catalogo_id || 'Existente / No Requiere';
+            document.getElementById('cerco_varilla_tierra_catalogo').value = data.varilla_tierra_catalogo_id || 'No Requiere';
+            document.getElementById('cerco_cant_varillas_tierra').value = data.cant_varillas_tierra || 1;
+            document.getElementById('cerco_gel_tierra_catalogo').value = data.gel_tierra_catalogo_id || 'No Requiere';
+            document.getElementById('cerco_metros_cable_tierra').value = data.metros_cable_tierra || 10;
+
+            if (data.fotos && Array.isArray(data.fotos)) {
+              listaFotosCerco = data.fotos;
+              renderizarFotosCerco();
+            }
+
+            recalcularCercoAutomatico();
+          }
+        } catch (err) {
+          console.error("Error restaurando inspeccion_cercos:", err);
+        }
+      }
+    });
+
+    async function guardarModuloCercos() {
+      const btn = document.getElementById('btn_guardar_cloud');
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`;
+
+      const cercosData = {
+        ticket_id: ticketId || null,
+        accion_energizador: document.getElementById('cerco_accion_energizador').value,
+        energizador_catalogo_id: document.getElementById('cerco_energizador_catalogo').value,
+        cant_energizadores: parseInt(document.getElementById('cerco_cant_energizadores').value) || 1,
+        ubicacion_energizador: document.getElementById('cerco_ubicacion_energizador').value,
+        condicion_electrica: document.getElementById('cerco_condicion_electrica').value,
+
+        accion_modulo: document.getElementById('cerco_accion_modulo').value,
+        modulo_catalogo_id: document.getElementById('cerco_modulo_catalogo').value,
+        cant_modulos: parseInt(document.getElementById('cerco_cant_modulos').value) || 1,
+
+        perimetro_m: parseFloat(document.getElementById('cerco_perimetro_m').value) || 0,
+        num_lineas: document.getElementById('cerco_num_lineas').value,
+        num_esquinas: parseInt(document.getElementById('cerco_num_esquinas').value) || 4,
+        tipo_superficie: document.getElementById('cerco_tipo_superficie').value,
+        alambre_catalogo_id: document.getElementById('cerco_alambre_catalogo').value,
+        rendimiento_rollo_m: parseFloat(document.getElementById('cerco_rendimiento_rollo_m').value) || 500,
+        cant_rollos: parseInt(document.getElementById('cerco_cant_rollos').value) || 1,
+
+        poste_templador_catalogo_id: document.getElementById('cerco_poste_templador_catalogo').value,
+        cant_postes_templadores: parseInt(document.getElementById('cerco_cant_postes_templadores').value) || 0,
+        poste_intermedio_catalogo_id: document.getElementById('cerco_poste_intermedio_catalogo').value,
+        cant_postes_intermedios: parseInt(document.getElementById('cerco_cant_postes_intermedios').value) || 0,
+
+        aislador_catalogo_id: document.getElementById('cerco_aislador_catalogo').value,
+        cant_aisladores: parseInt(document.getElementById('cerco_cant_aisladores').value) || 0,
+        tensor_catalogo_id: document.getElementById('cerco_tensor_catalogo').value,
+        cant_tensores: parseInt(document.getElementById('cerco_cant_tensores').value) || 0,
+
+        letrero_catalogo_id: document.getElementById('cerco_letrero_catalogo').value,
+        cant_letreros: parseInt(document.getElementById('cerco_cant_letreros').value) || 0,
+        anillo_catalogo_id: document.getElementById('cerco_anillo_catalogo').value,
+        cant_anillos: parseInt(document.getElementById('cerco_cant_anillos').value) || 0,
+
+        cable_bujia_catalogo_id: document.getElementById('cerco_cable_bujia_catalogo').value,
+        metros_cable_bujia: parseFloat(document.getElementById('cerco_metros_cable_bujia').value) || 15,
+        tapas_catalogo_id: document.getElementById('cerco_tapas_catalogo').value,
+        cant_tapas: parseInt(document.getElementById('cerco_cant_tapas').value) || 0,
+
+        sirena_catalogo_id: document.getElementById('cerco_sirena_catalogo').value,
+        bateria_catalogo_id: document.getElementById('cerco_bateria_catalogo').value,
+        varilla_tierra_catalogo_id: document.getElementById('cerco_varilla_tierra_catalogo').value,
+        cant_varillas_tierra: parseInt(document.getElementById('cerco_cant_varillas_tierra').value) || 1,
+        gel_tierra_catalogo_id: document.getElementById('cerco_gel_tierra_catalogo').value,
+        metros_cable_tierra: parseFloat(document.getElementById('cerco_metros_cable_tierra').value) || 10,
+
+        fotos: listaFotosCerco,
+        updated_at: new Date().toISOString()
+      };
+
+      if (supabaseClient && ticketId) {
+        try {
+          await supabaseClient
+            .from('inspeccion_cercos')
+            .upsert(cercosData, { onConflict: 'ticket_id' });
+        } catch (err) {
+          console.error("Error al guardar en inspeccion_cercos:", err);
+        }
+      }
+
+      btn.innerHTML = `<i class="fa-solid fa-check"></i> Guardado`;
+      setTimeout(() => { btn.innerHTML = orig; }, 1200);
+      return true;
+    }
+
+    async function guardarYSalir() {
+      await guardarModuloCercos();
+      setTimeout(() => {
+        navegarA('inspecciones_index.html');
+      }, 500);
+    }
+  </script>
+
+  <!-- MODAL LIGHTBOX PARA FOTOS -->
+  <div id="modal_lightbox" onclick="cerrarLightbox()" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100] hidden flex flex-col justify-center items-center p-4">
+    <div class="relative max-w-2xl w-full flex flex-col items-center" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center w-full pb-2 text-white text-xs font-tech-mono">
+        <span id="lightbox_titulo" class="font-bold">Evidencia Perimetral</span>
+        <button onclick="cerrarLightbox()" class="p-1 text-slate-400 hover:text-rose-400 transition text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <img id="lightbox_img" src="" class="max-h-[80vh] w-auto rounded-2xl border border-white/20 shadow-2xl object-contain">
+    </div>
+  </div>
+
+  <!-- MODAL / ACTION SHEET (CÁMARA O GALERÍA) -->
+  <div id="modal_origen_foto" onclick="cerrarSelectorFotoCerco()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[110] hidden flex justify-center items-end sm:items-center p-3 sm:p-4">
+    <div class="cyber-glass-card bg-slate-900/95 w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-white/20 space-y-4 text-white" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center pb-2 border-b border-white/15">
+        <h4 class="font-tech-head font-bold text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-camera-rotate text-rose-400"></i> Seleccionar Fotografía
+        </h4>
+        <button type="button" onclick="cerrarSelectorFotoCerco()" class="p-1 text-white/70 hover:text-rose-400 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <p class="text-xs text-white/70 leading-snug">¿Cómo deseas adjuntar la evidencia del muro perimetral?</p>
+      
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <label class="cursor-pointer flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white transition text-center shadow-md">
+          <i class="fa-solid fa-camera text-2xl text-blue-300"></i>
+          <span class="text-xs font-bold leading-tight">Tomar Foto<br><span class="text-[10px] font-normal text-white/70">Cámara Directa</span></span>
+          <input type="file" id="input_camara_directa" accept="image/*" capture="environment" onchange="procesarFotoCercoDesdeModal(event)" class="hidden">
+        </label>
+
+        <label class="cursor-pointer flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl btn-glass-action bg-purple-600/60 hover:bg-purple-600/80 text-white transition text-center shadow-md">
+          <i class="fa-solid fa-images text-2xl text-purple-300"></i>
+          <span class="text-xs font-bold leading-tight">Ver Galería<br><span class="text-[10px] font-normal text-white/70">Fotos o Archivos</span></span>
+          <input type="file" id="input_galeria_directa" accept="image/*" onchange="procesarFotoCercoDesdeModal(event)" class="hidden">
+        </label>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

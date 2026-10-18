@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acta de Entrega-Recepción & Dossier As-Built — ProTech Security</title>
+  
+  <!-- Configuración PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+  
+  <!-- Tipografía Corporativa Master -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Librería de Escaneo Barcode & QR ultraliviana para navegador -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Video de Fondo */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    .app-window {
+      background: rgba(15, 23, 42, 0.12);
+      height: 100vh;
+      width: 100vw;
+    }
+
+    @media (min-width: 768px) {
+      #sidebar_menu.collapsed {
+        margin-left: -18rem;
+      }
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+
+    .btn-glass-action {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 3px 3px 8px rgba(0, 0, 0, 0.25), 
+        inset -3px -3px 8px rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(0, 0, 0, 0.25);
+      border-radius: 1rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #ffffff;
+    }
+    .btn-glass-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .cyber-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+    .cyber-input option {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: rgba(255, 255, 255, 0.22); 
+      color: #ffffff; 
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+
+    canvas.signature-pad {
+      touch-action: none;
+      width: 100%;
+      height: 150px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px dashed rgba(255, 255, 255, 0.4);
+      border-radius: 0.75rem;
+      cursor: crosshair;
+    }
+
+    .osd-tag {
+      font-family: var(--tech-mono);
+      font-size: 10px;
+      color: #38bdf8;
+      text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
+    }
+
+    #lector_qr_camara video {
+      border-radius: 1rem;
+      object-fit: cover;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ESTILOS DE IMPRESIÓN Y EXPORTACIÓN A PDF */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+      }
+      .bg-video-container, .bg-video-overlay, aside, header, .no-print, #mobile_menu_overlay, #modal_escaner_serial {
+        display: none !important;
+      }
+      .app-window {
+        background: #ffffff !important;
+        height: auto !important;
+        width: 100% !important;
+        overflow: visible !important;
+      }
+      main {
+        overflow: visible !important;
+        padding: 0 !important;
+      }
+      .glass-card {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        color: #0f172a !important;
+        border-radius: 0.75rem !important;
+        padding: 1rem !important;
+        page-break-inside: avoid;
+      }
+      .cyber-input {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+      }
+      canvas.signature-pad {
+        background: #ffffff !important;
+        border: 1px solid #94a3b8 !important;
+      }
+      .text-white { color: #0f172a !important; }
+      .text-white\/60, .text-white\/70, .text-white\/80 { color: #475569 !important; }
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center overflow-hidden text-white">
+
+  <!-- VIDEO DE FONDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- DASHBOARD MASTER -->
+  <div id="seccion_dashboard" class="app-window hidden flex w-full relative z-10 overflow-hidden">
+
+    <!-- BARRA LATERAL TÁCTICA -->
+    <aside id="sidebar_menu" class="absolute md:relative top-0 left-0 z-50 h-full w-72 flex-col justify-between border-r border-white/15 p-5 transition-all duration-300 ease-in-out flex bg-slate-950/80 md:bg-transparent backdrop-blur-2xl md:backdrop-blur-none shadow-2xl md:shadow-none -translate-x-full md:translate-x-0 no-print flex-shrink-0">
+      <div class="space-y-4 relative z-10 overflow-y-auto max-h-[calc(100vh-100px)] pr-1 hide-scrollbar">
+        
+        <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+          <div class="flex items-center gap-3.5">
+            <div class="relative">
+              <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain drop-shadow" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+              <div id="logo_fallback" style="display:none;" class="h-10 w-10 rounded-2xl bg-slate-900 text-white font-bold text-base items-center justify-center">PS</div>
+              <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-950"></span>
+              </span>
+            </div>
+            <div>
+              <h1 class="font-extrabold text-base text-white leading-none">ProTech</h1>
+              <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-1">Cyber-OS • v4.2</p>
+            </div>
+          </div>
+          <button onclick="toggleMobileMenu()" class="md:hidden text-white/70 hover:text-rose-400 transition p-2 bg-white/10 rounded-lg">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <nav class="space-y-3 font-semibold">
+          <div>
+            <button onclick="window.location.href='index.html'" class="glass-card flex w-full items-center gap-3.5 px-3.5 py-2.5 text-white transition relative overflow-hidden group">
+              <i class="fa-solid fa-layer-group w-4 text-center text-sm"></i>
+              <span class="font-bold text-[11px] uppercase tracking-wider">Centro Operaciones</span>
+            </button>
+          </div>
+
+          <div class="glass-card p-2.5">
+            <div class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1 select-none">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+            </div>
+            <div class="space-y-1 mt-2">
+              <a href="agenda_tickets.html" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
+                <span>Agenda & Tickets</span>
+              </a>
+              <a href="inspecciones_index.html" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-list"></i></div>
+                <span>Inspección CCTV</span>
+              </a>
+              <a href="topologia_general.html" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-sitemap"></i></div>
+                <span>Topología Dinámica</span>
+              </a>
+              <a href="orden_trabajo.html" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                <span>Órdenes de Trabajo</span>
+              </a>
+              <a href="acta_entrega.html" class="menu-link active w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-signature"></i></div>
+                <span class="font-bold text-white">Acta de Entrega</span>
+              </a>
+              <a href="bandeja_operativa.html" class="menu-link w-full text-left">
+                <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-orange-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-list-check"></i></div>
+                <span>Monitor General OTs</span>
+              </a>
+            </div>
+          </div>
+        </nav>
+      </div>
+
+      <div class="glass-card p-3.5 flex items-center justify-between mt-3">
+        <div class="flex items-center gap-3 overflow-hidden">
+          <div class="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-md">JP</div>
+          <div class="truncate">
+            <p class="text-xs font-bold text-white truncate">Juan Pablo Luna</p>
+            <p class="font-tech-mono text-[9px] text-blue-300 uppercase font-bold">Administrador</p>
+          </div>
+        </div>
+        <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-2 rounded-lg hover:bg-white/10 transition" title="Cerrar Sesión">
+          <i class="fa-solid fa-power-off text-xs"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+      
+      <!-- CABECERA -->
+      <header class="border-b border-white/15 px-6 py-4 flex items-center justify-between bg-slate-950/30 z-20 backdrop-blur-md flex-shrink-0 no-print">
+        <div class="flex items-center space-x-3.5 w-full max-w-md">
+          <button onclick="toggleMobileMenu()" class="md:hidden text-white p-2 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 transition flex-shrink-0">
+            <i class="fa-solid fa-bars text-lg"></i>
+          </button>
+          <div class="relative w-full">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-white/50 text-xs z-10"></i>
+            <input type="text" id="filtro-rapido-acta" onkeyup="filtrarOTsRapido(this.value)" placeholder="Buscar orden o cliente..." class="cyber-input w-full pl-9 pr-4 py-2.5 rounded-xl text-xs outline-none shadow-sm relative z-10">
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-2.5 flex-shrink-0">
+          <button onclick="window.print()" class="px-3.5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center gap-2">
+            <i class="fa-solid fa-print text-blue-400"></i> Imprimir / PDF
+          </button>
+          <button onclick="guardarYEnviarActa()" class="px-4 py-2.5 rounded-xl btn-glass-action bg-blue-600/70 hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-2 transition">
+            <i class="fa-solid fa-floppy-disk text-emerald-300"></i> Guardar Acta & Ficha Técnica
+          </button>
+        </div>
+      </header>
+
+      <main class="flex-1 p-4 md:p-8 overflow-y-auto hide-scrollbar relative z-10 space-y-6">
+        <div class="max-w-[1100px] mx-auto space-y-6">
+
+          <!-- TÍTULO PRINCIPAL -->
+          <div class="no-print">
+            <h2 class="font-extrabold text-2xl text-white tracking-tight flex items-center gap-3">
+              <i class="fa-solid fa-file-signature text-blue-400 drop-shadow-md"></i> Acta de Entrega-Recepción & Dossier As-Built
+            </h2>
+            <p class="font-tech-mono text-[11px] uppercase tracking-wider text-white/70 mt-1.5">
+              CONFORMIDAD TÉCNICA, MEMORIA DE CONEXIÓN, REGISTRO FOTOGRÁFICO Y ENCUADRES NVR
+            </p>
+          </div>
+
+          <!-- SELECTOR DE ORDEN DE TRABAJO -->
+          <div class="glass-card p-5 rounded-2xl space-y-3 no-print">
+            <label class="block font-bold text-white text-xs uppercase tracking-wider">
+              <i class="fa-solid fa-link text-blue-400 mr-1.5"></i> Seleccionar Orden de Trabajo / Proyecto *
+            </label>
+            <select id="select-ot-acta" onchange="cargarDatosOTSeleccionada()" class="cyber-input w-full rounded-xl p-3 font-bold text-sm outline-none">
+              <option value="">-- Seleccionar Orden de Trabajo --</option>
+            </select>
+          </div>
+
+          <!-- CUERPO IMPRESO DEL ACTA -->
+          <div class="glass-card p-6 md:p-8 rounded-3xl space-y-6" id="documento-impresion-acta">
+            
+            <!-- ENCABEZADO FORMAL -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-white/15 gap-4">
+              <div class="flex items-center gap-4">
+                <img src="logo.png" alt="ProTech Security" class="h-12 w-auto object-contain drop-shadow" onerror="this.style.display='none';">
+                <div>
+                  <h3 class="font-extrabold text-lg text-white leading-tight">PROTECH SECURITY</h3>
+                  <p class="text-xs text-white/60 font-tech-mono">Ingeniería en Seguridad Electrónica & Telecomunicaciones</p>
+                  <p class="text-[11px] font-bold text-blue-400 font-tech-mono mt-0.5">ACTA FORMAL DE ENTREGA-RECEPCIÓN & MEMORIA AS-BUILT</p>
+                </div>
+              </div>
+              <div class="text-left md:text-right font-tech-mono">
+                <span id="txt-acta-numero" class="text-xs font-bold bg-white/10 text-blue-300 px-3 py-1.5 rounded-xl border border-white/20 block mb-1">ACTA-2026-000</span>
+                <span id="txt-acta-fecha" class="text-xs text-white/60">Fecha: --/--/----</span>
+              </div>
+            </div>
+
+            <!-- 1. DATOS DEL CLIENTE Y TÉCNICO -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div class="glass-card p-4 rounded-2xl space-y-2 bg-white/5 border-white/10">
+                <p class="font-tech-mono text-[10px] font-bold text-white/60 uppercase tracking-wider">Cliente & Ubicación</p>
+                <p class="font-bold text-white text-sm" id="info-cliente">--</p>
+                <div>
+                  <label class="block text-[10px] text-white/70 font-bold mb-1">Sede / Sucursal Asignada</label>
+                  <input type="text" id="input-sede-destino" value="Sede Principal" class="cyber-input w-full font-bold text-white p-2 rounded-xl outline-none text-xs">
+                </div>
+                <p class="text-white/80"><i class="fa-solid fa-location-dot text-white/50 mr-1.5"></i><span id="info-ubicacion">--</span></p>
+                <p class="text-white/80"><i class="fa-solid fa-phone text-white/50 mr-1.5"></i><span id="info-telefono">--</span></p>
+              </div>
+
+              <div class="glass-card p-4 rounded-2xl space-y-2 bg-white/5 border-white/10">
+                <p class="font-tech-mono text-[10px] font-bold text-white/60 uppercase tracking-wider">Responsable Técnico & Garantía</p>
+                <input type="text" id="input-tecnico" value="Juan Pablo Luna / Responsable Técnico" class="cyber-input w-full font-bold text-white p-2 rounded-xl outline-none text-xs">
+                <div class="flex gap-2 pt-1 font-tech-mono">
+                  <div class="w-1/2">
+                    <span class="text-[10px] text-white/60 block font-bold">N° OT Vinculada</span>
+                    <span id="info-num-ot" class="font-bold text-blue-300">--</span>
+                  </div>
+                  <div class="w-1/2">
+                    <span class="text-[10px] text-white/60 block font-bold">Garantía Otorgada</span>
+                    <span class="font-bold text-emerald-400">1 Año en Instalación</span>
+                  </div>
+                </div>
+                <!-- Credenciales Iniciales -->
+                <div class="pt-2 border-t border-white/15 space-y-1">
+                  <span class="text-[10px] font-bold text-white/80 block">Credenciales Iniciales Configurados:</span>
+                  <div class="grid grid-cols-2 gap-2 font-mono">
+                    <input type="text" id="input-acceso-user" placeholder="Usuario (admin)" class="cyber-input p-1.5 rounded-lg text-[10px]">
+                    <input type="text" id="input-acceso-pass" placeholder="Contraseña Inicial" class="cyber-input p-1.5 rounded-lg text-[10px]">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. MEMORIA DE TOPOLOGÍA DE CONEXIÓN P2P -->
+            <div class="space-y-3 pt-2">
+              <h4 class="font-bold text-white text-sm flex items-center justify-between border-b border-white/15 pb-2">
+                <span class="flex items-center gap-2">
+                  <i class="fa-solid fa-sitemap text-blue-400"></i> 1. Topología de Conexión & Asignación de Puertos As-Built
+                </span>
+                <span id="tag-total-puertos" class="font-tech-mono text-[10px] bg-blue-500/20 text-blue-300 px-2.5 py-0.5 rounded-lg border border-blue-400/30">0 Dispositivos Mapeados</span>
+              </h4>
+
+              <div id="contenedor-resumen-core-switches" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs"></div>
+
+              <div class="overflow-x-auto hide-scrollbar border border-white/15 rounded-2xl bg-white/5">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="text-white/60 font-semibold border-b border-white/15 bg-white/5 font-tech-mono text-[10px] uppercase">
+                      <th class="p-3">ID / Punto</th>
+                      <th class="p-3">Dispositivo / Modelo</th>
+                      <th class="p-3">Ubicación Física</th>
+                      <th class="p-3">Equipo Destino (Red)</th>
+                      <th class="p-3">Puerto Switch / BNC</th>
+                      <th class="p-3">Canal NVR / IP</th>
+                      <th class="p-3 text-center">Medio</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabla-topologia-p2p-body" class="divide-y divide-white/10 text-white/90">
+                    <tr><td colspan="7" class="p-4 text-center text-white/50 italic">Seleccione una Orden de Trabajo para cargar la topología.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 3. DOSSIER TÉCNICO FOTOGRÁFICO DE CÁMARAS MONTADAS -->
+            <div class="space-y-3 pt-2">
+              <h4 class="font-bold text-white text-sm flex items-center justify-between border-b border-white/15 pb-2">
+                <span class="flex items-center gap-2">
+                  <i class="fa-solid fa-camera-retro text-indigo-400"></i> 2. Dossier Técnico: Registro Físico de Cámaras Instaladas
+                </span>
+                <span class="text-[10px] font-tech-mono text-indigo-300">Evidencia As-Built de Montaje</span>
+              </h4>
+              <div id="grid-dossier-camaras-montadas" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                <p class="text-xs text-white/50 italic col-span-full py-4 text-center">No hay registros fotográficos cargados.</p>
+              </div>
+            </div>
+
+            <!-- 4. VALIDACIÓN DE ENCUADRE DIGITAL NVR / DVR -->
+            <div class="space-y-3 pt-2">
+              <h4 class="font-bold text-white text-sm flex items-center justify-between border-b border-white/15 pb-2">
+                <span class="flex items-center gap-2">
+                  <i class="fa-solid fa-tv text-emerald-400"></i> 3. Validación de Encuadre & Video en Vivo (Live View NVR)
+                </span>
+                <span class="text-[10px] font-tech-mono text-emerald-300">Ordenado por Canal OSD</span>
+              </h4>
+              <div id="grid-mosaico-nvr-acta" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <p class="text-xs text-white/50 italic col-span-full py-4 text-center">No hay capturas de video registradas.</p>
+              </div>
+            </div>
+
+            <!-- 5. INVENTARIO DE HARDWARE & NÚMEROS DE SERIE CON ESCÁNER CÓDIGO BARRAS / QR -->
+            <div class="space-y-3 pt-2">
+              <div class="flex justify-between items-center border-b border-white/15 pb-2">
+                <div>
+                  <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-barcode text-blue-400"></i> 4. Inventario de Hardware Entregado & Números de Serie (S/N)
+                  </h4>
+                  <p class="text-[10px] text-white/60 mt-0.5">Escanea directamente el código de barras o QR de la caja / etiqueta con la cámara.</p>
+                </div>
+                <button onclick="agregarFilaEquipo()" class="px-3 py-1.5 rounded-xl btn-glass-action text-white font-bold text-[11px] transition flex items-center gap-1.5 no-print">
+                  <i class="fa-solid fa-plus text-blue-400"></i> Agregar Fila Manual
+                </button>
+              </div>
+
+              <div class="overflow-x-auto hide-scrollbar border border-white/15 rounded-2xl bg-white/5">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="text-white/60 font-semibold border-b border-white/15 bg-white/5 font-tech-mono text-[10px] uppercase">
+                      <th class="p-3 w-14 text-center">Cant</th>
+                      <th class="p-3">Equipo / Canal / Ubicación Asignada</th>
+                      <th class="p-3 w-80">N° de Serie de Fábrica (S/N) & Escáner</th>
+                      <th class="p-3 w-16 text-center no-print">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabla-equipos-body" class="divide-y divide-white/10">
+                    <tr><td colspan="4" class="p-3 text-center text-white/50 italic">Seleccione una OT para cargar equipos...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 6. PRUEBAS DE CALIDAD & NOVEDADES -->
+            <div class="space-y-3 pt-2">
+              <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-emerald-400"></i> 5. Checklist de Verificación Operativa
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <label class="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/15 cursor-pointer">
+                  <input type="checkbox" checked class="h-4 w-4 rounded text-blue-600">
+                  <span class="font-semibold text-white/90">Visualización local en monitor HDMI y remota en App Móvil OK.</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/15 cursor-pointer">
+                  <input type="checkbox" checked class="h-4 w-4 rounded text-blue-600">
+                  <span class="font-semibold text-white/90">Grabación continúa y detección de eventos validada.</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/15 cursor-pointer">
+                  <input type="checkbox" checked class="h-4 w-4 rounded text-blue-600">
+                  <span class="font-semibold text-white/90">Capacitación básica de operación brindada al usuario.</span>
+                </label>
+                <label class="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/15 cursor-pointer">
+                  <input type="checkbox" checked class="h-4 w-4 rounded text-blue-600">
+                  <span class="font-semibold text-white/90">Área de trabajo entregada limpia, rotulada y ordenada.</span>
+                </label>
+              </div>
+
+              <div class="pt-2">
+                <label class="block font-bold text-white text-xs uppercase tracking-wider mb-1">
+                  Observaciones o Novedades Técnicas en Sitio
+                </label>
+                <textarea id="input-observaciones" rows="2" placeholder="Ej. Instalación completada a entera satisfacción. Todos los puntos operativos." class="cyber-input w-full rounded-2xl p-3 text-xs outline-none"></textarea>
+              </div>
+            </div>
+
+            <!-- 7. FIRMAS DIGITALES -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/15">
+              <div class="space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="font-bold text-white">Firma Responsable Técnico ProTech</span>
+                  <button onclick="limpiarFirma('canvas-tecnico')" class="text-rose-400 hover:text-rose-300 text-[10px] font-bold no-print"><i class="fa-solid fa-rotate-right mr-1"></i> Limpiar</button>
+                </div>
+                <div class="relative">
+                  <canvas id="canvas-tecnico" class="signature-pad"></canvas>
+                  <div class="absolute bottom-2 left-3 pointer-events-none text-[10px] font-mono text-slate-500">ProTech Security C.A.</div>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="font-bold text-white">Firma de Conformidad del Cliente</span>
+                  <button onclick="limpiarFirma('canvas-cliente')" class="text-rose-400 hover:text-rose-300 text-[10px] font-bold no-print"><i class="fa-solid fa-rotate-right mr-1"></i> Limpiar</button>
+                </div>
+                <div class="relative">
+                  <canvas id="canvas-cliente" class="signature-pad"></canvas>
+                  <div class="absolute bottom-2 left-3 pointer-events-none text-[10px] font-mono text-slate-500">Recibí a entera satisfacción</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- WHATSAPP -->
+            <div id="contenedor-whatsapp" class="hidden pt-2 no-print">
+              <a id="btn-enviar-whatsapp" href="#" target="_blank" class="w-full py-3.5 px-4 rounded-2xl btn-glass-action bg-emerald-600/70 hover:bg-emerald-600 text-white font-bold text-xs shadow-lg flex items-center justify-center gap-2.5 transition">
+                <i class="fa-brands fa-whatsapp text-lg"></i> Enviar Notificación de Entrega por WhatsApp
+              </a>
+            </div>
+
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL ESCÁNER DE CÓDIGO DE BARRAS & QR (MÉTODO 1) -->
+  <div id="modal_escaner_serial" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md no-print">
+    <div class="w-full max-w-md glass-card p-5 rounded-3xl bg-slate-900 border border-white/20 shadow-2xl flex flex-col gap-4">
+      
+      <div class="flex items-center justify-between border-b border-white/15 pb-2.5">
+        <div class="flex items-center gap-2.5">
+          <div class="h-8 w-8 rounded-xl bg-blue-600 flex items-center justify-center text-white text-sm shadow">
+            <i class="fa-solid fa-barcode"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-white">Escáner de Código de Barras / QR</h3>
+            <p class="font-tech-mono text-[9px] text-blue-300 uppercase">Apunte la cámara a la etiqueta del S/N</p>
+          </div>
+        </div>
+        <button onclick="cerrarEscanerSerial()" class="text-white/60 hover:text-rose-400 p-1 text-lg transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Visor de la Cámara -->
+      <div class="relative w-full aspect-square bg-black rounded-2xl overflow-hidden border border-slate-700 flex items-center justify-center shadow-inner">
+        <div id="lector_qr_camara" class="w-full h-full"></div>
+        <div class="absolute inset-x-8 inset-y-16 border-2 border-emerald-400/80 rounded-xl pointer-events-none animate-pulse flex items-center justify-center">
+          <span class="bg-black/70 text-emerald-300 text-[10px] font-mono px-2 py-0.5 rounded">Encuadre Código</span>
+        </div>
+      </div>
+
+      <div class="text-center space-y-1">
+        <p class="text-[11px] text-white/70">Asegure buena iluminación sobre el código de barras o QR de la caja.</p>
+        <button onclick="cerrarEscanerSerial()" class="w-full py-2 rounded-xl btn-glass-action text-xs font-bold text-white transition">
+          Cancelar Escaneo
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let listaOTsActas = [];
+    let listaProformasActas = [];
+    let otSeleccionadaActual = null;
+    let fichaExistenteCliente = null;
+    let datosCCTVObra = { camaras: [], switches_cctv: [] };
+    let topologiaObraData = {};
+    let padsFirmas = {};
+
+    // Variable de referencia al escáner Html5Qrcode activo
+    let html5QrScanner = null;
+    let inputObjetivoEscaneo = null;
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    window.addEventListener('load', () => {
+      document.getElementById('txt-acta-fecha').innerText = `Fecha: ${new Date().toLocaleDateString('es-EC')}`;
+      document.getElementById('txt-acta-numero').innerText = `ACTA-2026-${Math.floor(100 + Math.random() * 900)}`;
+      inicializarCanvasFirmas();
+      cargarDatosGlobalesActas();
+      document.body.classList.add('session-checked');
+      document.getElementById('seccion_dashboard').classList.remove('hidden');
+    });
+
+    function inicializarCanvasFirmas() {
+      ['canvas-tecnico', 'canvas-cliente'].forEach(id => {
+        const canvas = document.getElementById(id);
+        const ctx = canvas.getContext('2d');
+        let dibujando = false;
+
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+
+        function obtenerPosicion(e) {
+          const rect = canvas.getBoundingClientRect();
+          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+          return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        canvas.addEventListener('mousedown', (e) => { dibujando = true; ctx.beginPath(); const p = obtenerPosicion(e); ctx.moveTo(p.x, p.y); });
+        canvas.addEventListener('mousemove', (e) => { if (!dibujando) return; const p = obtenerPosicion(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+        window.addEventListener('mouseup', () => { dibujando = false; });
+
+        canvas.addEventListener('touchstart', (e) => { dibujando = true; ctx.beginPath(); const p = obtenerPosicion(e); ctx.moveTo(p.x, p.y); e.preventDefault(); });
+        canvas.addEventListener('touchmove', (e) => { if (!dibujando) return; const p = obtenerPosicion(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); });
+        canvas.addEventListener('touchend', () => { dibujando = false; });
+
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        padsFirmas[id] = canvas;
+      });
+    }
+
+    function limpiarFirma(id) {
+      const canvas = document.getElementById(id);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    async function cargarDatosGlobalesActas() {
+      if (!supabaseClient) return;
+      try {
+        const [resOT, resProf] = await Promise.all([
+          supabaseClient.from('ordenes_trabajo').select('*').order('created_at', { ascending: false }),
+          supabaseClient.from('proformas').select('*')
+        ]);
+
+        listaOTsActas = resOT.data || [];
+        listaProformasActas = resProf.data || [];
+        poblarSelectOTs(listaOTsActas);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramId = urlParams.get('id') || urlParams.get('ot_id');
+        if (paramId) {
+          const select = document.getElementById('select-ot-acta');
+          const existe = listaOTsActas.find(o => String(o.id) === String(paramId) || String(o.ticket_id) === String(paramId) || String(o.inspeccion_id) === String(paramId));
+          if (existe) {
+            select.value = existe.id;
+            await cargarDatosOTSeleccionada();
+          }
+        }
+      } catch (err) {
+        console.error("Error cargando actas:", err);
+      }
+    }
+
+    function poblarSelectOTs(ots) {
+      const select = document.getElementById('select-ot-acta');
+      select.innerHTML = '<option value="">-- Seleccionar Orden de Trabajo --</option>';
+      ots.forEach(ot => {
+        select.innerHTML += `<option value="${ot.id}">${ot.numero_ot || 'OT-' + ot.id} - ${ot.cliente} (${ot.estado || 'Pendiente'})</option>`;
+      });
+    }
+
+    function filtrarOTsRapido(texto) {
+      const query = texto.toLowerCase();
+      const filtradas = listaOTsActas.filter(ot => {
+        const txt = `${ot.numero_ot || ''} ${ot.cliente || ''}`.toLowerCase();
+        return txt.includes(query);
+      });
+      poblarSelectOTs(filtradas);
+    }
+
+    function esCamaraAnaloga(cam) {
+      const tec = (cam.tipo_tecnologia || '').toLowerCase();
+      const desc = (cam.descripcion_catalogo || cam.descripcion || '').toLowerCase();
+      return tec.includes('análog') || tec.includes('analog') || tec.includes('bnc') || tec.includes('tvi') || tec.includes('cvi') || desc.includes('análog') || desc.includes('coaxial');
+    }
+
+    function extraerNumeroCanalNVR(cam, index, mapeo) {
+      const key = `cam_${cam.uid || index}`;
+      const analoga = esCamaraAnaloga(cam);
+      const canalGuardado = mapeo[key]?.canal_nvr || cam.canal_nvr || '';
+      if (canalGuardado) {
+        const match = canalGuardado.match(/\d+/);
+        if (match) return parseInt(match[0], 10);
+      }
+      if (analoga) {
+        const puertoAsignado = mapeo[key]?.puerto_canal || cam.puerto_canal || '';
+        const matchBNC = puertoAsignado.match(/\d+/);
+        if (matchBNC) return parseInt(matchBNC[0], 10);
+      }
+      return index + 1;
+    }
+
+    async function cargarDatosOTSeleccionada() {
+      const otId = document.getElementById('select-ot-acta').value;
+      if (!otId) return;
+
+      otSeleccionadaActual = listaOTsActas.find(o => String(o.id) === String(otId));
+      if (!otSeleccionadaActual) return;
+
+      document.getElementById('info-cliente').innerText = otSeleccionadaActual.cliente || 'Consumidor Final';
+      document.getElementById('info-ubicacion').innerText = otSeleccionadaActual.ubicacion || 'Quito, Ecuador';
+      document.getElementById('info-telefono').innerText = otSeleccionadaActual.telefono || '0990000000';
+      document.getElementById('info-num-ot').innerText = otSeleccionadaActual.numero_ot || `OT-${otSeleccionadaActual.id}`;
+      document.getElementById('input-sede-destino').value = otSeleccionadaActual.ubicacion ? `Sucursal - ${otSeleccionadaActual.ubicacion}` : 'Sede Principal';
+
+      const ticketAsociadoId = otSeleccionadaActual.ticket_id || otSeleccionadaActual.inspeccion_id || otSeleccionadaActual.id;
+
+      try {
+        const [resTicket, resCCTV] = await Promise.all([
+          supabaseClient.from('tickets').select('*').eq('id', ticketAsociadoId).maybeSingle(),
+          supabaseClient.from('inspeccion_cctv').select('*').eq('ticket_id', ticketAsociadoId).maybeSingle()
+        ]);
+
+        const ticketData = resTicket.data || {};
+        topologiaObraData = ticketData.topologia_data || {};
+        datosCCTVObra = resCCTV.data || { camaras: [], switches_cctv: [] };
+        if (!datosCCTVObra.camaras) datosCCTVObra.camaras = [];
+
+        renderizarSeccionesTecnicas();
+      } catch (err) {
+        console.error("Error al cargar topología para el acta:", err);
+      }
+
+      poblarTablaEquiposHardware();
+    }
+
+    function renderizarSeccionesTecnicas() {
+      const camaras = datosCCTVObra.camaras || [];
+      const mapeo = topologiaObraData.mapeo_conexiones || {};
+      const capturasNVR = topologiaObraData.capturas_pantalla_nvr || {};
+      const switches = topologiaObraData.switches_obra_extra || datosCCTVObra.switches_cctv || [];
+
+      document.getElementById('tag-total-puertos').innerText = `${camaras.length} Cámaras Registradas`;
+
+      // 1. Resumen de Grabador y Switches
+      const resumenCoreDiv = document.getElementById('contenedor-resumen-core-switches');
+      const tieneSoloAnalogas = camaras.length > 0 && camaras.every(c => esCamaraAnaloga(c));
+      const nombreGrabador = datosCCTVObra.nombre_nvr || (tieneSoloAnalogas ? 'DVR / XVR Central Grabador' : 'NVR Grabador Core IP');
+
+      resumenCoreDiv.innerHTML = `
+        <div class="glass-card p-3 rounded-xl bg-white/5 border-white/10">
+          <span class="text-[10px] font-tech-mono font-bold text-blue-300 uppercase block">Grabador Principal:</span>
+          <p class="font-bold text-white">${nombreGrabador}</p>
+          <p class="font-tech-mono text-[11px] text-white/70 mt-0.5">IP: ${datosCCTVObra.ip_nvr || '192.168.1.100'}</p>
+        </div>
+        <div class="glass-card p-3 rounded-xl bg-white/5 border-white/10">
+          <span class="text-[10px] font-tech-mono font-bold text-indigo-300 uppercase block">Nodos de Distribución:</span>
+          <p class="font-bold text-white">${switches.length} Switch(es) PoE / Uplinks</p>
+          <p class="font-tech-mono text-[11px] text-white/70 mt-0.5">${switches.map(s => s.nombre).join(', ') || 'Conexión Directa al Grabador'}</p>
+        </div>
+      `;
+
+      // 2. Tabla P2P de Topología
+      const tbodyP2P = document.getElementById('tabla-topologia-p2p-body');
+      tbodyP2P.innerHTML = '';
+
+      if (camaras.length === 0) {
+        tbodyP2P.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-white/50 italic">No hay cámaras registradas en la memoria técnica.</td></tr>`;
+      } else {
+        camaras.forEach((c, i) => {
+          const key = `cam_${c.uid || i}`;
+          const analoga = esCamaraAnaloga(c);
+          const destino = mapeo[key]?.destino || c.destino || 'NVR Principal';
+          const puertoFisico = mapeo[key]?.puerto_canal || c.puerto_canal || `P#${i + 1}`;
+          const canalNVR = mapeo[key]?.canal_nvr || c.canal_nvr || (analoga ? `Canal BNC #${i + 1}` : `Canal IP #${i + 1}`);
+          const ipOIdentificador = analoga ? canalNVR : (c.ip || `192.168.1.${101 + i}`);
+
+          tbodyP2P.innerHTML += `
+            <tr class="hover:bg-white/5 border-b border-white/10">
+              <td class="p-3 font-tech-mono font-bold text-blue-300">CAM-${String(i + 1).padStart(2, '0')}</td>
+              <td class="p-3 font-semibold text-white">${c.descripcion_catalogo || c.descripcion || 'Cámara'}</td>
+              <td class="p-3 text-white/80">${c.ubicacion || 'En sitio'}</td>
+              <td class="p-3 font-medium text-white/90">${destino}</td>
+              <td class="p-3 font-tech-mono font-bold text-amber-300">${puertoFisico}</td>
+              <td class="p-3 font-tech-mono font-bold ${analoga ? 'text-amber-300' : 'text-emerald-300'}">${ipOIdentificador}</td>
+              <td class="p-3 text-center font-mono text-[10px] text-white/70">${analoga ? 'Coaxial / Balun' : 'Cat6 100% Cobre'}</td>
+            </tr>
+          `;
+        });
+      }
+
+      // 3. Dossier de Cámaras Montadas
+      const gridMontadas = document.getElementById('grid-dossier-camaras-montadas');
+      gridMontadas.innerHTML = '';
+      if (camaras.length === 0) {
+        gridMontadas.innerHTML = `<p class="text-xs text-white/50 italic col-span-full py-4 text-center">Sin cámaras registradas.</p>`;
+      } else {
+        camaras.forEach((c, i) => {
+          const foto = c.foto_instalada_final || c.foto_base64 || null;
+          gridMontadas.innerHTML += `
+            <div class="glass-card p-3 rounded-2xl bg-white/5 border-white/10 flex flex-col justify-between">
+              <div class="w-full h-36 bg-black rounded-xl overflow-hidden mb-2.5 border border-white/15 flex items-center justify-center">
+                ${foto ? `<img src="${foto}" class="w-full h-full object-cover">` : `<span class="text-xs text-white/40 italic">Sin Foto de Montaje</span>`}
+              </div>
+              <div>
+                <span class="font-tech-mono text-[10px] text-blue-400 font-bold">Punto CAM-${String(i + 1).padStart(2, '0')}</span>
+                <p class="font-bold text-xs text-white leading-tight truncate">${c.descripcion_catalogo || c.descripcion || 'Cámara'}</p>
+                <p class="text-[11px] text-white/60 truncate mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>${c.ubicacion || 'Punto'}</p>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      // 4. Mosaico Digital NVR (Ordenado por Canal OSD)
+      const gridNVR = document.getElementById('grid-mosaico-nvr-acta');
+      gridNVR.innerHTML = '';
+
+      const camarasOrdenadasNVR = camaras.map((c, idx) => ({
+        cam: c,
+        idxOriginal: idx,
+        canalNum: extraerNumeroCanalNVR(c, idx, mapeo)
+      })).sort((a, b) => a.canalNum - b.canalNum);
+
+      if (camarasOrdenadasNVR.length === 0) {
+        gridNVR.innerHTML = `<p class="text-xs text-white/50 italic col-span-full py-4 text-center">Sin capturas de video.</p>`;
+      } else {
+        camarasOrdenadasNVR.forEach(({ cam, idxOriginal, canalNum }) => {
+          const key = `cam_${cam.uid || idxOriginal}`;
+          const analoga = esCamaraAnaloga(cam);
+          const capturaVideo = capturasNVR[`cam_${idxOriginal}`] || null;
+          const canalTexto = String(canalNum).padStart(2, '0');
+          const puertoFisico = mapeo[key]?.puerto_canal || cam.puerto_canal || '';
+
+          gridNVR.innerHTML += `
+            <div class="relative bg-black rounded-xl overflow-hidden border border-slate-800 aspect-video shadow-md">
+              ${capturaVideo 
+                ? `<img src="${capturaVideo}" class="w-full h-full object-cover">` 
+                : `<div class="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-600 font-mono text-[10px]">
+                     <i class="fa-solid fa-tv text-xl mb-1 text-slate-700"></i>
+                     <span>Canal ${canalTexto}</span>
+                   </div>`}
+              <div class="absolute inset-0 p-2 flex flex-col justify-between pointer-events-none osd-tag">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-emerald-400">CH${canalTexto} - ${cam.ubicacion || ''}</span>
+                  <span class="text-white text-[9px] font-bold">● REC</span>
+                </div>
+                <div class="flex items-center justify-between text-[8px] text-slate-300">
+                  <span class="bg-black/60 px-1 rounded font-mono">${puertoFisico}</span>
+                  <span class="bg-black/60 px-1 rounded uppercase text-amber-300 font-bold">${analoga ? 'BNC' : 'IP'}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      }
+    }
+
+    // 5. INVENTARIO CON BOTÓN DE ESCÁNER DE CÓDIGO DE BARRAS / QR
+    function poblarTablaEquiposHardware() {
+      const tbody = document.getElementById('tabla-equipos-body');
+      tbody.innerHTML = '';
+
+      const camaras = datosCCTVObra.camaras || [];
+      const switches = topologiaObraData.switches_obra_extra || datosCCTVObra.switches_cctv || [];
+      const mapeo = topologiaObraData.mapeo_conexiones || {};
+
+      const tieneSoloAnalogas = camaras.length > 0 && camaras.every(c => esCamaraAnaloga(c));
+      const nombreGrabadorDefault = tieneSoloAnalogas ? 'DVR / XVR Central Grabador' : 'NVR Grabador Core IP';
+      const nombreGrabador = datosCCTVObra.nombre_nvr || nombreGrabadorDefault;
+
+      // FILA 1: Grabador Central Obligatorio (XVR / NVR)
+      tbody.innerHTML += `
+        <tr class="bg-blue-950/20 border-b border-blue-500/30">
+          <td class="p-2.5 text-center"><input type="number" value="1" class="w-12 text-center cyber-input rounded-lg p-1 font-mono font-bold" data-field="cant"></td>
+          <td class="p-2.5">
+            <div class="flex items-center gap-2">
+              <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase flex-shrink-0"><i class="fa-solid fa-server mr-1"></i>Core</span>
+              <input type="text" value="Grabador Central: ${nombreGrabador} (IP: ${datosCCTVObra.ip_nvr || '192.168.1.100'})" class="w-full cyber-input rounded-lg p-1.5 font-bold text-white" data-field="desc">
+            </div>
+          </td>
+          <td class="p-2.5">
+            <div class="flex items-center gap-1.5">
+              <input type="text" placeholder="S/N del Grabador..." class="w-full cyber-input rounded-lg p-1.5 font-mono text-xs border-blue-400/50" data-field="serial">
+              <button type="button" onclick="abrirEscanerSerial(this)" class="px-2.5 py-1.5 rounded-lg btn-glass-action bg-blue-600/40 hover:bg-blue-600 text-white text-[11px] font-bold transition flex items-center gap-1 flex-shrink-0" title="Escanear Código de Barras / QR">
+                <i class="fa-solid fa-barcode"></i>
+                <span class="hidden sm:inline">Escanear</span>
+              </button>
+            </div>
+          </td>
+          <td class="p-2.5 text-center no-print"><button onclick="this.closest('tr').remove()" class="text-white/40 hover:text-rose-400 p-1"><i class="fa-solid fa-trash-can"></i></button></td>
+        </tr>
+      `;
+
+      // FILAS SWITCHES POE
+      switches.forEach((sw) => {
+        tbody.innerHTML += `
+          <tr class="bg-indigo-950/20 border-b border-indigo-500/20">
+            <td class="p-2.5 text-center"><input type="number" value="1" class="w-12 text-center cyber-input rounded-lg p-1 font-mono font-bold" data-field="cant"></td>
+            <td class="p-2.5">
+              <div class="flex items-center gap-2">
+                <span class="bg-indigo-600 text-white px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase flex-shrink-0"><i class="fa-solid fa-network-wired mr-1"></i>Switch</span>
+                <input type="text" value="${sw.nombre || 'Switch PoE'} - Ubicación: ${sw.ubicacion || 'Rack'} (IP: ${sw.ip || 'N/A'})" class="w-full cyber-input rounded-lg p-1.5 font-semibold text-indigo-200" data-field="desc">
+              </div>
+            </td>
+            <td class="p-2.5">
+              <div class="flex items-center gap-1.5">
+                <input type="text" placeholder="S/N del Switch..." class="w-full cyber-input rounded-lg p-1.5 font-mono text-xs" data-field="serial">
+                <button type="button" onclick="abrirEscanerSerial(this)" class="px-2.5 py-1.5 rounded-lg btn-glass-action bg-indigo-600/40 hover:bg-indigo-600 text-white text-[11px] font-bold transition flex items-center gap-1 flex-shrink-0" title="Escanear Código de Barras / QR">
+                  <i class="fa-solid fa-barcode"></i>
+                  <span class="hidden sm:inline">Escanear</span>
+                </button>
+              </div>
+            </td>
+            <td class="p-2.5 text-center no-print"><button onclick="this.closest('tr').remove()" class="text-white/40 hover:text-rose-400 p-1"><i class="fa-solid fa-trash-can"></i></button></td>
+          </tr>
+        `;
+      });
+
+      // FILAS DE CÁMARAS DISCRIMINADAS (CON UBICACIÓN, CANAL E IP)
+      if (camaras.length > 0) {
+        camaras.forEach((c, idx) => {
+          const key = `cam_${c.uid || idx}`;
+          const analoga = esCamaraAnaloga(c);
+          const canalNum = extraerNumeroCanalNVR(c, idx, mapeo);
+          const canalTexto = String(canalNum).padStart(2, '0');
+          const ubicacionTexto = c.ubicacion || `Punto ${idx + 1}`;
+          const modeloTexto = c.descripcion_catalogo || c.descripcion || 'Cámara de Seguridad';
+
+          let prefijoBadge = '';
+          let descripcionCompleta = '';
+
+          if (analoga) {
+            const puertoBNC = mapeo[key]?.puerto_canal || c.puerto_canal || `BNC #${idx + 1}`;
+            prefijoBadge = `<span class="bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded text-[10px] font-mono font-bold flex-shrink-0"><i class="fa-solid fa-video mr-1"></i>${puertoBNC}</span>`;
+            descripcionCompleta = `[CH${canalTexto} - ${ubicacionTexto}] ${modeloTexto}`;
+          } else {
+            const ipAsignada = c.ip || `192.168.1.${101 + idx}`;
+            prefijoBadge = `<span class="bg-blue-500/20 text-blue-300 border border-blue-400/40 px-2 py-0.5 rounded text-[10px] font-mono font-bold flex-shrink-0"><i class="fa-solid fa-network-wired mr-1"></i>IP: ${ipAsignada}</span>`;
+            descripcionCompleta = `[CH${canalTexto} - ${ubicacionTexto}] ${modeloTexto}`;
+          }
+
+          tbody.innerHTML += `
+            <tr class="hover:bg-white/5 border-b border-white/10">
+              <td class="p-2.5 text-center"><input type="number" value="1" class="w-12 text-center cyber-input rounded-lg p-1 font-mono font-bold" data-field="cant"></td>
+              <td class="p-2.5">
+                <div class="flex items-center gap-2">
+                  ${prefijoBadge}
+                  <input type="text" value="${descripcionCompleta}" class="w-full cyber-input rounded-lg p-1.5 font-semibold text-white" data-field="desc">
+                </div>
+              </td>
+              <td class="p-2.5">
+                <div class="flex items-center gap-1.5">
+                  <input type="text" placeholder="S/N de fábrica..." class="w-full cyber-input rounded-lg p-1.5 font-mono text-xs" data-field="serial">
+                  <button type="button" onclick="abrirEscanerSerial(this)" class="px-2.5 py-1.5 rounded-lg btn-glass-action bg-white/10 hover:bg-blue-600 text-white text-[11px] font-bold transition flex items-center gap-1 flex-shrink-0" title="Escanear Código de Barras / QR">
+                    <i class="fa-solid fa-barcode text-blue-400"></i>
+                    <span class="hidden sm:inline">Escanear</span>
+                  </button>
+                </div>
+              </td>
+              <td class="p-2.5 text-center no-print"><button onclick="this.closest('tr').remove()" class="text-white/40 hover:text-rose-400 p-1"><i class="fa-solid fa-trash-can"></i></button></td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    function agregarFilaEquipo() {
+      const tbody = document.getElementById('tabla-equipos-body');
+      tbody.innerHTML += `
+        <tr>
+          <td class="p-2.5 text-center"><input type="number" value="1" class="w-12 text-center cyber-input rounded-lg p-1 font-mono font-bold" data-field="cant"></td>
+          <td class="p-2.5"><input type="text" placeholder="Descripción del equipo / Modelo..." class="w-full cyber-input rounded-lg p-1.5 font-semibold text-white" data-field="desc"></td>
+          <td class="p-2.5">
+            <div class="flex items-center gap-1.5">
+              <input type="text" placeholder="S/N de fábrica..." class="w-full cyber-input rounded-lg p-1.5 font-mono text-xs" data-field="serial">
+              <button type="button" onclick="abrirEscanerSerial(this)" class="px-2.5 py-1.5 rounded-lg btn-glass-action bg-white/10 hover:bg-blue-600 text-white text-[11px] font-bold transition flex items-center gap-1 flex-shrink-0">
+                <i class="fa-solid fa-barcode text-blue-400"></i>
+                <span class="hidden sm:inline">Escanear</span>
+              </button>
+            </div>
+          </td>
+          <td class="p-2.5 text-center no-print"><button onclick="this.closest('tr').remove()" class="text-white/40 hover:text-rose-400 p-1"><i class="fa-solid fa-trash-can"></i></button></td>
+        </tr>
+      `;
+    }
+
+    // ========================================================
+    // FUNCIONES DEL ESCÁNER DE CÓDIGO DE BARRAS & QR (MÉTODO 1)
+    // ========================================================
+    async function abrirEscanerSerial(botonElemento) {
+      const celdaPadre = botonElemento.closest('td');
+      inputObjetivoEscaneo = celdaPadre.querySelector('[data-field="serial"]');
+
+      const modal = document.getElementById('modal_escaner_serial');
+      modal.classList.remove('hidden');
+
+      try {
+        if (!html5QrScanner) {
+          html5QrScanner = new Html5Qrcode("lector_qr_camara");
+        }
+
+        const config = {
+          fps: 15,
+          qrbox: { width: 260, height: 160 }, // Ventana horizontal ideal para códigos de barras largos
+          aspectRatio: 1.0
+        };
+
+        await html5QrScanner.start(
+          { facingMode: "environment" }, // Prioridad: cámara trasera del móvil
+          config,
+          (textoDecodificado) => {
+            // Éxito en la detección
+            if (inputObjetivoEscaneo) {
+              // Limpiar espacios o saltos de línea habituales en lectores
+              inputObjetivoEscaneo.value = textoDecodificado.trim();
+              
+              // Pequeña vibración háptica en móvil de confirmación
+              if (navigator.vibrate) navigator.vibrate(80);
+            }
+            cerrarEscanerSerial();
+          },
+          (errorMessage) => {
+            // Escaneo en progreso (ignorar errores cuadro a cuadro)
+          }
+        );
+      } catch (err) {
+        alert("No se pudo iniciar la cámara para el escaneo: " + err);
+        cerrarEscanerSerial();
+      }
+    }
+
+    async function cerrarEscanerSerial() {
+      const modal = document.getElementById('modal_escaner_serial');
+      modal.classList.add('hidden');
+      inputObjetivoEscaneo = null;
+
+      if (html5QrScanner) {
+        try {
+          await html5QrScanner.stop();
+        } catch (e) {
+          // Ignorar si ya estaba detenido
+        }
+      }
+    }
+
+    async function guardarYEnviarActa() {
+      if (!otSeleccionadaActual) {
+        alert("Por favor selecciona primero una Orden de Trabajo.");
+        return;
+      }
+
+      const sedeDestino = document.getElementById('input-sede-destino').value.trim() || 'Sede Principal';
+      const observaciones = document.getElementById('input-observaciones').value.trim();
+      const userIni = document.getElementById('input-acceso-user').value.trim();
+      const passIni = document.getElementById('input-acceso-pass').value.trim();
+
+      const filasEquipos = document.querySelectorAll('#tabla-equipos-body tr');
+      let inventarioEquiposList = [];
+      filasEquipos.forEach(tr => {
+        const cant = tr.querySelector('[data-field="cant"]')?.value || '1';
+        const desc = tr.querySelector('[data-field="desc"]')?.value || '';
+        const serial = tr.querySelector('[data-field="serial"]')?.value || 'S/N';
+        if (desc) inventarioEquiposList.push(`[Cant: ${cant}] ${desc} - S/N: ${serial}`);
+      });
+
+      try {
+        await supabaseClient
+          .from('ordenes_trabajo')
+          .update({ estado: 'terminado' })
+          .eq('id', otSeleccionadaActual.id);
+
+        const payloadFicha = {
+          cliente_nombre: otSeleccionadaActual.cliente,
+          sede: sedeDestino,
+          ubicacion: otSeleccionadaActual.ubicacion || 'Quito',
+          contacto: otSeleccionadaActual.telefono || '',
+          estado_sede: 'Activa',
+          fecha_instalacion: new Date().toISOString().slice(0, 10),
+          cctv_usuario: userIni || 'admin',
+          cctv_clave: passIni || '',
+          equipos_instalados: inventarioEquiposList.join(' | '),
+          notas_tecnicas: `Acta y Dossier As-Built generado desde OT ${otSeleccionadaActual.numero_ot || ''}. Obs: ${observaciones}`
+        };
+
+        const { data: fData } = await supabaseClient
+          .from('fichas_tecnicas')
+          .select('id')
+          .ilike('cliente_nombre', otSeleccionadaActual.cliente)
+          .maybeSingle();
+
+        if (fData && fData.id) {
+          await supabaseClient.from('fichas_tecnicas').update(payloadFicha).eq('id', fData.id);
+        } else {
+          await supabaseClient.from('fichas_tecnicas').insert([payloadFicha]);
+        }
+
+        const clienteNombre = otSeleccionadaActual.cliente || 'Cliente';
+        const numOT = otSeleccionadaActual.numero_ot || `OT-${otSeleccionadaActual.id}`;
+        const mensajeWa = encodeURIComponent(`Hola *${clienteNombre}*, le saludamos de *ProTech Security*. Le confirmamos que su Acta de Entrega y Dossier Técnico As-Built para la orden ${numOT} (${sedeDestino}) ha sido generada y registrada con éxito a entera satisfacción. ¡Gracias por confiar en nosotros!`);
+        
+        const btnWa = document.getElementById('btn-enviar-whatsapp');
+        btnWa.href = `https://wa.me/?text=${mensajeWa}`;
+        document.getElementById('contenedor-whatsapp').classList.remove('hidden');
+
+        alert("✓ Acta de Entrega y Dossier As-Built guardados con éxito. OT actualizada a 'Terminado' y Ficha Técnica sincronizada.");
+      } catch (err) {
+        alert("Error al guardar acta: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

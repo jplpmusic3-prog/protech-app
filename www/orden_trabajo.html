@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orden de Trabajo (OT) - ProTech Security</title>
+  
+  <!-- Configuración PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Moderna, Limpia y Sobria -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO NÍDIDO
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    /* ========================================================
+       2. TARJETAS Y CRISTAL CÓNCAVO (Homologado)
+       ======================================================== */
+    .cyber-glass-card, .glass-card {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        inset 5px 5px 12px rgba(0, 0, 0, 0.4), 
+        inset -5px -5px 12px rgba(255, 255, 255, 0.12),
+        0 25px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Tarjeta fija específica para el informe (sin efecto hover blanqueador) */
+    .report-glass-card {
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 4px 4px 12px rgba(0, 0, 0, 0.4), 
+        inset -4px -4px 12px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.45);
+      border-radius: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+
+    .btn-glass-action {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 3px 3px 8px rgba(0, 0, 0, 0.25), 
+        inset -3px -3px 8px rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(0, 0, 0, 0.25);
+      border-radius: 1rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #ffffff;
+    }
+
+    .btn-glass-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.35), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.12),
+        0 15px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cyber-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+    .cyber-input option {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    /* Animación colapsable del menú lateral */
+    .collapse-content {
+      max-height: 400px; overflow: hidden; transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out; opacity: 1;
+    }
+    .collapse-content.collapsed { max-height: 0; opacity: 0; }
+    .collapse-icon { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapsed-btn .collapse-icon { transform: rotate(-90deg); }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: rgba(255, 255, 255, 0.22); 
+      color: #ffffff; 
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+
+    button, .btn-action { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    button:active, .btn-action:active { transform: scale(0.97); }
+
+    /* Estilo para impresión / PDF (Fondo blanco automático) */
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; color: black !important; }
+      #documento-ot-imprimible { 
+        background: white !important;
+        color: black !important;
+        border: none !important; 
+        box-shadow: none !important; 
+        padding: 5mm !important; 
+        width: 100% !important; 
+        max-width: 100% !important;
+      }
+      #documento-ot-imprimible * { color: black !important; }
+      #documento-ot-imprimible .text-blue-700, #documento-ot-imprimible .text-blue-300 { color: #1d4ed8 !important; }
+      #documento-ot-imprimible .bg-slate-50, #documento-ot-imprimible .bg-slate-50\/80 { background-color: #f8fafc !important; border-color: #cbd5e1 !important; }
+      #documento-ot-imprimible .bg-amber-50\/70 { background-color: #fef3c7 !important; border-color: #fcd34d !important; }
+      #documento-ot-imprimible .bg-emerald-50\/40 { background-color: #ecfdf5 !important; border-color: #a7f3d0 !important; }
+      #documento-ot-imprimible .bg-blue-50\/60 { background-color: #eff6ff !important; border-color: #bfdbfe !important; }
+      .evitar-corte { page-break-inside: avoid !important; break-inside: avoid !important; }
+      tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+      img { max-height: 180px !important; object-fit: contain !important; }
+    }
+
+    .evitar-corte { page-break-inside: avoid !important; break-inside: avoid !important; }
+    tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+    table { page-break-inside: auto; }
+  </style>
+</head>
+<body class="min-h-screen relative flex flex-col md:flex-row pb-20 md:pb-0 text-white antialiased overflow-x-hidden session-checked">
+
+  <!-- VIDEO DE FONDO NÍDIDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL TÁCTICA -->
+  <aside id="sidebar_menu" class="fixed md:sticky top-0 left-0 z-50 h-[100dvh] w-72 flex-col justify-between border-r border-white/15 p-5 transition-all duration-300 ease-in-out flex bg-slate-950/80 md:bg-slate-950/40 border-y-0 border-l-0 rounded-none flex-shrink-0 transform -translate-x-full md:translate-x-0 no-print">
+    <div class="space-y-4 relative z-10 overflow-y-auto max-h-[calc(100vh-100px)] pr-1 hide-scrollbar">
+      
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain drop-shadow" onerror="this.style.display='none'; document.getElementById('logo_nextgen').style.display='flex';">
+            <div id="logo_nextgen" style="display:none;" class="h-10 w-10 rounded-2xl gradient-cyber-brand text-white font-tech-head text-base items-center justify-center shadow-lg shadow-blue-500/25 font-black">PS</div>
+            <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-950"></span>
+            </span>
+          </div>
+          <div>
+            <h1 class="font-tech-head font-extrabold text-base text-white leading-none">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-1">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white/70 hover:text-rose-400 transition p-2 bg-white/10 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <nav class="space-y-3 text-xs font-semibold">
+        <div>
+          <a href="index.html" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white shadow-sm relative overflow-hidden group transition">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"></div>
+            <i class="fa-solid fa-layer-group w-4 text-center text-sm text-white/80"></i>
+            <span class="font-bold">Centro de Operaciones</span>
+          </a>
+        </div>
+
+        <!-- ÁREA OPERATIVA (Activa) -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_operativa', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_operativa" class="collapse-content space-y-1 mt-2">
+            <a href="agenda_tickets.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
+              <span>Agenda & Tickets</span>
+            </a>
+            <a href="inspecciones_index.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-list"></i></div>
+              <span>Inspección</span>
+            </a>
+            <a href="orden_trabajo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white bg-blue-600/40 font-bold transition group border border-blue-400/40 shadow-sm">
+              <div class="icon-box h-6 w-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+              <span>Órdenes de Trabajo</span>
+            </a>
+            <a href="clientes_tech.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-cyan-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-address-book"></i></div>
+              <span>Ficha Técnica / Clientes</span>
+            </a>
+            <a href="acta_entrega.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-signature"></i></div>
+              <span>Acta de Entrega</span>
+            </a>
+            <a href="bandeja_operativa.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-orange-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-list-check"></i></div>
+              <span>Monitor General OTs</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ÁREA COMERCIAL -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_comercial', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-purple-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-store"></i> Área Comercial</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_comercial" class="collapse-content space-y-1 mt-2">
+            <a href="bandeja.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-purple-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-folder-open"></i></div>
+              <span>Bandeja & Aprobaciones</span>
+            </a>
+            <a href="catalogo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <span>Catálogo de Precios</span>
+            </a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="p-3.5 rounded-2xl cyber-glass-card border border-white/20 flex items-center justify-between shadow-sm relative z-10 mt-3">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-tech-head font-bold text-xs shadow-md">JP</div>
+        <div class="truncate">
+          <p class="text-xs font-bold text-white truncate">Juan Pablo Luna</p>
+          <p class="font-tech-mono text-[9px] text-blue-300 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-2 rounded-lg hover:bg-white/10 transition" title="Desconectar">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden">
+    
+    <!-- CABECERA HOMOLOGADA -->
+    <header class="cyber-glass-card border-x-0 border-t-0 rounded-none sticky top-0 z-40 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between bg-slate-950/30 backdrop-blur-md flex-shrink-0 no-print">
+      <div class="flex items-center gap-3 md:gap-4">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white p-2 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 transition">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <div class="hidden lg:flex items-center relative group">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 text-white/50 group-hover:text-blue-400 transition z-10"></i>
+          <input type="text" placeholder="Buscar orden de trabajo o cliente..." class="cyber-input pl-10 pr-4 py-2.5 rounded-xl w-80 text-xs font-medium placeholder-white/50 outline-none relative z-10">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <!-- Espacio libre para controles globales -->
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto hide-scrollbar relative z-10 space-y-6">
+      <div class="max-w-[1300px] mx-auto space-y-6">
+
+        <!-- TÍTULO DE LA SECCIÓN FUERA DE LA CABECERA -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
+          <div>
+            <h2 class="font-tech-head font-extrabold text-2xl text-white tracking-tight flex items-center gap-3">
+              <i class="fa-solid fa-screwdriver-wrench text-amber-400"></i> Control Operativo & Órdenes de Trabajo
+            </h2>
+            <p class="font-tech-mono text-[11px] uppercase tracking-wider text-white/70 mt-1.5">Ejecución en campo y guía de instalación</p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <button onclick="window.print()" class="px-3.5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center gap-2 transition">
+              <i class="fa-solid fa-eye text-blue-400"></i> Pre-visualizar
+            </button>
+            <button onclick="imprimirOT()" class="px-4 py-2.5 rounded-xl btn-glass-action text-white font-bold text-xs flex items-center gap-2 transition">
+              <i class="fa-solid fa-download text-emerald-400"></i> Descargar PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+          <!-- BARRA LATERAL: CONTROL Y FIRMA -->
+          <section class="lg:col-span-4 space-y-4 no-print">
+            
+            <!-- Selector de OT -->
+            <div class="cyber-glass-card p-5 rounded-2xl shadow-sm space-y-2">
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-2 font-tech-head">
+                <i class="fa-solid fa-wrench text-blue-400"></i> Seleccionar Orden de Trabajo
+              </h2>
+              <select id="select-ot" onchange="cargarOTPorId(this.value)" class="cyber-input w-full rounded-xl px-3 py-2.5 text-xs font-bold outline-none">
+                <option value="">Cargando órdenes de trabajo...</option>
+              </select>
+            </div>
+
+            <!-- Control de Estado de Ejecución y Cobro -->
+            <div class="cyber-glass-card p-5 rounded-2xl shadow-sm space-y-4">
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2 font-tech-head">
+                <i class="fa-solid fa-sliders text-blue-400"></i> Ejecución & Liquidación de Obra
+              </h2>
+              
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-[11px] font-semibold text-white/80 mb-1">Estado Actual:</label>
+                  <select id="ot-estado-select" class="cyber-input w-full text-xs rounded-xl p-2.5 font-bold outline-none">
+                    <option value="pendiente">Pendiente de Inicio</option>
+                    <option value="en_ejecucion">En Ejecución (En Obra)</option>
+                    <option value="terminado">Terminado / Por Entregar</option>
+                    <option value="facturado">Completado & Facturado</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-white/80 mb-1">Técnico Líder / Cuadrilla:</label>
+                  <input type="text" id="ot-tecnico-input" placeholder="Nombre del responsable técnico" class="cyber-input w-full text-xs rounded-xl p-2.5 outline-none">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-white/80 mb-1">Observaciones de Campo / Novedades de Cierre:</label>
+                  <textarea id="ot-observaciones-input" rows="3" placeholder="Detalles ocurridos durante la instalación, metros adicionales o cambios..." class="cyber-input w-full text-xs rounded-xl p-2.5 outline-none resize-none"></textarea>
+                </div>
+              </div>
+
+              <hr class="border-white/15">
+
+              <!-- Bloque de Liquidación de Saldo -->
+              <div class="space-y-3 bg-white/5 p-3.5 rounded-xl border border-white/10">
+                <h3 class="text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5 font-tech-mono">
+                  <i class="fa-solid fa-cash-register text-emerald-400"></i> Cobro de Saldo en Sitio
+                </h3>
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="cyber-glass-card p-2.5 rounded-xl text-center shadow-sm">
+                    <p class="text-[9px] font-bold text-white/60 uppercase font-tech-mono">Anticipo Previo</p>
+                    <p id="ui-anticipo-previo" class="text-xs font-bold text-emerald-400 mt-0.5 font-tech-mono">$0.00</p>
+                  </div>
+                  <div class="cyber-glass-card p-2.5 rounded-xl text-center shadow-sm">
+                    <p class="text-[9px] font-bold text-white/60 uppercase font-tech-mono">Saldo a Cobrar</p>
+                    <p id="ui-saldo-pendiente" class="text-xs font-black text-amber-400 mt-0.5 font-tech-mono">$0.00</p>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold text-white/80 mb-1">Método de Pago (Saldo):</label>
+                  <select id="ot-metodo-pago-select" class="cyber-input w-full text-xs rounded-xl p-2.5 font-semibold outline-none">
+                    <option value="Pendiente">⏳ Pendiente de Cobro</option>
+                    <option value="Efectivo">💵 Efectivo (Recibido en sitio)</option>
+                    <option value="Transferencia Bancaria">🏦 Transferencia Bancaria</option>
+                    <option value="PayPhone (POS Celular)">📱 Tarjeta - PayPhone (POS Celular)</option>
+                    <option value="PayPhone (Link de Pago)">🔗 Tarjeta - PayPhone (Link)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold text-white/80 mb-1">Ref / Lote / Comprobante:</label>
+                  <input type="text" id="ot-comprobante-input" placeholder="Ej. Lote PayPhone #12345" class="cyber-input w-full text-xs rounded-xl p-2.5 outline-none">
+                </div>
+              </div>
+
+              <button onclick="guardarCambiosOT()" id="btn-actualizar-ot" class="w-full btn-glass-action bg-emerald-600/60 hover:bg-emerald-600/80 text-white font-bold text-xs py-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md">
+                <i class="fa-solid fa-floppy-disk text-emerald-300"></i> Guardar OT & Liquidación
+              </button>
+            </div>
+
+            <!-- Firma del Cliente en Sitio (Acta de Entrega) -->
+            <div class="cyber-glass-card p-5 rounded-2xl shadow-sm space-y-3">
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2 font-tech-head">
+                <i class="fa-solid fa-signature text-blue-400"></i> Firma de Recepción Conforme
+              </h2>
+              <p class="text-[10px] text-white/60">El cliente firma en sitio desde el celular o tablet al recibir el sistema y liquidar la obra.</p>
+              
+              <div class="border border-white/20 rounded-xl overflow-hidden bg-white/90 relative shadow-inner">
+                <canvas id="canvas-firma" class="w-full h-32 block touch-none cursor-crosshair"></canvas>
+                <button onclick="limpiarFirma()" type="button" class="absolute bottom-2 right-2 px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-[10px] font-bold rounded-lg text-slate-800 transition border border-slate-300">
+                  Limpiar
+                </button>
+              </div>
+              
+              <button onclick="guardarFirmaRecepcion()" class="w-full btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white font-bold text-xs py-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md">
+                <i class="fa-solid fa-check-double text-blue-300"></i> Registrar Firma de Entrega
+              </button>
+            </div>
+
+          </section>
+
+          <!-- DOCUMENTO FORMAL: ORDEN DE TRABAJO (INFORME FLOTANTE SOBRE TARJETA DE CRISTAL) -->
+          <section class="lg:col-span-8">
+            <div id="documento-ot-imprimible" class="report-glass-card p-8 md:p-12 shadow-xl max-w-4xl mx-auto space-y-6 text-xs">
+              
+              <!-- Encabezado OT -->
+              <div class="flex justify-between items-start border-b-2 border-white/20 pb-5 evitar-corte">
+                <div class="flex items-start gap-3.5">
+                  <img src="logo.png" alt="ProTech Security" class="h-14 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('ot_logo_txt').style.display='block';">
+                  <div>
+                    <h2 id="ot_logo_txt" style="display:none;" class="text-xl font-black text-blue-300 leading-tight">PROTECH SECURITY</h2>
+                    <h2 class="text-lg font-black text-white leading-tight">PROTECH SECURITY</h2>
+                    <p class="text-[11px] font-semibold text-white/80 mt-0.5">Seguridad Electrónica, CCTV, Alarmas & Telecomunicaciones</p>
+                    <p class="text-[10px] text-white/60 font-tech-mono">RUC: 1713637120001 | Quito - Ecuador</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="inline-block bg-white/10 text-white text-[10px] font-black px-3 py-1 rounded uppercase tracking-wider mb-1 shadow-sm font-tech-mono border border-white/20">ORDEN DE TRABAJO TÉCNICA</span>
+                  
+                  <div class="mb-2">
+                    <span id="lbl-ot-estado-badge" class="inline-block px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider border transition-colors duration-300 font-tech-mono">
+                      Cargando...
+                    </span>
+                  </div>
+
+                  <p class="text-xs text-white/70 font-tech-mono">N° OT: <span id="lbl-ot-numero" class="font-black text-blue-400 text-sm">OT-2026-0000</span></p>
+                  <p class="text-[10px] text-white/70 font-tech-mono">Ref. Proforma: <span id="lbl-ot-proforma-ref" class="font-semibold text-white">-</span></p>
+                  <p class="text-[10px] text-white/60 font-tech-mono">Fecha Emisión: <span id="lbl-ot-fecha">-</span></p>
+                </div>
+              </div>
+
+              <!-- Ficha de Datos de la Obra -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white/5 p-4 rounded-xl border border-white/10 text-xs evitar-corte shadow-sm">
+                <div>
+                  <span class="text-[10px] font-bold uppercase text-white/60 block font-tech-mono">Cliente / Empresa</span>
+                  <span id="lbl-ot-cliente" class="font-bold text-white">-</span>
+                </div>
+                <div>
+                  <span class="text-[10px] font-bold uppercase text-white/60 block font-tech-mono">Ubicación / Proyecto</span>
+                  <span id="lbl-ot-ubicacion" class="font-semibold text-white/90">-</span>
+                </div>
+                <div>
+                  <span class="text-[10px] font-bold uppercase text-white/60 block font-tech-mono">Técnico Responsable</span>
+                  <span id="lbl-ot-tecnico" class="font-semibold text-white/90">-</span>
+                </div>
+                <div>
+                  <span class="text-[10px] font-bold uppercase text-white/60 block font-tech-mono">Fecha Programada</span>
+                  <span id="lbl-ot-fecha-prog" class="font-semibold text-white/90">-</span>
+                </div>
+              </div>
+
+              <!-- Observaciones de la Inspección Inicial -->
+              <div class="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl text-xs space-y-1 evitar-corte shadow-sm">
+                <span class="text-[10px] font-bold uppercase text-amber-300 flex items-center gap-1.5 font-tech-mono">
+                  <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Observaciones de Sitio (Guía de Instalación Inicial):
+                </span>
+                <p id="lbl-ot-obs-inspeccion" class="text-white/80 italic">Cargando notas de inspección...</p>
+              </div>
+
+              <!-- 1. Checklist de Despacho de Bodega -->
+              <div class="space-y-2">
+                <div class="flex justify-between items-center border-b border-white/15 pb-1">
+                  <h3 class="text-xs font-bold uppercase text-white tracking-wider font-tech-head">
+                    1. Checklist de Despacho de Bodega & Equipamiento
+                  </h3>
+                  <span class="text-[10px] text-white/60 font-medium font-tech-mono">Verificación física de salida</span>
+                </div>
+                <div class="overflow-x-auto bg-white/5 rounded-xl border border-white/10 shadow-sm">
+                  <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr class="bg-white/10 text-white border-b border-white/15 text-[10px] uppercase font-tech-mono">
+                        <th class="p-2.5 w-12 text-center">Check</th>
+                        <th class="p-2.5 w-16 text-center">Cant.</th>
+                        <th class="p-2.5">Descripción del Equipo / Material / Accesorio</th>
+                        <th class="p-2.5 w-28 font-mono">Código</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tabla-ot-items-body" class="divide-y divide-white/10 text-white/90">
+                      <tr><td colspan="4" class="p-4 text-center text-white/50 italic">No hay ítems cargados.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- 2. Registro Fotográfico & Puntos de Montaje -->
+              <div class="space-y-3">
+                <div class="border-b border-white/15 pb-1 flex justify-between items-center">
+                  <h3 class="text-xs font-bold uppercase text-white tracking-wider font-tech-head">
+                    2. Registro Fotográfico & Guía de Montaje en Sitio
+                  </h3>
+                  <span class="text-[10px] text-white/60 font-tech-mono">Puntos capturados en inspección</span>
+                </div>
+                <div id="galeria-fotos-ot" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <p class="text-white/50 italic text-center col-span-2 py-4">Cargando registro fotográfico...</p>
+                </div>
+              </div>
+
+              <!-- 3. Liquidación de Obra y Cobro Final -->
+              <div class="space-y-2">
+                <div class="border-b border-white/15 pb-1 flex justify-between items-center">
+                  <h3 class="text-xs font-bold uppercase text-emerald-400 tracking-wider font-tech-head">
+                    3. Liquidación de Obra y Cobro Final
+                  </h3>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20 text-xs evitar-corte shadow-sm font-tech-mono">
+                  <div>
+                    <span class="text-[10px] font-bold uppercase text-white/60 block">Total Proyecto</span>
+                    <span id="lbl-ot-subtotal" class="font-bold text-white text-sm">$0.00</span>
+                  </div>
+                  <div>
+                    <span class="text-[10px] font-bold uppercase text-white/60 block">Anticipo Recibido</span>
+                    <span id="lbl-ot-anticipo" class="font-semibold text-emerald-400 text-sm">$0.00</span>
+                  </div>
+                  <div class="bg-white/10 px-2 py-1 -my-1 rounded-lg border border-amber-500/30 shadow-sm">
+                    <span class="text-[10px] font-bold uppercase text-amber-400 block">Saldo Cobrado</span>
+                    <span id="lbl-ot-saldo" class="font-black text-amber-300 text-sm">$0.00</span>
+                  </div>
+                  <div>
+                    <span class="text-[10px] font-bold uppercase text-white/60 block">Método Pago Final</span>
+                    <span id="lbl-ot-metodo" class="font-bold text-white text-[11px] leading-tight block">Pendiente</span>
+                    <span id="lbl-ot-comprobante" class="text-[9px] text-white/60 font-mono mt-0.5 block">-</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Observaciones de Cierre de Campo -->
+              <div class="bg-blue-500/10 border border-blue-500/20 p-3.5 rounded-xl text-xs space-y-1 evitar-corte shadow-sm">
+                <span class="text-[10px] font-bold uppercase text-blue-300 block font-tech-mono">Novedades & Observaciones de Ejecución (Cuadrilla):</span>
+                <p id="lbl-ot-observaciones" class="text-white/80 italic">Sin observaciones de campo registradas.</p>
+              </div>
+
+              <!-- Firmas de Recepción Conforme -->
+              <div class="pt-6 border-t border-white/15 grid grid-cols-2 gap-10 text-center text-xs evitar-corte">
+                <div>
+                  <div class="border-t border-white/40 mx-auto w-48 mb-1"></div>
+                  <p class="font-bold text-white" id="lbl-firma-tecnico-resp">Técnico Instalador</p>
+                  <p class="text-[10px] text-white/60">ProTech Security</p>
+                </div>
+                <div>
+                  <div id="contenedor-firma-cliente-ot" class="h-16 flex items-center justify-center mb-1">
+                    <span class="text-[10px] text-white/50 italic">Pendiente de firma en entrega</span>
+                  </div>
+                  <div class="border-t border-white/40 mx-auto w-48 mb-1"></div>
+                  <p class="font-bold text-white" id="lbl-firma-cliente-resp">Recibido Conforme (Cliente)</p>
+                  <p class="text-[10px] text-white/60">Aprobación Técnica, Operativa y Liquidación</p>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let ordenesDisponibles = [];
+    let ordenActual = null;
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    function toggleArea(idContent, headerElement) {
+      const content = document.getElementById(idContent);
+      if (content) {
+        content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed-btn');
+      }
+    }
+
+    // Configuración del canvas táctil
+    const canvas = document.getElementById('canvas-firma');
+    const ctx = canvas.getContext('2d');
+    let dibujando = false;
+
+    function ajustarCanvas() {
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#0f172a';
+    }
+
+    window.addEventListener('resize', ajustarCanvas);
+
+    if (canvas) {
+      canvas.addEventListener('mousedown', (e) => { dibujando = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
+      canvas.addEventListener('mousemove', (e) => { if (dibujando) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } });
+      window.addEventListener('mouseup', () => { dibujando = false; });
+
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        dibujando = true;
+        ctx.beginPath();
+        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+      });
+      canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!dibujando) return;
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        ctx.stroke();
+      });
+      window.addEventListener('touchend', () => { dibujando = false; });
+    }
+
+    function limpiarFirma() {
+      if (ctx && canvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    function actualizarBadgeEstado(estado) {
+      const badge = document.getElementById('lbl-ot-estado-badge');
+      if (!badge) return;
+      
+      let texto = 'Pendiente de Inicio';
+      let clasesBase = 'inline-block px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider border transition-colors duration-300 ';
+
+      if (estado === 'en_ejecucion') {
+        texto = 'En Ejecución (En Obra)';
+        badge.className = clasesBase + 'bg-blue-500/20 text-blue-300 border-blue-400/40';
+      } else if (estado === 'terminado') {
+        texto = 'Terminado / Por Entregar';
+        badge.className = clasesBase + 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40';
+      } else if (estado === 'facturado') {
+        texto = 'Completado & Facturado';
+        badge.className = clasesBase + 'bg-purple-500/20 text-purple-300 border-purple-400/40';
+      } else {
+        texto = 'Pendiente de Inicio';
+        badge.className = clasesBase + 'bg-white/10 text-white/80 border-white/20';
+      }
+      
+      badge.textContent = texto;
+    }
+
+    window.addEventListener('load', async () => {
+      ajustarCanvas();
+      await cargarListaOTs();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const otId = urlParams.get('id');
+      const otNumero = urlParams.get('ot');
+
+      if (otId) {
+        const select = document.getElementById('select-ot');
+        if (select) {
+          select.value = otId;
+          cargarOTPorId(otId);
+        }
+      } else if (otNumero && ordenesDisponibles.length > 0) {
+        const encontrada = ordenesDisponibles.find(o => o.numero_ot === otNumero);
+        if (encontrada) {
+          const select = document.getElementById('select-ot');
+          if (select) {
+            select.value = encontrada.id;
+            cargarOTPorId(encontrada.id);
+          }
+        }
+      }
+      document.body.classList.add('session-checked');
+      document.getElementById('seccion_dashboard').classList.remove('hidden');
+    });
+
+    async function cargarListaOTs() {
+      const select = document.getElementById('select-ot');
+      if (!select || !supabaseClient) return;
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('ordenes_trabajo')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        ordenesDisponibles = data || [];
+
+        if (ordenesDisponibles.length === 0) {
+          select.innerHTML = '<option value="">No hay Órdenes de Trabajo registradas</option>';
+          return;
+        }
+
+        select.innerHTML = '<option value="">-- Seleccionar Orden de Trabajo --</option>';
+        ordenesDisponibles.forEach(ot => {
+          select.innerHTML += `<option value="${ot.id}">${ot.numero_ot} - ${ot.cliente} (${ot.estado})</option>`;
+        });
+
+        if (!new URLSearchParams(window.location.search).get('id') && ordenesDisponibles.length > 0) {
+          select.value = ordenesDisponibles[0].id;
+          cargarOTPorId(ordenesDisponibles[0].id);
+        }
+      } catch (err) {
+        console.error("Error al cargar OTs:", err);
+      }
+    }
+
+    async function cargarOTPorId(id) {
+      if (!id) return;
+      ordenActual = ordenesDisponibles.find(o => String(o.id) === String(id));
+      if (!ordenActual) return;
+
+      document.getElementById('ot-estado-select').value = ordenActual.estado || 'pendiente';
+      document.getElementById('ot-tecnico-input').value = ordenActual.tecnico_asignado || '';
+      document.getElementById('ot-observaciones-input').value = ordenActual.observaciones || '';
+      
+      const totalNum = Number(ordenActual.subtotal || 0);
+      const anticipoNum = Number(ordenActual.anticipo || 0);
+      const saldoNum = Number(ordenActual.saldo || 0);
+      
+      document.getElementById('ui-anticipo-previo').textContent = `$${anticipoNum.toFixed(2)}`;
+      document.getElementById('ui-saldo-pendiente').textContent = `$${saldoNum.toFixed(2)}`;
+      document.getElementById('ot-metodo-pago-select').value = ordenActual.metodo_pago_saldo || 'Pendiente';
+      document.getElementById('ot-comprobante-input').value = ordenActual.comprobante_saldo || '';
+
+      document.getElementById('lbl-ot-numero').textContent = ordenActual.numero_ot || `OT-${ordenActual.id}`;
+      document.getElementById('lbl-ot-proforma-ref').textContent = ordenActual.proforma_id ? `PRF ID: ${ordenActual.proforma_id}` : '-';
+      document.getElementById('lbl-ot-fecha').textContent = ordenActual.created_at ? new Date(ordenActual.created_at).toLocaleDateString('es-EC') : '-';
+      document.getElementById('lbl-ot-cliente').textContent = ordenActual.cliente || 'Consumidor Final';
+      document.getElementById('lbl-ot-ubicacion').textContent = ordenActual.ubicacion || 'Quito, Ecuador';
+      document.getElementById('lbl-ot-tecnico').textContent = ordenActual.tecnico_asignado || 'Por asignar';
+      document.getElementById('lbl-ot-fecha-prog').textContent = ordenActual.fecha_inicio ? new Date(ordenActual.fecha_inicio + 'T00:00:00').toLocaleDateString('es-EC') : 'Inmediato';
+      
+      document.getElementById('lbl-ot-observaciones').textContent = ordenActual.observaciones || 'Sin observaciones de campo registradas.';
+      document.getElementById('lbl-firma-tecnico-resp').textContent = ordenActual.tecnico_asignado || 'Responsable Técnico';
+      document.getElementById('lbl-firma-cliente-resp').textContent = ordenActual.cliente || 'Cliente';
+
+      document.getElementById('lbl-ot-subtotal').textContent = `$${totalNum.toFixed(2)}`;
+      document.getElementById('lbl-ot-anticipo').textContent = `$${anticipoNum.toFixed(2)}`;
+      document.getElementById('lbl-ot-saldo').textContent = `$${saldoNum.toFixed(2)}`;
+      document.getElementById('lbl-ot-metodo').textContent = ordenActual.metodo_pago_saldo || 'Pendiente';
+      document.getElementById('lbl-ot-comprobante').textContent = ordenActual.comprobante_saldo || 'Sin registrar';
+
+      const contFirma = document.getElementById('contenedor-firma-cliente-ot');
+      if (ordenActual.acta_entrega_firma) {
+        contFirma.innerHTML = `<img src="${ordenActual.acta_entrega_firma}" class="max-h-16 w-auto object-contain">`;
+      } else {
+        contFirma.innerHTML = `<span class="text-[10px] text-white/50 italic">Pendiente de firma en entrega</span>`;
+      }
+
+      // --- PROCESAMIENTO DINÁMICO DE ÍTEMS ---
+      const tbody = document.getElementById('tabla-ot-items-body');
+      tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-white/50 italic"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Consolidando equipos y materiales...</td></tr>`;
+
+      let items = ordenActual.items || ordenActual.lineas || ordenActual.detalle || [];
+      if (!Array.isArray(items) || items.length === 0) {
+        if (ordenActual.datos_proforma && Array.isArray(ordenActual.datos_proforma.items)) {
+          items = ordenActual.datos_proforma.items;
+        } else if (ordenActual.datos_proforma && Array.isArray(ordenActual.datos_proforma.lineas)) {
+          items = ordenActual.datos_proforma.lineas;
+        }
+      }
+
+      if ((!Array.isArray(items) || items.length === 0) && supabaseClient) {
+        try {
+          let ticketAsociadoId = ordenActual.inspeccion_id;
+          if (ordenActual.proforma_id) {
+            const { data: prof } = await supabaseClient.from('proformas').select('ticket_id').eq('id', ordenActual.proforma_id).maybeSingle();
+            if (prof && prof.ticket_id) ticketAsociadoId = prof.ticket_id;
+          }
+
+          if (ticketAsociadoId) {
+            const [resCCTV, resRedes, resAlarmas, resCercos, resAcceso, resMat, resCat] = await Promise.all([
+              supabaseClient.from('inspeccion_cctv').select('*').eq('ticket_id', ticketAsociadoId).maybeSingle(),
+              supabaseClient.from('inspeccion_redes').select('*').eq('ticket_id', ticketAsociadoId).maybeSingle(),
+              supabaseClient.from('inspeccion_alarmas').select('*').eq('ticket_id', ticketAsociadoId).maybeSingle(),
+              supabaseClient.from('inspeccion_cercos').select('*').eq('ticket_id', ticketAsociadoId).maybeSingle(),
+              supabaseClient.from('inspeccion_acceso').select('*').eq('ticket_id', ticketAsociadoId).maybeSingle(),
+              supabaseClient.from('inspeccion_materiales').select('*').eq('ticket_id', ticketAsociadoId).maybeSingle(),
+              supabaseClient.from('catalogo_precios').select('*')
+            ]);
+
+            const catDict = {};
+            (resCat.data || []).forEach(ic => { catDict[ic.id] = ic; });
+
+            const mapaConsolidado = new Map();
+            [resCCTV.data, resRedes.data, resAlarmas.data, resCercos.data, resAcceso.data].forEach(mod => {
+              if (mod) {
+                Object.keys(mod).forEach(k => {
+                  if (k.endsWith('_catalogo_id') && mod[k] && mod[k] !== 'No Requiere' && mod[k] !== '') {
+                    const itemCat = catDict[mod[k]];
+                    if (itemCat) {
+                      let cant = 1;
+                      if (k.includes('switch')) cant = mod.cant_switches || 1;
+                      if (mapaConsolidado.has(itemCat.id)) {
+                        mapaConsolidado.get(itemCat.id).cantidad += cant;
+                      } else {
+                        mapaConsolidado.set(itemCat.id, { cantidad: cant, descripcion: itemCat.descripcion, codigo: itemCat.codigo || 'EQP-GEN' });
+                      }
+                    }
+                  }
+                });
+              }
+            });
+
+            const camarasList = resCCTV.data?.camaras || [];
+            if (camarasList.length > 0) {
+              mapaConsolidado.set('cam_dinamica', { cantidad: camarasList.length, descripcion: camarasList[0].descripcion_catalogo || 'Cámara Domo IP', codigo: 'CCT-EQP-CAM' });
+            }
+
+            const materialesArr = resMat.data?.materiales_consolidados || [];
+            materialesArr.forEach(m => {
+              const keyMat = m.descripcion || m.nombre;
+              if (keyMat) {
+                mapaConsolidado.set(keyMat, { cantidad: parseFloat(m.cantidad || m.metros || 1) || 1, descripcion: keyMat, codigo: m.sku || m.codigo || 'MAT-GEN' });
+              }
+            });
+
+            items = Array.from(mapaConsolidado.values());
+          }
+        } catch (e) {
+          console.warn("No se pudieron cargar los ítems modulares automáticamente:", e);
+        }
+      }
+
+      tbody.innerHTML = '';
+      if (!Array.isArray(items) || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-white/50 italic">No hay ítems registrados en esta orden.</td></tr>`;
+      } else {
+        items.forEach((item) => {
+          const cantidad = item.cantidad || item.cant || item.qty || 1;
+          const descripcion = item.descripcion || item.nombre || item.detalle || item.producto || 'Ítem sin descripción';
+          const codigo = item.codigo || item.code || item.sku || '-';
+
+          tbody.innerHTML += `
+            <tr class="hover:bg-white/5 border-b border-white/10 transition evitar-corte">
+              <td class="p-2.5 text-center">
+                <input type="checkbox" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer">
+              </td>
+              <td class="p-2.5 text-center font-bold text-white font-tech-mono">${cantidad}</td>
+              <td class="p-2.5 font-medium text-white/90">${descripcion}</td>
+              <td class="p-2.5 font-mono text-white/60 text-[10px]">${codigo}</td>
+            </tr>
+          `;
+        });
+      }
+
+      actualizarBadgeEstado(ordenActual.estado);
+      await cargarDatosInspeccionOriginal(ordenActual.inspeccion_id);
+    }
+
+    async function cargarDatosInspeccionOriginal(inspeccionId) {
+      const contenedorFotos = document.getElementById('galeria-fotos-ot');
+      const lblObsInspeccion = document.getElementById('lbl-ot-obs-inspeccion');
+
+      if (!ordenActual) return;
+
+      try {
+        let observacionesTexto = 'Guía de instalación cargada y autorizada para ejecución en campo.';
+        let ticketAsociadoId = ordenActual.inspeccion_id || inspeccionId;
+
+        if (ordenActual.proforma_id && supabaseClient) {
+          const { data: prof } = await supabaseClient
+            .from('proformas')
+            .select('*')
+            .eq('id', ordenActual.proforma_id)
+            .maybeSingle();
+
+          if (prof) {
+            if (prof.observaciones) observacionesTexto = prof.observaciones;
+            if (prof.ticket_id) ticketAsociadoId = prof.ticket_id;
+          }
+        }
+
+        if (ticketAsociadoId && supabaseClient) {
+          const { data: tk } = await supabaseClient
+            .from('tickets')
+            .select('*')
+            .eq('id', ticketAsociadoId)
+            .maybeSingle();
+
+          if (tk && tk.motivo) {
+            observacionesTexto = tk.motivo;
+          }
+        }
+
+        lblObsInspeccion.textContent = observacionesTexto;
+        contenedorFotos.innerHTML = '';
+        let totalFotos = 0;
+
+        if (ticketAsociadoId && supabaseClient) {
+          const [resCCTV, resAlarmas] = await Promise.all([
+            supabaseClient.from('inspeccion_cctv').select('*').eq('ticket_id', ticketAsociadoId).maybeSingle(),
+            supabaseClient.from('inspeccion_alarmas').select('*').eq('ticket_id', ticketAsociadoId).maybeSingle()
+          ]);
+
+          const cctvData = resCCTV.data || {};
+          const almData = resAlarmas.data || {};
+
+          const camaras = cctvData.camaras || [];
+          camaras.forEach((c, idx) => {
+            if (c.foto_base64 || c.img) {
+              totalFotos++;
+              let detalle = `${c.descripcion_catalogo || 'Cámara'} | Distancia: ${c.distancia_m || 0}m | Canalización: ${c.canalizacion || 'EMT'}`;
+              contenedorFotos.innerHTML += `
+                <div class="border border-white/15 rounded-xl p-3 bg-white/5 space-y-2 flex flex-col justify-between evitar-corte shadow-sm">
+                  <div class="w-full bg-slate-950/50 rounded-lg border border-white/10 flex items-center justify-center p-1.5 overflow-hidden">
+                    <img src="${c.foto_base64 || c.img}" class="max-h-48 w-auto max-w-full object-contain rounded">
+                  </div>
+                  <div class="pt-1">
+                    <p class="font-bold text-white text-[11px]">Cámara #${idx + 1}: ${c.ubicacion || 'Punto'}</p>
+                    <p class="text-[10px] text-white/60 leading-tight">${detalle}</p>
+                  </div>
+                </div>
+              `;
+            }
+          });
+
+          const zonas = almData.zonas || [];
+          zonas.forEach((z, idx) => {
+            if (z.foto_base64 || z.img) {
+              totalFotos++;
+              let detalle = `${z.descripcion || 'Sensor'} | Tecnología: ${z.tecnologia || 'Cableado'} | Ubicación: ${z.ubicacion || 'General'}`;
+              contenedorFotos.innerHTML += `
+                <div class="border border-amber-500/30 rounded-xl p-3 bg-amber-500/10 space-y-2 flex flex-col justify-between evitar-corte shadow-sm">
+                  <div class="w-full bg-slate-950/50 rounded-lg border border-amber-500/20 flex items-center justify-center p-1.5 overflow-hidden">
+                    <img src="${z.foto_base64 || z.img}" class="max-h-48 w-auto max-w-full object-contain rounded">
+                  </div>
+                  <div class="pt-1">
+                    <p class="font-bold text-amber-300 text-[11px]">${z.identificacion || 'Zona #' + (idx + 1)}</p>
+                    <p class="text-[10px] text-white/60 leading-tight">${detalle}</p>
+                  </div>
+                </div>
+              `;
+            }
+          });
+        }
+
+        if (totalFotos === 0) {
+          contenedorFotos.innerHTML = `<p class="text-white/50 italic text-center col-span-2 py-4">Registro fotográfico consolidado en el expediente de instalación del proyecto.</p>`;
+        }
+
+      } catch (err) {
+        console.warn("Aviso al recuperar guía de instalación:", err);
+        lblObsInspeccion.textContent = 'Guía de instalación gestionada mediante los requerimientos técnicos aprobados.';
+        contenedorFotos.innerHTML = `<p class="text-white/50 italic text-center col-span-2 py-4">Registro fotográfico disponible en el expediente del cliente.</p>`;
+      }
+    }
+
+    async function guardarCambiosOT() {
+      if (!ordenActual || !supabaseClient) return;
+      const btn = document.getElementById('btn-actualizar-ot');
+      const texto = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`;
+      btn.disabled = true;
+
+      try {
+        const nuevoEstado = document.getElementById('ot-estado-select').value;
+        const nuevoTecnico = document.getElementById('ot-tecnico-input').value.trim();
+        const nuevasObs = document.getElementById('ot-observaciones-input').value.trim();
+        
+        const nuevoMetodo = document.getElementById('ot-metodo-pago-select').value;
+        const nuevoComprobante = document.getElementById('ot-comprobante-input').value.trim();
+
+        const { error } = await supabaseClient
+          .from('ordenes_trabajo')
+          .update({
+            estado: nuevoEstado,
+            tecnico_asignado: nuevoTecnico,
+            observaciones: nuevasObs,
+            metodo_pago_saldo: nuevoMetodo,
+            comprobante_saldo: nuevoComprobante
+          })
+          .eq('id', ordenActual.id);
+
+        if (error) throw error;
+
+        if (nuevoMetodo && nuevoMetodo !== 'Pendiente') {
+          const montoLiquidacion = Number(ordenActual.saldo || 0);
+
+          if (montoLiquidacion > 0) {
+            const { error: errInsert } = await supabaseClient.from('pagos_abonos').insert([{
+              ot_id: ordenActual.id,
+              proforma_id: ordenActual.proforma_id || null,
+              referencia_ot: ordenActual.numero_ot || `OT-${ordenActual.id}`,
+              cliente: ordenActual.cliente,
+              monto: montoLiquidacion,
+              metodo: nuevoMetodo,
+              comprobante: `Liquidación Saldo (${nuevoComprobante || 'Sin ref'})`
+            }]);
+
+            if (errInsert) {
+              console.error("Error al registrar en pagos_abonos:", errInsert);
+            }
+          }
+        }
+
+        if (nuevoEstado === 'facturado' && ordenActual.proforma_id) {
+          await supabaseClient
+            .from('proformas')
+            .update({ estado: 'FACTURADA' })
+            .eq('id', ordenActual.proforma_id);
+        }
+
+        alert('✓ Cambios de la OT y Liquidación actualizados correctamente.');
+        
+        ordenActual.estado = nuevoEstado; 
+        ordenActual.metodo_pago_saldo = nuevoMetodo;
+        ordenActual.comprobante_saldo = nuevoComprobante;
+        
+        actualizarBadgeEstado(nuevoEstado);
+        
+        document.getElementById('lbl-ot-metodo').textContent = nuevoMetodo;
+        document.getElementById('lbl-ot-comprobante').textContent = nuevoComprobante || 'Sin registrar';
+        document.getElementById('lbl-ot-observaciones').textContent = nuevasObs || 'Sin observaciones de campo registradas.';
+        
+        await cargarListaOTs();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.innerHTML = texto;
+        btn.disabled = false;
+      }
+    }
+
+    async function guardarFirmaRecepcion() {
+      if (!ordenActual || !supabaseClient) return;
+
+      const firmaBase64 = canvas.toDataURL('image/png');
+      try {
+        const { error } = await supabaseClient
+          .from('ordenes_trabajo')
+          .update({
+            acta_entrega_firma: firmaBase64,
+            estado: 'terminado'
+          })
+          .eq('id', ordenActual.id);
+
+        if (error) throw error;
+
+        document.getElementById('contenedor-firma-cliente-ot').innerHTML = `<img src="${firmaBase64}" class="max-h-16 w-auto object-contain">`;
+        limpiarFirma();
+        alert('✓ Acta de Entrega firmada con éxito. Estado actualizado a: Terminado.');
+        
+        document.getElementById('ot-estado-select').value = 'terminado';
+        ordenActual.estado = 'terminado';
+        actualizarBadgeEstado('terminado'); 
+
+        await cargarListaOTs();
+      } catch (err) {
+        alert('Error al guardar firma: ' + err.message);
+      }
+    }
+
+    function imprimirOT() {
+      const elemento = document.getElementById('documento-ot-imprimible');
+      const otNumero = document.getElementById('lbl-ot-numero').textContent.trim();
+      const cliente = document.getElementById('lbl-ot-cliente').textContent.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+
+      const opciones = {
+        margin: [8, 8, 8, 8],
+        filename: `${otNumero}_${cliente}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { 
+          mode: ['avoid-all', 'css', 'legacy'], 
+          avoid: ['.evitar-corte', 'tr', '.border'] 
+        }
+      };
+
+      html2pdf().set(opciones).from(elemento).save();
+    }
+  </script>
+</body>
+</html>

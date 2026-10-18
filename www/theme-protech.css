@@ -1,0 +1,228 @@
+/* ==========================================================
+   THEME-PROTECH.CSS - Sistema de Diseño Cyber-Tech Operations OS
+   ========================================================== */
+
+:root {
+  --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: #f6f8fd;
+  color: #0c1527;
+  overflow-x: hidden;
+  letter-spacing: -0.012em;
+}
+
+.font-tech-head {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+}
+
+.font-tech-mono {
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+}
+
+/* Malla Cuántica & Textura de Grano Fotográfico Premium */
+.bg-cyber-matrix {
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.08) 1.5px, transparent 1.5px),
+    linear-gradient(to right, rgba(99, 102, 241, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.bg-grain {
+  position: fixed; inset: 0; pointer-events: none; z-index: 100;
+  background: url('data:image/svg+xml;utf8,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.025%22/%3E%3C/svg%3E');
+}
+
+/* Orbes Holográficos Líquidos */
+@keyframes cyberOrbFloat1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1) rotate(0deg); }
+  33% { transform: translate(70px, -60px) scale(1.2) rotate(45deg); }
+  66% { transform: translate(-50px, 40px) scale(0.9) rotate(-30deg); }
+}
+@keyframes cyberOrbFloat2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1) rotate(0deg); }
+  33% { transform: translate(-80px, 60px) scale(1.18) rotate(-40deg); }
+  66% { transform: translate(60px, -50px) scale(0.85) rotate(35deg); }
+}
+
+.holo-orb-1 {
+  animation: cyberOrbFloat1 18s ease-in-out infinite;
+  filter: blur(100px);
+}
+.holo-orb-2 {
+  animation: cyberOrbFloat2 22s ease-in-out infinite;
+  filter: blur(110px);
+}
+
+/* Tarjetas Cristal Neomórfico con Borde Gradiente */
+.cyber-glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.65) 100%);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 1);
+  box-shadow: 
+    0 14px 35px -8px rgba(15, 23, 42, 0.04),
+    0 1px 2px 0 rgba(255, 255, 255, 0.9) inset,
+    0 -1px 2px 0 rgba(37, 99, 235, 0.03) inset;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cyber-glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(59, 130, 246, 0.08), transparent 50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.cyber-glass-card:hover::before {
+  opacity: 1;
+}
+
+.cyber-glass-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 
+    0 24px 45px -10px rgba(37, 99, 235, 0.1),
+    0 1px 2px 0 rgba(255, 255, 255, 1) inset;
+}
+
+/* Gradientes Vivos de Alta Tecnología */
+.gradient-cyber-brand {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
+}
+
+.gradient-cyber-glow {
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #6366f1 100%);
+}
+
+/* Botón Hiper-Fluido con Haz de Luz Láser */
+.btn-cyber-laser {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.btn-cyber-laser::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(from 0deg at 50% 50%, transparent 70%, rgba(255, 255, 255, 0.6) 100%);
+  animation: rotateLaser 4s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes rotateLaser {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.btn-cyber-laser:hover::before { opacity: 0.2; }
+
+.btn-cyber-laser::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.4) 50%, transparent 80%);
+  transform: translateX(-120%);
+  transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.btn-cyber-laser:hover::after { transform: translateX(120%); }
+
+.btn-cyber-laser:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -4px rgba(37, 99, 235, 0.35);
+}
+
+.btn-cyber-laser:active { transform: scale(0.96); }
+
+/* Inputs Futuristas */
+.cyber-input {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  color: #0f172a;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02) inset;
+}
+
+.cyber-input:hover {
+  background: #ffffff;
+  border-color: #818cf8;
+}
+
+.cyber-input:focus {
+  background: #ffffff;
+  border-color: #4f46e5;
+  box-shadow: 
+    0 0 0 4px rgba(79, 70, 229, 0.15),
+    0 4px 15px rgba(79, 70, 229, 0.08);
+  outline: none;
+}
+
+/* Pulso Láser Animado del Workflow */
+@keyframes pulseBeam {
+  0% { transform: translateX(-100%); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateX(200%); opacity: 0; }
+}
+.laser-beam {
+  position: absolute;
+  height: 2px;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, #ffffff);
+  animation: pulseBeam 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.laser-beam::after {
+  content: ''; position: absolute; right: 0; top: -2px; height: 6px; width: 6px;
+  border-radius: 50%; background: #fff; box-shadow: 0 0 10px 2px #60a5fa;
+}
+
+/* Gráficos Sparkline Animados para KPIs */
+@keyframes drawSparkline {
+  to { stroke-dashoffset: 0; }
+}
+.sparkline-fill {
+  animation: drawSparkline 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Nodos del Workflow Táctico */
+.workflow-pill {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+}
+
+.workflow-pill.active {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(238, 242, 255, 0.9) 100%);
+  border-color: #4f46e5;
+  box-shadow: 
+    0 8px 24px -4px rgba(79, 70, 229, 0.15),
+    0 0 0 1px #4f46e5 inset;
+  transform: scale(1.02);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.25); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.5); }

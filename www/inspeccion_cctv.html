@@ -1,0 +1,2375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>CCTV & Audio — ProTech Security</title>
+  
+  <!-- Configuración PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Técnica -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO Y MICRO-RETÍCULA CAD (GPU SAFE)
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.14), transparent 60%),
+        linear-gradient(rgba(2, 6, 23, 0.65), rgba(2, 6, 23, 0.78));
+    }
+    .tech-grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+    }
+
+    /* ========================================================
+       2. TARJETAS CYBER-GLASS CON LUZ ESPECULAR Y TELEMETRÍA
+       ======================================================== */
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.82) 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.08),
+        inset -1px -1px 3px rgba(0, 0, 0, 0.5),
+        0 12px 28px -6px rgba(0, 0, 0, 0.55) !important;
+      border-radius: 1.25rem !important;
+      position: relative !important;
+      color: #ffffff !important;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.18s ease;
+    }
+
+    .cyber-glass-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 12%;
+      right: 12%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.55), transparent);
+      pointer-events: none;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      border-color: rgba(59, 130, 246, 0.5) !important;
+    }
+
+    .corner-telemetry::after {
+      content: "";
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid rgba(59, 130, 246, 0.45);
+      border-bottom: 2px solid rgba(59, 130, 246, 0.45);
+      pointer-events: none;
+    }
+
+    .btn-glass-action {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.92) 0%, rgba(51, 65, 85, 0.88) 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 4px 12px rgba(0, 0, 0, 0.35) !important;
+      border-radius: 0.875rem !important;
+      transition: all 0.18s ease;
+      color: #ffffff !important;
+    }
+    .btn-glass-action:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(51, 65, 85, 0.98) 0%, rgba(71, 85, 105, 0.92) 100%) !important;
+      border-color: rgba(59, 130, 246, 0.65) !important;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25) !important;
+    }
+    .btn-glass-action:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    .btn-glass-action:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .btn-cyber-primary {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+      border: 1px solid rgba(147, 197, 253, 0.4) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 16px rgba(37, 99, 235, 0.4) !important;
+      border-radius: 0.875rem !important;
+      color: #ffffff !important;
+      transition: all 0.18s ease;
+    }
+    .btn-cyber-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 20px rgba(37, 99, 235, 0.55) !important;
+    }
+    .btn-cyber-primary:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .cyber-input, .glass-input {
+      background: rgba(15, 23, 42, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #ffffff !important;
+      box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.45) !important;
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.45); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(30, 41, 59, 0.98) !important;
+      border-color: rgba(59, 130, 246, 0.85) !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+      outline: none;
+    }
+    .cyber-input option, .glass-input option {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+    details[open] .accordion-chevron { transform: rotate(180deg); }
+    .accordion-chevron { transition: transform 0.2s ease; }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .font-tech-head { font-family: var(--tech-sans); }
+    
+    .hide-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+
+    /* ========================================================
+       3. SIDEBAR RESPONSIVO Y COLAPSABLE EN DESKTOP
+       ======================================================== */
+    #sidebar_menu {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, opacity 0.25s ease;
+    }
+    @media (min-width: 768px) {
+      #sidebar_menu.collapsed {
+        width: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        border-right-width: 0 !important;
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+    }
+
+    .menu-link {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.55rem 0.75rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.82); transition: all 0.2s; margin-bottom: 0.3rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.1); color: #ffffff; }
+    .menu-link.active { 
+      background: linear-gradient(90deg, rgba(37, 99, 235, 0.45) 0%, rgba(37, 99, 235, 0.2) 100%); 
+      color: #ffffff; 
+      border: 1px solid rgba(59, 130, 246, 0.6);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+
+    #page_transition_overlay {
+      transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center text-white">
+
+  <!-- PANTALLA DE CARGA / TRANSICIÓN -->
+  <div id="page_transition_overlay" class="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center opacity-100">
+    <div class="cyber-glass-card p-8 sm:p-10 flex flex-col items-center gap-5 min-w-[260px] sm:min-w-[290px]">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute -inset-3 rounded-full border border-blue-500/30 animate-ping opacity-30"></div>
+        <img src="logo.png" alt="ProTech" class="h-28 sm:h-36 w-auto object-contain drop-shadow-lg relative z-10" onerror="this.style.display='none';">
+      </div>
+      <div class="text-center">
+        <p class="font-tech-head font-extrabold text-sm sm:text-base text-white tracking-wide">ProTech Cyber-OS</p>
+        <p class="font-tech-mono text-[10px] sm:text-xs uppercase tracking-widest text-blue-400 font-bold mt-1.5" id="transition_text">Cargando Módulo CCTV...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR DE NOTIFICACIONES CYBER-TOAST -->
+  <div id="toast_container" class="fixed top-4 right-4 z-[9990] flex flex-col gap-2.5 max-w-xs sm:max-w-sm w-full pointer-events-none px-2 sm:px-0"></div>
+
+  <!-- VIDEO DE FONDO Y RETÍCULA TÉCNICA -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline preload="auto">
+      <source src="fondo-tech.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+  <div class="tech-grid-overlay"></div>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="app-window flex w-full h-screen overflow-hidden relative z-10">
+
+    <!-- OVERLAY MÓVIL -->
+    <div id="mobile_menu_overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-950/80 z-40 hidden md:hidden transition-opacity"></div>
+
+    <!-- SIDEBAR NAVEGACIÓN -->
+    <aside id="sidebar_menu" class="fixed md:relative top-0 left-0 z-50 h-full w-72 flex-col justify-between border-r border-white/15 p-4 sm:p-5 flex bg-slate-950/95 md:bg-slate-950/55 shadow-2xl md:shadow-none -translate-x-full md:translate-x-0 flex-shrink-0">
+      
+      <div class="space-y-4 overflow-y-auto max-h-[calc(100vh-115px)] pr-1 hide-scrollbar">
+        <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <img src="logo.png" alt="ProTech" class="h-9 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+              <div id="logo_fallback" style="display:none;" class="h-9 w-9 rounded-xl bg-blue-600 text-white font-bold text-sm items-center justify-center shadow-md">PS</div>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="font-extrabold text-[15px] text-white leading-tight">ProTech</h1>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-[8px] font-tech-mono text-emerald-300 font-bold">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>ONLINE
+                </span>
+              </div>
+              <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-0.5">Cyber-OS • v4.2</p>
+            </div>
+          </div>
+          <button onclick="toggleSidebar()" class="md:hidden text-white/70 hover:text-white p-1.5 rounded-lg hover:bg-white/10">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+
+        <nav class="space-y-3.5">
+          <div class="cyber-glass-card p-2.5">
+            <div class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-blue-300 tracking-wider px-2 py-1 mb-1 select-none">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-clipboard-list"></i> Módulos de Campo</span>
+            </div>
+            <div class="space-y-1">
+              <button onclick="navegarA('inspecciones_index.html', 'Dashboard Principal')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-gauge-high"></i></div>
+                  <span class="truncate">Panel Principal</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_cliente.html', 'Datos del Cliente')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-white/80 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-address-card"></i></div>
+                  <span class="truncate">1. Datos del Cliente</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_cctv.html', 'CCTV & Audio')" class="menu-link active w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-video"></i></div>
+                  <span class="truncate">2. CCTV & Audio</span>
+                </div>
+                <span id="side_badge_cctv_live" class="font-tech-mono text-[9px] px-1.5 py-0.5 rounded bg-blue-500/30 text-white border border-blue-400/40 font-bold">0</span>
+              </button>
+              <button onclick="navegarA('inspeccion_alarmas.html', 'Sistema de Alarmas')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-bell"></i></div>
+                  <span class="truncate">3. Alarmas</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_redes.html', 'Redes & Fibra')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-network-wired"></i></div>
+                  <span class="truncate">4. Redes & Fibra</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_cercos.html', 'Cercos Eléctricos')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-rose-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-bolt"></i></div>
+                  <span class="truncate">5. Cercos Eléctricos</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_acceso.html', 'Control de Acceso')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-fingerprint"></i></div>
+                  <span class="truncate">6. Control Acceso</span>
+                </div>
+              </button>
+              <button onclick="navegarA('topologia_general.html', 'Topología de Obra')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-purple-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-sitemap"></i></div>
+                  <span class="truncate">Topología Dinámica Obra</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card p-2.5">
+            <div class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-white/60 tracking-wider px-2 py-1 mb-1 select-none">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-file-invoice"></i> Consolidación</span>
+            </div>
+            <div class="space-y-1">
+              <button onclick="navegarA('inspeccion_equipos.html', 'Consolidado de Equipos')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-300 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-boxes-stacked"></i></div>
+                  <span class="truncate">Consolidado Equipos</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_materiales.html', 'Calculadora de Materiales')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-toolbox"></i></div>
+                  <span class="truncate">Calculadora Materiales</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </nav>
+      </div>
+
+      <div class="cyber-glass-card p-3 flex items-center justify-between mt-3">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shadow-md flex-shrink-0 border border-blue-400/30">JP</div>
+          <div class="truncate">
+            <p class="text-[11px] font-bold text-white truncate">Juan Pablo Luna</p>
+            <p class="font-tech-mono text-[8px] text-blue-300 uppercase font-bold">Ing. Proyectos • Admin</p>
+          </div>
+        </div>
+        <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition flex-shrink-0" title="Cerrar Sesión">
+          <i class="fa-solid fa-power-off text-xs"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="flex-1 flex flex-col h-screen overflow-y-auto hide-scrollbar relative z-10" id="main_scroll_container">
+      
+      <!-- HEADER STICKY -->
+      <header class="border-b border-white/15 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 bg-slate-950/90 z-20 sticky top-0">
+        <div class="flex items-center gap-2 sm:gap-3.5 flex-1 min-w-0">
+          <button onclick="toggleSidebar()" class="text-white p-2 sm:p-2.5 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 active:scale-95 transition focus:outline-none flex-shrink-0" title="Alternar Menú">
+            <i class="fa-solid fa-bars text-xs sm:text-sm"></i>
+          </button>
+          
+          <!-- BUSCADOR EN TIEMPO REAL DE CÁMARAS Y SWITCHES -->
+          <div class="relative flex-1 max-w-xs">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-white/45 text-xs"></i>
+            <input id="input_buscar_cctv" oninput="filtrarPuntosCCTV(this.value)" type="text" placeholder="Buscar cámara, ubicación, IP..." class="cyber-input w-full text-xs pl-8 pr-7 py-2 rounded-xl font-medium">
+            <button id="btn_limpiar_busqueda" onclick="limpiarBusquedaCCTV()" class="hidden absolute right-2.5 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white text-xs">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button onclick="navegarA('index.html', 'Portal Principal')" class="cyber-glass-card px-2.5 sm:px-3 py-2 text-white text-[11px] font-bold hidden sm:flex items-center gap-1.5 hover:bg-white/10 active:scale-95">
+            <i class="fa-solid fa-arrow-right-from-bracket text-rose-400"></i><span class="hidden lg:inline">Salir</span>
+          </button>
+          <button onclick="navegarA('catalogo.html', 'Catálogo Oficial')" class="cyber-glass-card px-2.5 sm:px-3 py-2 text-white text-[11px] font-bold flex items-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-book-open text-indigo-400"></i><span class="hidden lg:inline">Catálogo</span>
+          </button>
+          <button onclick="navegarA('inspecciones_index.html', 'Dashboard Principal')" class="cyber-glass-card px-2.5 sm:px-3 py-2 text-white text-[11px] font-bold flex items-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-gauge-high text-blue-400"></i><span class="hidden sm:inline">Panel</span>
+          </button>
+          <button id="btn_guardar_cloud" onclick="guardarModuloCCTV()" class="hidden sm:flex px-4 py-2 rounded-xl btn-cyber-primary text-white text-[11px] font-bold items-center gap-1.5 transition">
+            <i class="fa-solid fa-floppy-disk"></i><span>Guardar Cambios</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- MAIN BODY -->
+      <main class="flex-1 p-3.5 sm:p-6 lg:p-8 relative z-10">
+        <div class="max-w-6xl mx-auto space-y-5 sm:space-y-6 pb-24 sm:pb-16">
+
+          <!-- ENCABEZADO DEL MÓDULO -->
+          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div>
+              <div class="inline-flex items-center gap-2 text-[10px] font-tech-mono uppercase tracking-widest text-blue-400 font-bold mb-1">
+                <i class="fa-solid fa-video animate-pulse"></i> SUBSISTEMA PASO 02 • INGENIERÍA DE VIDEO IP / ANÁLOGO & AUDIO
+              </div>
+              <h2 class="font-tech-head font-extrabold text-xl sm:text-2xl text-white tracking-tight">
+                Relevamiento de CCTV, Switches PoE & Perifoneo
+              </h2>
+            </div>
+            <div class="inline-flex items-center gap-2 self-start sm:self-auto cyber-glass-card px-3 py-1.5 border-white/20">
+              <span class="text-[9px] font-tech-mono uppercase font-bold text-blue-300">Ticket Activo:</span>
+              <span id="label_id_ticket" class="text-xs font-tech-mono font-bold text-white"># INS-0000</span>
+            </div>
+          </div>
+
+          <!-- CINTA DE TELEMETRÍA EN VIVO (4 KPIs CCTV) -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="cyber-glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 flex-shrink-0"><i class="fa-solid fa-camera text-sm sm:text-base"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] uppercase font-bold text-white/60 font-tech-mono truncate">Cámaras Relevadas</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_live_camaras" class="text-lg sm:text-xl font-black text-white leading-none">0</p>
+                  <span id="kpi_live_split" class="text-[9px] font-tech-mono text-blue-300 truncate">0 IP • 0 Anál.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cyber-glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 flex-shrink-0"><i class="fa-solid fa-network-wired text-sm sm:text-base"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] uppercase font-bold text-white/60 font-tech-mono truncate">Switches CCTV</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_live_switches" class="text-lg sm:text-xl font-black text-white leading-none">0</p>
+                  <span class="text-[9px] font-tech-mono text-indigo-300 truncate">nodos PoE</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cyber-glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 flex-shrink-0"><i class="fa-solid fa-ruler-combined text-sm sm:text-base"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] uppercase font-bold text-white/60 font-tech-mono truncate">Cable UTP (+10%)</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_live_utp" class="text-lg sm:text-xl font-black text-white leading-none">0 m</p>
+                  <span class="text-[9px] font-tech-mono text-emerald-300 truncate">estimados</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cyber-glass-card corner-telemetry p-3.5 sm:p-4 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-300 flex-shrink-0"><i class="fa-solid fa-hard-drive text-sm sm:text-base"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] uppercase font-bold text-white/60 font-tech-mono truncate">Retención HDD</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_live_hdd" class="text-lg sm:text-xl font-black text-white leading-none">~0 d</p>
+                  <span class="text-[9px] font-tech-mono text-amber-300 truncate">H.265 24/7</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 1. GRABADOR PRINCIPAL & ALMACENAMIENTO -->
+          <div class="cyber-glass-card p-5 sm:p-7 space-y-5 border-l-4 border-l-blue-500">
+            <div class="flex items-center justify-between border-b border-white/15 pb-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                <i class="fa-solid fa-server text-blue-400"></i> 1. Grabador Principal, Almacenamiento & Respaldo
+              </h3>
+              <span class="text-[9px] font-tech-mono text-blue-300 bg-blue-500/15 border border-blue-400/30 px-2 py-0.5 rounded font-bold">HARDWARE CORE</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              <div>
+                <label class="block text-[11px] font-bold text-white/80 mb-1">Acción Grabador</label>
+                <select id="cctv_accion_grabador" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                  <option value="No Requiere">No Requiere</option>
+                  <option value="Instalación Nueva">Instalación Nueva</option>
+                  <option value="Mantenimiento">Mantenimiento</option>
+                  <option value="Reubicación">Reubicación</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-[11px] font-bold text-white/80 mb-1">Tipo de Grabador (NVR / XVR / DVR)</label>
+                <select id="cctv_grabador_catalogo" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                  <option value="">Cargando catálogo...</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-white/80 mb-1">Ubicación Física del Grabador</label>
+                <input type="text" id="cctv_ubicacion_grabador" placeholder="Ej. Rack Cuarto Servidores" class="cyber-input w-full text-xs rounded-xl p-2.5 outline-none">
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-[11px] font-bold text-white/80">Disco Duro Especializado (HDD)</label>
+                  <span id="badge_estimacion_dias" class="text-[9px] font-tech-mono font-bold text-blue-300 bg-blue-500/20 border border-blue-400/30 px-1.5 py-0.5 rounded shadow-sm">~0 días</span>
+                </div>
+                <select id="cctv_hdd_catalogo" onchange="calcularEstimacionDiasHDD()" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                  <option value="Sin Disco / No Requiere">Sin Disco / No Requiere</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-white/80 mb-1">Estado HDD</label>
+                <select id="cctv_estado_hdd" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                  <option value="Nuevo">Nuevo</option>
+                  <option value="Existente Reutilizado">Existente Reutilizado</option>
+                  <option value="Requiere Cambio">Requiere Cambio</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-amber-300 mb-1 flex items-center gap-1">
+                  <i class="fa-solid fa-plug-circle-bolt text-amber-400"></i> Condición Punto Eléctrico
+                </label>
+                <select id="cctv_condicion_electrica" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium bg-amber-500/20 border-amber-400/30">
+                  <option value="Toma 110V disponible con Tierra">Toma 110V disponible con Tierra</option>
+                  <option value="Toma 110V disponible sin Tierra">Toma 110V disponible sin Tierra</option>
+                  <option value="Requiere nueva extensión eléctrica">Requiere nueva extensión eléctrica</option>
+                  <option value="Conexión en Tablero Principal">Conexión en Tablero Principal</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-white/80 mb-1">Gabinete / Rack Pared CCTV</label>
+                <select id="cctv_rack_catalogo" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                  <option value="No Requiere">No Requiere</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-white/80 mb-1">UPS / Respaldo de Energía</label>
+                <select id="cctv_ups_catalogo" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                  <option value="No Requiere">No Requiere</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-white/80 mb-1">Memorias MicroSD (Wi-Fi / Edge)</label>
+                <select id="cctv_microsd_catalogo" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium">
+                  <option value="No Requiere / Sin MicroSD">No Requiere / Sin MicroSD</option>
+                </select>
+              </div>
+
+              <div class="sm:col-span-2 lg:col-span-1">
+                <label class="block text-[11px] font-bold text-white/80 mb-1">Cantidad de Memorias MicroSD</label>
+                <input type="number" id="cctv_cant_microsd" min="0" value="0" class="cyber-input w-full text-xs rounded-xl p-2.5 font-tech-mono outline-none">
+              </div>
+
+              <div class="sm:col-span-2 lg:col-span-2">
+                <label class="block text-[11px] font-bold text-blue-300 mb-1 flex items-center gap-1.5">
+                  <i class="fa-solid fa-network-wired text-blue-400"></i> Tipo de Cable UTP a Utilizar (Catálogo Oficial)
+                </label>
+                <select id="cctv_cable_catalogo" class="cyber-input w-full text-xs rounded-xl p-2.5 font-medium bg-blue-500/20 border-blue-400/30">
+                  <option value="">Seleccionar Cable UTP del Catálogo...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. GESTOR DE SWITCHES PoE (Nativo Details) -->
+          <div class="cyber-glass-card p-5 sm:p-7 space-y-4 border-l-4 border-l-indigo-400">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                  <i class="fa-solid fa-network-wired text-indigo-400"></i> 2. Switches PoE de CCTV en Obra (Topología Distribuida)
+                </h3>
+                <p class="text-[10px] text-white/70 mt-0.5">Define los switches de video secundarios, sus IPs, Uplink y si enlazan por Cobre o Fibra Óptica.</p>
+              </div>
+              <div class="flex items-center gap-2 self-start sm:self-auto">
+                <button type="button" onclick="alternarAcordeones('switches_cctv_container', false)" class="px-2.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white/70 hover:text-white text-[10px] font-tech-mono font-bold transition" title="Contraer todos los switches">
+                  <i class="fa-solid fa-compress"></i>
+                </button>
+                <button type="button" onclick="agregarSwitchCCTV()" class="px-4 py-2 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-plus text-xs text-indigo-400"></i> <span>Añadir Switch</span>
+                </button>
+              </div>
+            </div>
+            <div id="switches_cctv_container" class="space-y-3.5"></div>
+          </div>
+
+          <!-- 3. PUNTOS DE CÁMARAS (Nativo Details) -->
+          <div class="cyber-glass-card p-5 sm:p-7 space-y-4 border-l-4 border-l-emerald-400">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                  <i class="fa-solid fa-camera text-emerald-400"></i> 3. Puntos de Cámaras Levantados en Sitio
+                </h3>
+                <p class="text-[10px] text-white/70 mt-0.5">Soporta cámaras IP PoE, Análogas HD-TVI (BNC/Balun), Wi-Fi y PTZ con evidencia fotográfica.</p>
+              </div>
+              <div class="flex items-center gap-2 self-start sm:self-auto">
+                <button type="button" onclick="alternarAcordeones('camaras_container', true)" class="px-2.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white/70 hover:text-white text-[10px] font-tech-mono font-bold transition" title="Expandir todas las cámaras">
+                  <i class="fa-solid fa-expand"></i>
+                </button>
+                <button type="button" onclick="alternarAcordeones('camaras_container', false)" class="px-2.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white/70 hover:text-white text-[10px] font-tech-mono font-bold transition" title="Contraer todas las cámaras">
+                  <i class="fa-solid fa-compress"></i>
+                </button>
+                <button type="button" onclick="agregarCamara()" class="px-4 py-2 rounded-xl btn-cyber-primary text-white text-xs font-bold transition flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-plus text-xs"></i> <span>Añadir Cámara</span>
+                </button>
+              </div>
+            </div>
+            <div id="camaras_container" class="space-y-4"></div>
+          </div>
+
+          <!-- 4. ACCESORIOS DE CONEXIÓN, ALIMENTACIÓN & AUDIO -->
+          <div class="cyber-glass-card p-5 sm:p-7 space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/15 pb-3">
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                  <i class="fa-solid fa-plug text-blue-400"></i> 4. Accesorios de Conexión, Alimentación & Audio
+                </h3>
+                <p class="text-[10px] text-white/60 mt-0.5">Calcula automáticamente Video Baluns, Fuentes 12V, Cajas Estancas y Patch Cords según las cámaras relevadas.</p>
+              </div>
+              <button type="button" onclick="autoCalcularAccesoriosPorCamaras(false)" class="px-3.5 py-2 rounded-xl btn-glass-action text-amber-300 border-amber-400/40 text-[11px] font-bold flex items-center gap-1.5 self-start sm:self-auto">
+                <i class="fa-solid fa-bolt"></i> <span>Auto-Dimensionar Accesorios</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+              
+              <!-- LÍNEA ANÁLOGA -->
+              <div class="cyber-glass-card p-4 sm:p-5 space-y-4 border-l-4 border-l-blue-400 bg-white/5">
+                <h4 class="text-[11px] font-bold text-blue-300 uppercase tracking-wide flex items-center gap-1.5">
+                  <i class="fa-solid fa-shield-halved"></i> Línea Análoga HD-TVI & Protección
+                </h4>
+                <div class="space-y-3 text-xs text-white">
+                  <div class="grid grid-cols-3 gap-3">
+                    <div class="col-span-2">
+                      <label class="block text-[10px] font-bold text-white/80 mb-1">Tipo Video Balun (Catálogo)</label>
+                      <select id="acc_balun_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium"></select>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-white/80 mb-1">Cant. Pares</label>
+                      <input type="number" id="acc_cant_baluns" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-3 gap-3">
+                    <div class="col-span-2">
+                      <label class="block text-[10px] font-bold text-white/80 mb-1">Caja de Paso / Estanca (Catálogo)</label>
+                      <select id="acc_caja_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium"></select>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-white/80 mb-1">Cantidad</label>
+                      <input type="number" id="acc_cant_cajas" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-3 gap-3">
+                    <div class="col-span-2">
+                      <label class="block text-[10px] font-bold text-white/80 mb-1">Fuente Individual 12V (Catálogo)</label>
+                      <select id="acc_fuente_indiv_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium"></select>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-white/80 mb-1">Cantidad</label>
+                      <input type="number" id="acc_cant_fuentes_indiv" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-3 gap-3">
+                    <div class="col-span-2">
+                      <label class="block text-[10px] font-bold text-white/80 mb-1">Regleta / Cortapicos Estándar</label>
+                      <select id="acc_cortapicos_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium"></select>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-white/80 mb-1">Cantidad</label>
+                      <input type="number" id="acc_cant_cortapicos" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Fuente Centralizada (Caja Multicanal 12V)</label>
+                    <select id="acc_fuente_central_catalogo" onchange="autoCalcularAccesoriosPorCamaras(true)" class="cyber-input w-full rounded-lg p-2 font-medium"></select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- LÍNEA IP -->
+              <div class="cyber-glass-card p-4 sm:p-5 space-y-4 border-l-4 border-l-emerald-400 bg-white/5">
+                <h4 class="text-[11px] font-bold text-emerald-300 uppercase tracking-wide flex items-center gap-1.5">
+                  <i class="fa-solid fa-network-wired"></i> Línea IP, Switches & Distribución
+                </h4>
+                <div class="space-y-3 text-xs text-white">
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Switch PoE Principal (Catálogo)</label>
+                    <select id="acc_switch_poe_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium"></select>
+                  </div>
+
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Switch Escritorio (No PoE)</label>
+                    <select id="acc_switch_desktop_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium"></select>
+                  </div>
+
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Regleta PDU Rack 19"</label>
+                    <select id="acc_pdu_rack_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium"></select>
+                  </div>
+
+                  <div class="grid grid-cols-3 gap-3">
+                    <div class="col-span-2">
+                      <label class="block text-[10px] font-bold text-white/80 mb-1">Patch Cord Certificados (Catálogo)</label>
+                      <select id="acc_patchcord_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium"></select>
+                    </div>
+                    <div>
+                      <label class="block text-[10px] font-bold text-white/80 mb-1">Cantidad</label>
+                      <input type="number" id="acc_cant_patchcords" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-[10px] font-bold text-white/80 mb-1">Total Metros UTP Estimados (+10% Holgura)</label>
+                    <input type="text" id="acc_total_utp" readonly value="0 m" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold bg-white/10 text-emerald-300">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- PERIFONEO Y AUDIO -->
+            <div class="cyber-glass-card p-4 sm:p-5 space-y-3 border-l-4 border-l-purple-400 bg-white/5">
+              <h4 class="text-[11px] font-bold text-purple-300 uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-bullhorn"></i> Sistema de Perifoneo, Voceo & Audio Disuasivo
+              </h4>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-white">
+                <div class="sm:col-span-2">
+                  <label class="block text-[10px] font-bold text-white/80 mb-1">Bocina Exponencial / Corneta Exterior / Megáfono IP</label>
+                  <select id="aud_bocina_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium"></select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-white/80 mb-1">Cantidad de Bocinas</label>
+                  <input type="number" id="aud_cant_bocinas" min="0" value="0" class="cyber-input w-full rounded-lg p-2 font-tech-mono outline-none">
+                </div>
+                <div class="sm:col-span-3">
+                  <label class="block text-[10px] font-bold text-white/80 mb-1">Amplificador Mezclador de Audio</label>
+                  <select id="aud_amplificador_catalogo" class="cyber-input w-full rounded-lg p-2 font-medium"></select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PIE DE PÁGINA DESKTOP -->
+          <div class="cyber-glass-card p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+            <button onclick="navegarA('inspecciones_index.html', 'Dashboard Principal')" class="w-full sm:w-auto px-5 py-3 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-arrow-left text-blue-400"></i> Volver al Dashboard
+            </button>
+            <button onclick="guardarYSalir()" class="w-full sm:w-auto px-7 py-3 rounded-xl btn-cyber-primary text-white text-xs font-bold transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-floppy-disk"></i> <span>Guardar & Volver al Panel</span>
+            </button>
+          </div>
+
+        </div>
+      </main>
+
+      <!-- BARRA INFERIOR TÁCTIL EXCLUSIVA PARA MÓVIL -->
+      <div id="mobile_bottom_dock" class="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-slate-950/95 border-t border-white/15 px-3 py-2.5 flex items-center gap-2 shadow-2xl">
+        <button type="button" onclick="agregarCamara()" class="flex-1 py-2.5 px-3 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-plus text-blue-400"></i>
+          <span>Añadir Cámara</span>
+        </button>
+        <button id="btn_guardar_cloud_mobile" type="button" onclick="guardarYSalir()" class="flex-1 py-2.5 px-3 rounded-xl btn-cyber-primary text-white text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Guardar & Salir</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL LIGHTBOX PARA FOTOS -->
+  <div id="modal_lightbox" onclick="cerrarLightbox()" class="fixed inset-0 bg-slate-950/95 z-[100] hidden flex flex-col justify-center items-center p-4 cursor-zoom-out">
+    <div class="relative max-w-4xl w-full flex flex-col items-center gap-3" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center w-full px-2 text-white text-xs font-tech-mono">
+        <span id="lightbox_titulo" class="font-bold tracking-wider uppercase text-blue-300 truncate">Vista de Inspección en Sitio</span>
+        <button onclick="cerrarLightbox()" class="h-9 w-9 rounded-xl bg-white/10 hover:bg-rose-500/20 text-white hover:text-rose-400 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+      <div class="cyber-glass-card p-2 w-full flex items-center justify-center max-h-[82vh] overflow-hidden">
+        <img id="lightbox_img" src="" class="max-h-[76vh] w-auto rounded-lg object-contain">
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ACTION SHEET PARA FOTOS -->
+  <div id="modal_origen_foto" onclick="cerrarSelectorFoto()" class="fixed inset-0 bg-slate-950/85 z-[110] hidden flex justify-center items-end sm:items-center p-3 sm:p-4">
+    <div class="cyber-glass-card bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 border border-white/20 text-white" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center pb-3 border-b border-white/15">
+        <h4 class="font-tech-head font-extrabold text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-camera-rotate text-blue-400"></i> Capturar Evidencia
+        </h4>
+        <button type="button" onclick="cerrarSelectorFoto()" class="p-1 text-white/70 hover:text-rose-400 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <p class="text-[11px] text-white/70 leading-snug font-medium">Selecciona el origen de la fotografía para este punto de cámara (se optimizará automáticamente):</p>
+      
+      <div class="grid grid-cols-2 gap-3.5 pt-1">
+        <label class="cursor-pointer flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl btn-cyber-primary text-white transition text-center shadow-md active:scale-95">
+          <i class="fa-solid fa-camera text-2xl text-white"></i>
+          <span class="text-xs font-bold leading-tight">Tomar Foto<br><span class="text-[9px] font-normal text-blue-200 mt-0.5 block font-tech-mono">Cámara Directa</span></span>
+          <input type="file" id="input_camara_directa" accept="image/*" capture="environment" onchange="procesarFotoDesdeModal(event)" class="hidden">
+        </label>
+
+        <label class="cursor-pointer flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl btn-glass-action text-white transition text-center shadow-md active:scale-95">
+          <i class="fa-solid fa-images text-2xl text-indigo-300"></i>
+          <span class="text-xs font-bold leading-tight">Galería<br><span class="text-[9px] font-normal text-white/60 mt-0.5 block font-tech-mono">Subir Archivo</span></span>
+          <input type="file" id="input_galeria_directa" accept="image/*" onchange="procesarFotoDesdeModal(event)" class="hidden">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    let supabaseClient = null;
+    try {
+      supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+    } catch (e) {
+      console.error("Error inicializando cliente Supabase:", e);
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let ticketId = urlParams.get('id');
+    if (!ticketId || ticketId === "null" || ticketId === "undefined") {
+      ticketId = localStorage.getItem('protech_current_ticket_id') || '885d363a-44f2-4c66-aff5-c6c7586831d1';
+    } else {
+      localStorage.setItem('protech_current_ticket_id', ticketId);
+    }
+
+    let inventarioCatalogo = [];
+    let listaSwitchesCCTV = [];
+    let listaCamaras = [];
+
+    // ==========================================
+    // 1. CYBER-TOASTS, NAVEGACIÓN Y UTILIDADES UI
+    // ==========================================
+    function mostrarToast(mensaje, tipo = 'info') {
+      const container = document.getElementById('toast_container');
+      if (!container) return;
+
+      const colores = {
+        success: 'border-emerald-400/50 text-emerald-300 bg-slate-900/95',
+        error: 'border-rose-400/50 text-rose-300 bg-slate-900/95',
+        info: 'border-blue-400/50 text-blue-300 bg-slate-900/95'
+      };
+      const iconos = {
+        success: 'fa-circle-check text-emerald-400',
+        error: 'fa-triangle-exclamation text-rose-400',
+        info: 'fa-circle-info text-blue-400'
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 ${colores[tipo] || colores.info}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${iconos[tipo] || iconos.info} text-sm flex-shrink-0"></i>
+        <span class="text-xs font-semibold text-white leading-snug">${mensaje}</span>
+      `;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-4');
+        setTimeout(() => toast.remove(), 300);
+      }, 3600);
+    }
+
+    function navegarA(pagina, moduloNombre = 'Módulo') {
+      const overlay = document.getElementById('page_transition_overlay');
+      const text = document.getElementById('transition_text');
+      let url = pagina;
+      if (ticketId && pagina !== 'index.html' && pagina !== 'catalogo.html') {
+        url += '?id=' + encodeURIComponent(ticketId);
+      }
+
+      if (overlay && text) {
+        overlay.classList.remove('hidden');
+        void overlay.offsetWidth;
+        overlay.classList.remove('opacity-0');
+        overlay.classList.add('opacity-100');
+        text.innerText = `Abriendo ${moduloNombre}...`;
+        setTimeout(() => { window.location.href = url; }, 350);
+      } else {
+        window.location.href = url;
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      if (window.innerWidth >= 768) {
+        sidebar.classList.toggle('collapsed');
+      } else {
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
+      }
+    }
+
+    function cerrarTarjeta(elementId, uid, tipo = 'camara') {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.open = false;
+        if (tipo === 'camara') {
+          sincronizarEstadoCamara(uid, false);
+        } else if (tipo === 'switch') {
+          sincronizarEstadoSwitch(uid, false);
+        }
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function alternarAcordeones(containerId, abrir) {
+      const cont = document.getElementById(containerId);
+      if (!cont) return;
+      cont.querySelectorAll('details').forEach(det => {
+        det.open = abrir;
+      });
+      if (containerId === 'camaras_container') {
+        listaCamaras.forEach(c => c.abierto = abrir);
+      } else {
+        listaSwitchesCCTV.forEach(s => s.abierto = abrir);
+      }
+    }
+
+    function filtrarPuntosCCTV(termino) {
+      const q = (termino || '').trim().toLowerCase();
+      const btnLimpiar = document.getElementById('btn_limpiar_busqueda');
+      if (btnLimpiar) btnLimpiar.classList.toggle('hidden', !q);
+
+      document.querySelectorAll('#camaras_container > details, #switches_cctv_container > details').forEach(det => {
+        const contenidoInputs = Array.from(det.querySelectorAll('input, select'))
+          .map(el => el.tagName === 'SELECT' ? (el.options[el.selectedIndex]?.text || '') : el.value)
+          .join(' ');
+        const textoTotal = (det.innerText + ' ' + contenidoInputs).toLowerCase();
+        det.classList.toggle('hidden', Boolean(q && !textoTotal.includes(q)));
+      });
+    }
+
+    function limpiarBusquedaCCTV() {
+      const input = document.getElementById('input_buscar_cctv');
+      if (input) {
+        input.value = '';
+        filtrarPuntosCCTV('');
+        input.focus();
+      }
+    }
+
+    function actualizarTelemetriaEnVivo() {
+      const totalCams = listaCamaras.length;
+      const totalAnalogas = listaCamaras.filter(c => (c.tipo_tecnologia || '').toLowerCase().includes('análoga')).length;
+      const totalIP = totalCams - totalAnalogas;
+
+      const elKpiCams = document.getElementById('kpi_live_camaras');
+      const elKpiSplit = document.getElementById('kpi_live_split');
+      const elKpiSw = document.getElementById('kpi_live_switches');
+      const elSideBadge = document.getElementById('side_badge_cctv_live');
+
+      if (elKpiCams) elKpiCams.innerText = totalCams;
+      if (elKpiSplit) elKpiSplit.innerText = `${totalIP} IP • ${totalAnalogas} Anál.`;
+      if (elKpiSw) elKpiSw.innerText = listaSwitchesCCTV.length;
+      if (elSideBadge) elSideBadge.innerText = totalCams;
+    }
+
+    // =========================================================
+    // AUTO-DIMENSIONAMIENTO DE ACCESORIOS (ANÁLOGO HD-TVI & IP)
+    // =========================================================
+    function autoCalcularAccesoriosPorCamaras(silencioso = false) {
+      const totalCams = listaCamaras.length;
+      const totalAnalogas = listaCamaras.filter(c =>
+        (c.tipo_tecnologia || '').toLowerCase().includes('análoga')
+      ).length;
+      const totalIP = listaCamaras.filter(c =>
+        (c.tipo_tecnologia || '') === 'IP PoE' || (c.tipo_tecnologia || '') === 'PTZ Motorizada'
+      ).length;
+      const totalWifi = listaCamaras.filter(c =>
+        (c.tipo_tecnologia || '').toLowerCase().includes('wi-fi')
+      ).length;
+
+      // 1. Video Baluns: 1 par por cada cámara análoga
+      const inputBaluns = document.getElementById('acc_cant_baluns');
+      if (inputBaluns) inputBaluns.value = totalAnalogas;
+
+      // 2. Cajas de paso/estancas: 1 por cada cámara instalada
+      const inputCajas = document.getElementById('acc_cant_cajas');
+      if (inputCajas) inputCajas.value = totalCams;
+
+      // 3. Fuentes 12V: Si hay Fuente Centralizada seleccionada, individuales = solo Wi-Fi
+      const selFuenteCentral = document.getElementById('acc_fuente_central_catalogo');
+      const usaCentralizada = selFuenteCentral && selFuenteCentral.value && selFuenteCentral.value !== 'No Requiere';
+      const inputFuentesIndiv = document.getElementById('acc_cant_fuentes_indiv');
+      if (inputFuentesIndiv) {
+        inputFuentesIndiv.value = usaCentralizada ? totalWifi : (totalAnalogas + totalWifi);
+      }
+
+      // 4. Memorias MicroSD para cámaras Wi-Fi
+      const inputMicroSD = document.getElementById('cctv_cant_microsd');
+      if (inputMicroSD && parseInt(inputMicroSD.value || 0) === 0 && totalWifi > 0) {
+        inputMicroSD.value = totalWifi;
+      }
+
+      // 5. Patch Cords: 1 por cámara IP + 1 por cada Switch PoE en cobre
+      const switchesCobre = listaSwitchesCCTV.filter(s => !(s.enlace_uplink || '').includes('Fibra')).length;
+      const inputPatch = document.getElementById('acc_cant_patchcords');
+      if (inputPatch) {
+        inputPatch.value = totalIP + switchesCobre;
+      }
+
+      if (!silencioso) {
+        mostrarToast(`Dimensionado: ${totalAnalogas} Baluns, ${totalCams} Cajas, ${inputPatch?.value || 0} Patch Cords`, "success");
+      }
+    }
+
+    // ==========================================
+    // 2. CARGA DE CATÁLOGO OFICIAL
+    // ==========================================
+    async function cargarCatalogoPrecios() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('catalogo_precios')
+          .select('*')
+          .order('descripcion');
+
+        if (error) throw error;
+        inventarioCatalogo = data || [];
+        poblarSelectoresCatalogo();
+        renderizarSwitchesCCTV();
+        renderizarCamaras();
+      } catch (err) {
+        console.error("Error al cargar catalogo_precios:", err);
+        mostrarToast("Error cargando el catálogo de precios", "error");
+      }
+    }
+
+    function poblarSelectoresCatalogo() {
+      const grabadores = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const c = (i.categoria || '').toLowerCase();
+        return d.includes('nvr') || d.includes('dvr') || d.includes('xvr') || c.includes('grabador');
+      });
+      llenarSelect('cctv_grabador_catalogo', grabadores, 'Seleccionar Grabador (NVR / XVR / DVR)');
+
+      const discos = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const esGrabador = d.includes('dvr') || d.includes('nvr') || d.includes('xvr');
+        const esDisco = (d.includes('disco duro') || d.includes('western digital purple') || d.includes('skyhawk') || d.includes('wd purple') || (d.includes('tera') && d.includes('disco'))) && !esGrabador;
+        return esDisco;
+      });
+      llenarSelect('cctv_hdd_catalogo', discos, 'Sin Disco / No Requiere', true);
+
+      const racks = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const esExcluido = d.includes('camara') || d.includes('cámara') || d.includes('switch') || d.includes('regleta') || d.includes('organizador') || d.includes('sirena') || d.includes('tracking');
+        const esGabineteORack = (d.includes('rack') || d.includes('gabinete')) && (d.includes('pared') || d.includes('mural') || d.includes('metalico') || d.includes('metálico') || d.includes('puerta') || d.includes('ur') || d.includes('dvr') || d.includes('nvr'));
+        return esGabineteORack && !esExcluido;
+      });
+      llenarSelect('cctv_rack_catalogo', racks, 'No Requiere', true);
+
+      const upss = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const esExcluido = d.includes('camara') || d.includes('cámara');
+        const esUPS = (d.includes('ups') || d.includes('regulador') || d.includes('no-break')) && !esExcluido;
+        return esUPS;
+      });
+      llenarSelect('cctv_ups_catalogo', upss, 'No Requiere', true);
+
+      const microsds = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const esCamara = d.includes('camara') || d.includes('cámara');
+        const esMemoria = d.includes('micro sd') || d.includes('microsd') || d.includes('tarjeta de memoria') || d.includes('memoria micro');
+        return esMemoria && !esCamara;
+      });
+      llenarSelect('cctv_microsd_catalogo', microsds, 'No Requiere / Sin MicroSD', true);
+
+      const cables = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return (d.includes('utp') || d.includes('cable')) && !d.includes('patch');
+      });
+      llenarSelect('cctv_cable_catalogo', cables, 'Seleccionar Cable UTP (Catálogo Oficial)');
+
+      const baluns = inventarioCatalogo.filter(i => (i.descripcion || '').toLowerCase().includes('balun'));
+      llenarSelect('acc_balun_catalogo', baluns, 'Seleccionar Video Balun');
+
+      const cajas = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return (d.includes('caja') || d.includes('estanca') || d.includes('paso')) && !d.includes('fuente');
+      });
+      llenarSelect('acc_caja_catalogo', cajas, 'Seleccionar Caja de Paso');
+
+      const fuentes = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return (d.includes('fuente') || d.includes('adaptador')) && !d.includes('central');
+      });
+      llenarSelect('acc_fuente_indiv_catalogo', fuentes, 'Seleccionar Fuente 12V');
+
+      const cortapicos = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('cortapico') || d.includes('protector');
+      });
+      llenarSelect('acc_cortapicos_catalogo', cortapicos, 'Seleccionar Cortapicos');
+
+      const fCentral = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('central') || (d.includes('fuente') && d.includes('caja'));
+      });
+      llenarSelect('acc_fuente_central_catalogo', fCentral, 'No Requiere', true);
+
+      const switchesPoE = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('switch') && d.includes('poe');
+      });
+      llenarSelect('acc_switch_poe_catalogo', switchesPoE, 'No Requiere', true);
+
+      const switchesDesktop = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('switch') && !d.includes('poe');
+      });
+      llenarSelect('acc_switch_desktop_catalogo', switchesDesktop, 'No Requiere', true);
+
+      const pdus = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('pdu') || (d.includes('regleta') && (d.includes('rack') || d.includes('tomas') || d.includes('19')));
+      });
+      llenarSelect('acc_pdu_rack_catalogo', pdus, 'No Requiere', true);
+
+      const patchcords = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('patch') || d.includes('latiguillo');
+      });
+      llenarSelect('acc_patchcord_catalogo', patchcords, 'Seleccionar Patch Cord');
+
+      const bocinas = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const esExcluido = d.includes('camara') || d.includes('cámara') || d.includes('dvr') || d.includes('nvr') || d.includes('disco');
+        const esAudio = d.includes('bocina') || d.includes('corneta') || d.includes('altavoz') || d.includes('megafono') || d.includes('megáfono') || d.includes('modulo audio') || d.includes('vox');
+        return esAudio && !esExcluido;
+      });
+      llenarSelect('aud_bocina_catalogo', bocinas, 'No Requiere', true);
+
+      const amplis = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('amplificador') || d.includes('mezclador');
+      });
+      llenarSelect('aud_amplificador_catalogo', amplis, 'No Requiere', true);
+    }
+
+    function llenarSelect(elementId, items, placeholder, incluirNoRequiere = false) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      el.innerHTML = '';
+
+      if (incluirNoRequiere) {
+        el.innerHTML += `<option value="No Requiere">${placeholder}</option>`;
+      } else {
+        el.innerHTML += `<option value="">${placeholder}</option>`;
+      }
+
+      items.forEach(item => {
+        el.innerHTML += `<option value="${item.id}" data-pvp="${item.pvp_sugerido || 0}" data-desc="${item.descripcion}">${item.descripcion}</option>`;
+      });
+    }
+
+    function calcularEstimacionDiasHDD() {
+      const selectHDD = document.getElementById('cctv_hdd_catalogo');
+      const badge = document.getElementById('badge_estimacion_dias');
+      const kpiHdd = document.getElementById('kpi_live_hdd');
+      if (!selectHDD || !badge) return;
+
+      const texto = selectHDD.options[selectHDD.selectedIndex]?.text?.toLowerCase() || '';
+      let terabytes = 0;
+
+      if (texto.includes('1 tb') || texto.includes('1tb')) terabytes = 1;
+      else if (texto.includes('2 tb') || texto.includes('2tb')) terabytes = 2;
+      else if (texto.includes('4 tb') || texto.includes('4tb')) terabytes = 4;
+      else if (texto.includes('6 tb') || texto.includes('6tb')) terabytes = 6;
+      else if (texto.includes('8 tb') || texto.includes('8tb')) terabytes = 8;
+      else if (texto.includes('10 tb') || texto.includes('10tb')) terabytes = 10;
+
+      const numCamaras = listaCamaras.length || 1;
+      if (terabytes === 0) {
+        badge.innerText = `~0 días`;
+        if (kpiHdd) kpiHdd.innerText = `0 días`;
+        return;
+      }
+
+      const dias = Math.round((terabytes * 1000) / (numCamaras * 25));
+      badge.innerText = `~${dias} días estimados (H.265)`;
+      if (kpiHdd) kpiHdd.innerText = `~${dias} días`;
+    }
+
+    // ==========================================
+    // 3. SWITCHES CCTV (Nativo <details>)
+    // ==========================================
+    function agregarSwitchCCTV(datosPrevios = null) {
+      const swUid = 'sw_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const enlacePorDefecto = 'NVR Principal (Directo)';
+      const otrosSwitches = listaSwitchesCCTV.filter(item => (item.enlace_uplink || '').includes('NVR Principal')).length;
+      const puertoSugerido = `Puerto Uplink #${otrosSwitches + 1}`;
+
+      listaSwitchesCCTV.push(datosPrevios || {
+        uid: swUid,
+        nombre: `Switch #${listaSwitchesCCTV.length + 1}`,
+        item_catalogo_id: '',
+        descripcion_catalogo: '',
+        ubicacion: 'Rack Principal',
+        ip: `192.168.1.${20 + listaSwitchesCCTV.length}`,
+        enlace_uplink: enlacePorDefecto,
+        puerto_uplink: puertoSugerido,
+        distancia_m: 0, 
+        fibra_origen: '',
+        fibra_destino: 'NVR Principal (Core)',
+        pvp_sugerido: 0.00,
+        abierto: true 
+      });
+      renderizarSwitchesCCTV();
+      sincronizarSelectoresDestinoEnCamaras();
+      actualizarTelemetriaEnVivo();
+
+      if (!datosPrevios) {
+        mostrarToast("Switch PoE añadido a la topología", "info");
+        setTimeout(() => {
+          const nuevaCard = document.getElementById(`card_sw_${swUid}`);
+          if (nuevaCard) {
+            nuevaCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            nuevaCard.classList.add('ring-2', 'ring-indigo-400');
+            setTimeout(() => nuevaCard.classList.remove('ring-2', 'ring-indigo-400'), 1400);
+          }
+        }, 80);
+      }
+    }
+
+    function eliminarSwitchCCTV(uid) {
+      listaSwitchesCCTV = listaSwitchesCCTV.filter(s => s.uid !== uid);
+      renderizarSwitchesCCTV();
+      sincronizarSelectoresDestinoEnCamaras();
+      calcularMetrajeTotalUTP();
+      actualizarTelemetriaEnVivo();
+      mostrarToast("Switch eliminado", "info");
+    }
+
+    function sincronizarEstadoSwitch(uid, abierto) {
+      const sw = listaSwitchesCCTV.find(s => s.uid === uid);
+      if (sw) sw.abierto = abierto;
+    }
+
+    // Filtra Switches PoE si la cámara es Análoga BNC (solo DVR/XVR para análogas)
+    function sincronizarSelectoresDestinoEnCamaras() {
+      listaCamaras.forEach(cam => {
+        const sel = document.getElementById(`destino_${cam.uid}`);
+        if (!sel) return;
+        const esAnalogaCam = (cam.tipo_tecnologia || '').toLowerCase().includes('análoga');
+        const textoGrabadorDefault = esAnalogaCam ? 'DVR / XVR Principal (Entrada BNC Directa)' : 'NVR Principal (Directo)';
+        const destinoCamLimpio = cam.destino ? cam.destino.split('(')[0].trim().toLowerCase() : '';
+        const esDefaultActual = destinoCamLimpio.includes('nvr') || destinoCamLimpio.includes('dvr') || destinoCamLimpio.includes('directo');
+
+        let htmlOpciones = `<option value="${textoGrabadorDefault}" ${esDefaultActual ? 'selected' : ''}>${textoGrabadorDefault}</option>`;
+        if (!esAnalogaCam) {
+          listaSwitchesCCTV.forEach(sw => {
+            const swNombreLimpio = (sw.nombre || '').trim();
+            const isSelected = destinoCamLimpio === swNombreLimpio.toLowerCase();
+            htmlOpciones += `<option value="${swNombreLimpio}" ${isSelected ? 'selected' : ''}>${sw.nombre}</option>`;
+          });
+        }
+        sel.innerHTML = htmlOpciones;
+      });
+    }
+
+    function actualizarSwitchCCTV(uid, campo, valor) {
+      const sw = listaSwitchesCCTV.find(s => s.uid === uid);
+      if (!sw) return;
+
+      const nombreAnterior = sw.nombre;
+      sw[campo] = valor;
+
+      if (campo === 'nombre') {
+        listaCamaras.forEach(cam => {
+          if (cam.destino === nombreAnterior) {
+            cam.destino = valor;
+            const badgeConxCam = document.getElementById(`badge_conx_${cam.uid}`);
+            if (badgeConxCam) {
+              const portLimpio = cam.puerto_canal ? cam.puerto_canal.replace('Puerto PoE ', 'P') : '?';
+              badgeConxCam.innerHTML = `<i class="fa-solid fa-network-wired mr-1"></i> ${valor} | ${portLimpio}`;
+            }
+          }
+        });
+        sincronizarSelectoresDestinoEnCamaras();
+      }
+
+      if (campo === 'enlace_uplink') {
+        const uplinkLimpio = valor ? valor.split(' (')[0].trim() : '';
+        const otrosSwitches = listaSwitchesCCTV.filter(item => item.uid !== uid && (item.enlace_uplink || '').includes(uplinkLimpio)).length;
+        sw.puerto_uplink = `Puerto Uplink #${otrosSwitches + 1}`;
+        
+        const inputPort = document.getElementById(`puerto_uplink_${uid}`);
+        if (inputPort) inputPort.value = sw.puerto_uplink;
+
+        const esFibra = valor.includes('Fibra Óptica');
+        const wrapFibra = document.getElementById(`wrap_fibra_${uid}`);
+        if (wrapFibra) {
+          wrapFibra.classList.toggle('hidden', !esFibra);
+        }
+        calcularMetrajeTotalUTP();
+      } else if (campo === 'distancia_m') {
+        sw.distancia_m = parseFloat(valor) || 0;
+        calcularMetrajeTotalUTP();
+      }
+
+      const badgeNombre = document.getElementById(`badge_sw_nom_${uid}`);
+      const badgeUb = document.getElementById(`badge_sw_ub_${uid}`);
+      const badgeConx = document.getElementById(`badge_sw_conx_${uid}`);
+
+      if (campo === 'nombre' && badgeNombre) badgeNombre.innerText = valor;
+      if (campo === 'ubicacion' && badgeUb) badgeUb.innerText = valor;
+      if ((campo === 'enlace_uplink' || campo === 'puerto_uplink') && badgeConx) {
+        let uplinkLimpio = sw.enlace_uplink ? sw.enlace_uplink.split(' (')[0] : 'NVR';
+        let portLimpio = sw.puerto_uplink ? sw.puerto_uplink.replace('Puerto Uplink ', 'P') : '?';
+        badgeConx.innerHTML = `<i class="fa-solid fa-arrow-up-right-dots mr-1"></i> ${uplinkLimpio} | ${portLimpio}`;
+      }
+    }
+
+    function seleccionarModeloSwitchCCTV(uid, selectEl) {
+      const selectedOption = selectEl.options[selectEl.selectedIndex];
+      const pvp = parseFloat(selectedOption.getAttribute('data-pvp')) || 0;
+      const desc = selectedOption.getAttribute('data-desc') || '';
+      const sw = listaSwitchesCCTV.find(s => s.uid === uid);
+      if (sw) {
+        sw.item_catalogo_id = selectEl.value;
+        sw.descripcion_catalogo = desc;
+        sw.pvp_sugerido = pvp;
+      }
+    }
+
+    function renderizarSwitchesCCTV() {
+      const container = document.getElementById('switches_cctv_container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (listaSwitchesCCTV.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-5 text-white/50 text-xs font-medium bg-white/5 rounded-xl border border-dashed border-white/15">
+            <i class="fa-solid fa-network-wired mr-1.5 text-indigo-400"></i> Sin switches secundarios registrados. Todas las cámaras se conectan directo al Grabador Principal.
+          </div>`;
+        return;
+      }
+
+      const switchesCatalogo = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        return d.includes('switch') && (d.includes('poe') || d.includes('port') || d.includes('gigabit'));
+      });
+
+      listaSwitchesCCTV.forEach((sw, idx) => {
+        let opcionesSwitches = `<option value="">Seleccionar Modelo de Switch...</option>`;
+        switchesCatalogo.forEach(item => {
+          const isSelected = item.id === sw.item_catalogo_id ? 'selected' : '';
+          opcionesSwitches += `<option value="${item.id}" data-pvp="${item.pvp_sugerido || 0}" data-desc="${item.descripcion}" ${isSelected}>${item.descripcion}</option>`;
+        });
+
+        const esEnlaceFibra = (sw.enlace_uplink || '').includes('Fibra Óptica');
+
+        let opcionesUplink = `
+          <option value="NVR Principal (Directo)" ${!esEnlaceFibra && sw.enlace_uplink === 'NVR Principal (Directo)' ? 'selected' : ''}>NVR Principal (Directo)</option>
+          <option value="Fibra Óptica Troncal" ${esEnlaceFibra ? 'selected' : ''}>🔗 Enlace de Fibra Óptica (Troncal)</option>
+        `;
+        listaSwitchesCCTV.forEach((otroSw, oIdx) => {
+          if (idx !== oIdx) {
+            opcionesUplink += `<option value="${otroSw.nombre}" ${!esEnlaceFibra && sw.enlace_uplink === otroSw.nombre ? 'selected' : ''}>Switch en Cascada: ${otroSw.nombre}</option>`;
+          }
+        });
+
+        let opcionesDestinoFibra = `<option value="NVR Principal (Core)" ${sw.fibra_destino === 'NVR Principal (Core)' ? 'selected' : ''}>NVR / DVR Principal (Core)</option>`;
+        listaSwitchesCCTV.forEach((otroSw, oIdx) => {
+          if (idx !== oIdx) {
+            opcionesDestinoFibra += `<option value="${otroSw.nombre}" ${sw.fibra_destino === otroSw.nombre ? 'selected' : ''}>Switch Destino: ${otroSw.nombre}</option>`;
+          }
+        });
+
+        const uplinkLimpio = sw.enlace_uplink ? sw.enlace_uplink.split(' (')[0] : 'NVR';
+        const portLimpio = sw.puerto_uplink ? sw.puerto_uplink.replace('Puerto Uplink ', 'P') : '?';
+        const isOpen = sw.abierto !== false ? 'open' : '';
+
+        const detailsEl = document.createElement('details');
+        detailsEl.id = `card_sw_${sw.uid}`;
+        detailsEl.className = 'cyber-glass-card border-l-4 border-l-indigo-400 text-xs transition';
+        if (isOpen) detailsEl.setAttribute('open', '');
+        detailsEl.ontoggle = () => sincronizarEstadoSwitch(sw.uid, detailsEl.open);
+
+        detailsEl.innerHTML = `
+          <summary class="p-4 sm:p-5 cursor-pointer select-none">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div class="flex items-center gap-2.5 flex-1 min-w-0 flex-wrap">
+                <span class="text-white/70 accordion-chevron text-sm flex-shrink-0">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </span>
+                <span class="font-tech-head font-extrabold text-sm text-white flex items-center gap-2 whitespace-nowrap">
+                  <i class="fa-solid fa-network-wired text-indigo-400"></i>
+                  <span id="badge_sw_nom_${sw.uid}">${sw.nombre}</span>
+                </span>
+                <span id="badge_sw_ub_${sw.uid}" class="text-[9px] font-tech-mono bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded border border-indigo-400/30 truncate max-w-[180px]" title="${sw.ubicacion}">
+                  ${sw.ubicacion}
+                </span>
+                <span id="badge_sw_conx_${sw.uid}" class="text-[9px] font-tech-mono bg-purple-500/20 text-purple-300 px-2.5 py-0.5 rounded border border-purple-400/30" title="${uplinkLimpio} | ${sw.puerto_uplink}">
+                  <i class="fa-solid fa-arrow-up-right-dots mr-1"></i> ${uplinkLimpio} | ${portLimpio}
+                </span>
+              </div>
+              
+              <div class="flex items-center gap-1.5 flex-shrink-0" onclick="event.stopPropagation(); event.preventDefault();">
+                <button type="button" onclick="eliminarSwitchCCTV('${sw.uid}')" class="text-xs font-bold text-rose-300 hover:text-rose-200 flex items-center gap-1.5 transition px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 shadow-sm" title="Eliminar switch">
+                  <i class="fa-solid fa-trash-can"></i> <span class="hidden sm:inline">Eliminar</span>
+                </button>
+              </div>
+            </div>
+          </summary>
+
+          <div class="p-4 sm:p-5 pt-0 space-y-4 border-t border-white/10 mt-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-3">
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Nombre Identificador</label>
+                <input type="text" value="${sw.nombre}" oninput="actualizarSwitchCCTV('${sw.uid}', 'nombre', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación Física</label>
+                <input type="text" value="${sw.ubicacion}" oninput="actualizarSwitchCCTV('${sw.uid}', 'ubicacion', this.value)" class="cyber-input w-full rounded-lg p-2">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Dirección IP</label>
+                <input type="text" value="${sw.ip}" oninput="actualizarSwitchCCTV('${sw.uid}', 'ip', this.value)" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-blue-300">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Conectado a (Uplink)</label>
+                <select onchange="actualizarSwitchCCTV('${sw.uid}', 'enlace_uplink', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white bg-indigo-500/20">
+                  ${opcionesUplink}
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Puerto en Destino (Uplink Port)</label>
+                <input type="text" id="puerto_uplink_${sw.uid}" value="${sw.puerto_uplink || ''}" oninput="actualizarSwitchCCTV('${sw.uid}', 'puerto_uplink', this.value)" placeholder="Ej. Puerto #8 o SFP 1" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-blue-300">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Metros al Uplink (m)</label>
+                <input type="number" min="0" value="${sw.distancia_m || 0}" oninput="actualizarSwitchCCTV('${sw.uid}', 'distancia_m', this.value)" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-blue-300">
+              </div>
+
+              <div id="wrap_fibra_${sw.uid}" class="${esEnlaceFibra ? '' : 'hidden'} sm:col-span-2 lg:col-span-3 bg-purple-500/20 border border-purple-400/30 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-[10px] font-bold text-purple-200 mb-1"><i class="fa-solid fa-route mr-1"></i> Origen de Fibra (Desde)</label>
+                  <input type="text" value="${sw.nombre}" readonly class="cyber-input w-full rounded-lg p-2 font-bold text-white cursor-not-allowed opacity-80">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-purple-200 mb-1"><i class="fa-solid fa-bullseye mr-1"></i> Destino de Fibra (Hacia)</label>
+                  <select onchange="actualizarSwitchCCTV('${sw.uid}', 'fibra_destino', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white">
+                    ${opcionesDestinoFibra}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo de Switch en Catálogo Oficial</label>
+              <select onchange="seleccionarModeloSwitchCCTV('${sw.uid}', this)" class="cyber-input w-full rounded-lg p-2.5 font-medium shadow-inner">
+                ${opcionesSwitches}
+              </select>
+            </div>
+
+            <div class="flex justify-end pt-3 border-t border-white/10 mt-3">
+              <button type="button" onclick="cerrarTarjeta('card_sw_${sw.uid}', '${sw.uid}', 'switch')" class="px-3.5 py-1.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-chevron-up text-indigo-400 text-xs"></i> <span>Contraer Switch</span>
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(detailsEl);
+      });
+    }
+
+    // ==========================================
+    // 4. CÁMARAS LEVANTADAS (Nativo <details>)
+    // ==========================================
+    function agregarCamara(datosPrevios = null) {
+      const idx = listaCamaras.length + 1;
+      const camUid = 'cam_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+      const destinoPorDefecto = 'NVR Principal (Directo)';
+      const tecnologiaPorDefecto = 'IP PoE';
+      const mismaTecnologia = listaCamaras.filter(c => (c.tipo_tecnologia || tecnologiaPorDefecto) === tecnologiaPorDefecto);
+      const puertoSugerido = `Puerto PoE #${mismaTecnologia.length + 1}`;
+
+      const camData = datosPrevios || {
+        uid: camUid,
+        item_catalogo_id: '',
+        descripcion_catalogo: '',
+        ubicacion: `Punto #${idx}`,
+        tipo_tecnologia: tecnologiaPorDefecto,
+        destino: destinoPorDefecto,
+        puerto_canal: puertoSugerido,
+        hostname: `CAM-${idx}`,
+        ip: `192.168.1.${100 + idx}`,
+        altura_m: '2.5 m (Escalera baja)',
+        superficie: 'Pared Hormigón / Ladrillo',
+        tendido: 'Interior (Cielo Raso / Pared)',
+        brazo: 'No Requiere',
+        distancia_m: 0,
+        canalizacion: 'Tubería Metálica EMT 3/4"',
+        canalizacion_mixta: 'No Requiere Tramo Mixto',
+        pvp_sugerido: 0.00,
+        foto_base64: null,
+        abierto: true 
+      };
+
+      listaCamaras.push(camData);
+      renderizarCamaras();
+      calcularMetrajeTotalUTP();
+      calcularEstimacionDiasHDD();
+      actualizarTelemetriaEnVivo();
+
+      if (!datosPrevios) {
+        mostrarToast(`Cámara #${idx} añadida al listado`, "info");
+        setTimeout(() => {
+          const nuevaCard = document.getElementById(`card_cam_${camUid}`);
+          if (nuevaCard) {
+            nuevaCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            nuevaCard.classList.add('ring-2', 'ring-blue-400');
+            setTimeout(() => nuevaCard.classList.remove('ring-2', 'ring-blue-400'), 1400);
+          }
+        }, 80);
+      }
+    }
+
+    function duplicarCamara(uid) {
+      const original = listaCamaras.find(c => c.uid === uid);
+      if (!original) return;
+
+      const idx = listaCamaras.length + 1;
+      const camUid = 'cam_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+
+      const copia = {
+        ...original,
+        uid: camUid,
+        ubicacion: `${original.ubicacion} (Copia)`,
+        hostname: `CAM-${idx}`,
+        ip: `192.168.1.${100 + idx}`,
+        foto_base64: null,
+        abierto: true 
+      };
+
+      listaCamaras.push(copia);
+      renderizarCamaras();
+      calcularMetrajeTotalUTP();
+      calcularEstimacionDiasHDD();
+      actualizarTelemetriaEnVivo();
+      mostrarToast("Configuración de cámara duplicada", "success");
+
+      setTimeout(() => {
+        const nuevaCard = document.getElementById(`card_cam_${camUid}`);
+        if (nuevaCard) {
+          nuevaCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          nuevaCard.classList.add('ring-2', 'ring-indigo-400');
+          setTimeout(() => nuevaCard.classList.remove('ring-2', 'ring-indigo-400'), 1400);
+        }
+      }, 80);
+    }
+
+    function eliminarCamara(uid) {
+      listaCamaras = listaCamaras.filter(c => c.uid !== uid);
+      renderizarCamaras();
+      calcularMetrajeTotalUTP();
+      calcularEstimacionDiasHDD();
+      actualizarTelemetriaEnVivo();
+      mostrarToast("Punto de cámara eliminado", "info");
+    }
+
+    function sincronizarEstadoCamara(uid, abierto) {
+      const c = listaCamaras.find(item => item.uid === uid);
+      if (c) c.abierto = abierto;
+    }
+
+    function renderizarCamaras() {
+      const container = document.getElementById('camaras_container');
+      if (!container) return;
+
+      if (listaCamaras.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-10 text-white/50 font-medium bg-white/5 rounded-2xl border border-dashed border-white/15">
+            <i class="fa-solid fa-video-slash text-3xl mb-3 block text-blue-400/50"></i> 
+            No hay puntos de cámara registrados todavía.<br>
+            <span class="text-[11px] text-white/40">Usa el botón "+ Añadir Cámara" para comenzar el levantamiento.</span>
+          </div>
+        `;
+        return;
+      }
+
+      const camarasCatalogo = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const c = (i.categoria || '').toLowerCase();
+        return d.includes('camara') || d.includes('cámara') || c.includes('camara') || c.includes('cctv');
+      });
+
+      const brazosCatalogo = inventarioCatalogo.filter(i => {
+        const d = (i.descripcion || '').toLowerCase();
+        const esExcluido = d.includes('camara') || d.includes('cámara') || d.includes('disco') || d.includes('dvr') || d.includes('nvr');
+        const esSoporte = d.includes('brazo') || d.includes('soporte') || d.includes('junction') || d.includes('caja de paso') || d.includes('grapa');
+        return esSoporte && !esExcluido;
+      });
+
+      container.innerHTML = '';
+      listaCamaras.forEach((cam, index) => {
+        let opcionesCamaras = `<option value="">Seleccionar Cámara del Catálogo Oficial...</option>`;
+        camarasCatalogo.forEach(item => {
+          const isSelected = item.id === cam.item_catalogo_id ? 'selected' : '';
+          opcionesCamaras += `<option value="${item.id}" data-pvp="${item.pvp_sugerido || 0}" data-desc="${item.descripcion}" ${isSelected}>${item.descripcion}</option>`;
+        });
+
+        let opcionesBrazos = `<option value="No Requiere">No Requiere</option>`;
+        brazosCatalogo.forEach(item => {
+          const isSelected = item.descripcion === cam.brazo ? 'selected' : '';
+          opcionesBrazos += `<option value="${item.descripcion}" ${isSelected}>${item.descripcion}</option>`;
+        });
+        if (cam.brazo && cam.brazo !== 'No Requiere' && !brazosCatalogo.some(i => i.descripcion === cam.brazo)) {
+          opcionesBrazos += `<option value="${cam.brazo}" selected>${cam.brazo}</option>`;
+        }
+
+        const esIP = cam.tipo_tecnologia === 'IP PoE' || cam.tipo_tecnologia === 'Wi-Fi Inalámbrica' || cam.tipo_tecnologia === 'PTZ Motorizada';
+        const esAnalogaCam = (cam.tipo_tecnologia || '').toLowerCase().includes('análoga');
+
+        let seccionFotoHTML = '';
+        if (cam.foto_base64) {
+          seccionFotoHTML = `
+            <div class="relative group">
+              <img src="${cam.foto_base64}" onclick="abrirLightbox('${cam.uid}')" class="h-16 w-16 rounded-xl object-cover border border-blue-400/50 shadow-sm cursor-zoom-in hover:brightness-110 transition" title="Clic para ampliar vista">
+              <button type="button" onclick="eliminarFoto('${cam.uid}')" class="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-[11px] shadow-md hover:bg-rose-700 transition" title="Eliminar fotografía">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <span class="text-[10px] text-emerald-300 font-bold font-tech-mono flex items-center gap-1">
+              <i class="fa-solid fa-circle-check"></i> Evidencia OK (${Math.round(cam.foto_base64.length / 1024)} KB)
+            </span>
+          `;
+        } else {
+          seccionFotoHTML = `
+            <span id="preview_label_${cam.uid}" class="text-[10px] text-white/50 italic font-tech-mono flex items-center gap-1">
+              <i class="fa-regular fa-image"></i> Sin evidencia adjunta
+            </span>
+          `;
+        }
+
+        let textoGrabadorDefault = esAnalogaCam ? 'DVR / XVR Principal (Entrada BNC Directa)' : 'NVR Principal (Directo)';
+        let destinoCamLimpio = cam.destino ? cam.destino.split('(')[0].trim().toLowerCase() : '';
+        let esDefaultActual = destinoCamLimpio.includes('nvr') || destinoCamLimpio.includes('dvr') || destinoCamLimpio.includes('directo');
+
+        let htmlOpcionesDestino = `<option value="${textoGrabadorDefault}" ${esDefaultActual ? 'selected' : ''}>${textoGrabadorDefault}</option>`;
+        if (!esAnalogaCam) {
+          listaSwitchesCCTV.forEach(sw => {
+            let swNombreLimpio = sw.nombre.trim();
+            let isSelected = destinoCamLimpio === swNombreLimpio.toLowerCase() || destinoCamLimpio.includes(swNombreLimpio.toLowerCase());
+            htmlOpcionesDestino += `<option value="${swNombreLimpio}" ${isSelected ? 'selected' : ''}>${sw.nombre}</option>`;
+          });
+        }
+
+        let badgeConexionHTML = '';
+        if (esAnalogaCam) {
+          badgeConexionHTML = `
+            <span id="badge_conx_${cam.uid}" class="text-[9px] font-tech-mono bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded border border-indigo-400/30 flex items-center gap-1.5" title="${cam.puerto_canal || 'Sin asignar'}">
+              <i class="fa-solid fa-tv"></i> ${cam.puerto_canal || '?'}
+            </span>`;
+        } else {
+          const destLimpio = cam.destino ? cam.destino.split(' (')[0] : 'NVR';
+          const portLimpio = cam.puerto_canal ? cam.puerto_canal.replace('Puerto PoE ', 'P') : '?';
+          badgeConexionHTML = `
+            <span id="badge_conx_${cam.uid}" class="text-[9px] font-tech-mono bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1.5" title="${destLimpio} | ${cam.puerto_canal || 'Sin asignar'}">
+              <i class="fa-solid fa-network-wired"></i> ${destLimpio} | ${portLimpio}
+            </span>`;
+        }
+
+        const isOpen = cam.abierto !== false ? 'open' : '';
+
+        const detailsEl = document.createElement('details');
+        detailsEl.id = `card_cam_${cam.uid}`;
+        detailsEl.className = 'cyber-glass-card border-l-4 border-l-blue-400 text-xs transition';
+        if (isOpen) detailsEl.setAttribute('open', '');
+        detailsEl.ontoggle = () => sincronizarEstadoCamara(cam.uid, detailsEl.open);
+
+        detailsEl.innerHTML = `
+          <summary class="p-4 sm:p-5 cursor-pointer select-none">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div class="flex items-center gap-2.5 flex-1 min-w-0 flex-wrap">
+                <span class="text-white/70 accordion-chevron text-sm flex-shrink-0">
+                  <i class="fa-solid fa-chevron-down"></i>
+                </span>
+                <span class="font-tech-head font-extrabold text-sm text-white flex items-center gap-2 whitespace-nowrap">
+                  <i class="fa-solid fa-camera text-blue-400"></i>
+                  CÁMARA #${index + 1}
+                </span>
+                <span id="badge_ub_${cam.uid}" class="text-[9px] font-tech-mono bg-blue-500/20 text-blue-300 px-2.5 py-0.5 rounded border border-blue-400/30 truncate max-w-[180px]" title="${cam.ubicacion}">
+                  ${cam.ubicacion}
+                </span>
+                ${badgeConexionHTML}
+              </div>
+              
+              <div class="flex items-center gap-2 flex-shrink-0" onclick="event.stopPropagation(); event.preventDefault();">
+                <button type="button" onclick="duplicarCamara('${cam.uid}')" class="text-xs font-bold text-indigo-300 hover:text-indigo-200 flex items-center gap-1.5 transition bg-indigo-500/20 hover:bg-indigo-500/30 px-2.5 py-1.5 rounded-lg border border-indigo-400/30 shadow-sm" title="Clonar este punto">
+                  <i class="fa-regular fa-copy"></i> <span class="hidden sm:inline">Duplicar</span>
+                </button>
+                <button type="button" onclick="eliminarCamara('${cam.uid}')" class="text-xs font-bold text-rose-300 hover:text-rose-200 flex items-center gap-1.5 transition px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 shadow-sm" title="Eliminar punto">
+                  <i class="fa-solid fa-trash-can"></i> <span class="hidden sm:inline">Eliminar</span>
+                </button>
+              </div>
+            </div>
+          </summary>
+
+          <div class="p-4 sm:p-5 pt-0 space-y-4 border-t border-white/10 mt-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs pt-3">
+              <div class="sm:col-span-2 lg:col-span-3">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Modelo del Catálogo Oficial</label>
+                <select onchange="seleccionarModeloCamara('${cam.uid}', this)" class="cyber-input w-full rounded-lg p-2.5 font-medium shadow-inner">
+                  ${opcionesCamaras}
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Ubicación / Sector</label>
+                <input type="text" value="${cam.ubicacion}" oninput="actualizarCampoCamara('${cam.uid}', 'ubicacion', this.value)" class="cyber-input w-full rounded-lg p-2.5 font-medium shadow-inner">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1 flex items-center gap-1">
+                  <i class="fa-solid fa-microchip text-blue-400"></i> Tipo de Tecnología
+                </label>
+                <select onchange="actualizarCampoCamara('${cam.uid}', 'tipo_tecnologia', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="IP PoE" ${cam.tipo_tecnologia === 'IP PoE' ? 'selected' : ''}>IP PoE</option>
+                  <option value="Análoga HD (TVI/CVI/AHD)" ${cam.tipo_tecnologia === 'Análoga HD (TVI/CVI/AHD)' ? 'selected' : ''}>Análoga HD (TVI/CVI/AHD)</option>
+                  <option value="Wi-Fi Inalámbrica" ${cam.tipo_tecnologia === 'Wi-Fi Inalámbrica' ? 'selected' : ''}>Wi-Fi Inalámbrica</option>
+                  <option value="PTZ Motorizada" ${cam.tipo_tecnologia === 'PTZ Motorizada' ? 'selected' : ''}>PTZ Motorizada</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-blue-300 mb-1">Destino de Conexión</label>
+                <select id="destino_${cam.uid}" onchange="actualizarCampoCamara('${cam.uid}', 'destino', this.value)" class="cyber-input w-full rounded-lg p-2 font-bold text-white bg-blue-500/20">
+                  ${htmlOpcionesDestino}
+                </select>
+              </div>
+
+              <div id="wrap_hostname_${cam.uid}" class="${esIP ? '' : 'hidden'}">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Hostname IP</label>
+                <input type="text" value="${cam.hostname || ''}" oninput="actualizarCampoCamara('${cam.uid}', 'hostname', this.value)" placeholder="CAM-ACCESO" class="cyber-input w-full rounded-lg p-2 font-tech-mono shadow-inner">
+              </div>
+
+              <div id="wrap_ip_${cam.uid}" class="${esIP ? '' : 'hidden'}">
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Dirección IP</label>
+                <input type="text" value="${cam.ip || ''}" oninput="actualizarCampoCamara('${cam.uid}', 'ip', this.value)" placeholder="192.168.1.X" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-blue-300 shadow-inner">
+              </div>
+
+              <div id="wrap_puerto_${cam.uid}" class="${esIP ? 'sm:col-span-2' : 'sm:col-span-3'}">
+                <label id="lbl_puerto_canal_${cam.uid}" class="${esIP ? 'block text-[10px] font-bold text-white/80 mb-1' : 'block text-[10px] font-bold text-blue-300 mb-1'}">
+                  ${esIP ? 'Puerto Físico (Switch o NVR)' : 'Canal BNC en DVR'}
+                </label>
+                <input type="text" id="puerto_canal_${cam.uid}" value="${cam.puerto_canal || ''}" oninput="actualizarCampoCamara('${cam.uid}', 'puerto_canal', this.value)" placeholder="${esIP ? 'Puerto PoE #3' : 'Canal BNC 01'}" class="cyber-input w-full rounded-lg p-2 font-tech-mono ${esIP ? '' : 'font-bold text-blue-300'} shadow-inner">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1 flex items-center gap-1">
+                  <i class="fa-solid fa-ruler-vertical text-indigo-400"></i> Altura de Montaje
+                </label>
+                <select onchange="actualizarCampoCamara('${cam.uid}', 'altura_m', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="2.5 m (Escalera baja)" ${cam.altura_m === '2.5 m (Escalera baja)' ? 'selected' : ''}>2.5 m (Escalera baja)</option>
+                  <option value="3.5 m - 4.5 m (Escalera telescópica)" ${cam.altura_m === '3.5 m - 4.5 m (Escalera telescópica)' ? 'selected' : ''}>3.5 m - 4.5 m (Telescópica)</option>
+                  <option value="> 5.0 m (Requiere Andamio)" ${cam.altura_m === '> 5.0 m (Requiere Andamio)' ? 'selected' : ''}>> 5.0 m (Requiere Andamio)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1 flex items-center gap-1">
+                  <i class="fa-solid fa-hammer text-amber-400"></i> Superficie de Fijación
+                </label>
+                <select onchange="actualizarCampoCamara('${cam.uid}', 'superficie', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="Pared Hormigón / Ladrillo" ${cam.superficie === 'Pared Hormigón / Ladrillo' ? 'selected' : ''}>Pared Hormigón / Ladrillo</option>
+                  <option value="Drywall / Gypsum" ${cam.superficie === 'Drywall / Gypsum' ? 'selected' : ''}>Drywall / Gypsum</option>
+                  <option value="Estructura Metálica / Viga" ${cam.superficie === 'Estructura Metálica / Viga' ? 'selected' : ''}>Estructura Metálica / Viga</option>
+                  <option value="Poste de Madera / Concreto" ${cam.superficie === 'Poste de Madera / Concreto' ? 'selected' : ''}>Poste de Madera / Concreto</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1 flex items-center gap-1">
+                  <i class="fa-solid fa-route text-sky-400"></i> Tendido de Cable
+                </label>
+                <select onchange="actualizarCampoCamara('${cam.uid}', 'tendido', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="Interior (Cielo Raso / Pared)" ${cam.tendido === 'Interior (Cielo Raso / Pared)' ? 'selected' : ''}>Interior (Cielo Raso / Pared)</option>
+                  <option value="Exterior (Intemperie UV)" ${cam.tendido === 'Exterior (Intemperie UV)' ? 'selected' : ''}>Exterior (Intemperie UV)</option>
+                  <option value="Aéreo con Guaya / Cable Tensor" ${cam.tendido === 'Aéreo con Guaya / Cable Tensor' ? 'selected' : ''}>Aéreo con Guaya / Tensor</option>
+                  <option value="Subterráneo en Tubería" ${cam.tendido === 'Subterráneo en Tubería' ? 'selected' : ''}>Subterráneo en Tubería</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Brazo Metálico / Soporte</label>
+                <select onchange="actualizarCampoCamara('${cam.uid}', 'brazo', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  ${opcionesBrazos}
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Distancia al Grabador/Switch (m)</label>
+                <input type="number" min="0" value="${cam.distancia_m}" oninput="actualizarDistancia('${cam.uid}', this.value)" class="cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-emerald-300 shadow-inner">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Canalización Principal (Tramo 1)</label>
+                <select onchange="actualizarCampoCamara('${cam.uid}', 'canalizacion', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value='Tubería Metálica EMT 3/4"' ${cam.canalizacion?.includes('EMT 3/4') ? 'selected' : ''}>Tubería Metálica EMT 3/4"</option>
+                  <option value='Tubería EMT 1"' ${cam.canalizacion?.includes('EMT 1') ? 'selected' : ''}>Tubería EMT 1"</option>
+                  <option value="PVC Conduit Exterior" ${cam.canalizacion === 'PVC Conduit Exterior' ? 'selected' : ''}>PVC Conduit Exterior</option>
+                  <option value="Canaleta Plástica Interior" ${cam.canalizacion === 'Canaleta Plástica Interior' ? 'selected' : ''}>Canaleta Plástica Interior</option>
+                  <option value="Manguera Corrugada Plástica" ${cam.canalizacion === 'Manguera Corrugada Plástica' ? 'selected' : ''}>Manguera Corrugada Plástica</option>
+                  <option value="Grapa / Vía Libre" ${cam.canalizacion === 'Grapa / Vía Libre' ? 'selected' : ''}>Grapa / Vía Libre</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-white/80 mb-1">Canalización Mixta (Tramo 2 Opcional)</label>
+                <select onchange="actualizarCampoCamara('${cam.uid}', 'canalizacion_mixta', this.value)" class="cyber-input w-full rounded-lg p-2 font-medium">
+                  <option value="No Requiere Tramo Mixto" ${!cam.canalizacion_mixta || cam.canalizacion_mixta === 'No Requiere Tramo Mixto' ? 'selected' : ''}>No Requiere Tramo Mixto</option>
+                  <option value="Canaleta Plástica Interior" ${cam.canalizacion_mixta === 'Canaleta Plástica Interior' ? 'selected' : ''}>↳ Transición a Canaleta</option>
+                  <option value='Tubería Metálica EMT 3/4"' ${cam.canalizacion_mixta?.includes('EMT 3/4') ? 'selected' : ''}>↳ Transición a EMT 3/4"</option>
+                  <option value="Manguera Corrugada Plástica" ${cam.canalizacion_mixta === 'Manguera Corrugada Plástica' ? 'selected' : ''}>↳ Transición a Manguera Corrugada</option>
+                  <option value="Grapa / Vía Libre" ${cam.canalizacion_mixta === 'Grapa / Vía Libre' ? 'selected' : ''}>↳ Transición a Vía Libre</option>
+                </select>
+              </div>
+
+              <!-- FOTOGRAFÍA / EVIDENCIA VISUAL -->
+              <div class="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center gap-4 pt-4 mt-1 border-t border-white/15">
+                <button type="button" onclick="abrirSelectorFoto('${cam.uid}')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition shadow-sm">
+                  <i class="fa-solid fa-camera text-blue-400"></i> <span id="btn_foto_label_${cam.uid}">${cam.foto_base64 ? 'Cambiar Foto' : 'Adjuntar Foto'}</span>
+                </button>
+                
+                <div id="preview_container_${cam.uid}" class="flex items-center gap-3">
+                  ${seccionFotoHTML}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end pt-3 border-t border-white/10 mt-3">
+              <button type="button" onclick="cerrarTarjeta('card_cam_${cam.uid}', '${cam.uid}', 'camara')" class="px-3.5 py-1.5 rounded-xl btn-glass-action text-white text-[11px] font-bold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-chevron-up text-blue-400 text-xs"></i> <span>Contraer Cámara</span>
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(detailsEl);
+      });
+    }
+
+    function seleccionarModeloCamara(uid, selectEl) {
+      const selectedOption = selectEl.options[selectEl.selectedIndex];
+      const pvp = parseFloat(selectedOption.getAttribute('data-pvp')) || 0;
+      const desc = selectedOption.getAttribute('data-desc') || '';
+
+      const c = listaCamaras.find(item => item.uid === uid);
+      if (c) {
+        c.item_catalogo_id = selectEl.value;
+        c.descripcion_catalogo = desc;
+        c.pvp_sugerido = pvp;
+      }
+    }
+
+    function actualizarCampoCamara(uid, campo, valor) {
+      const c = listaCamaras.find(item => item.uid === uid);
+      if (!c) return;
+
+      c[campo] = valor;
+
+      if (campo === 'destino' && valor) {
+        const destinoLimpio = valor.split('(')[0].trim();
+        const otrasEnDestino = listaCamaras.filter(item => item.uid !== uid && (item.destino || '').includes(destinoLimpio)).length;
+        const prefijoCanal = (c.tipo_tecnologia && c.tipo_tecnologia.includes('Análoga')) ? 'Canal BNC #' : 'Puerto PoE #';
+        c.puerto_canal = `${prefijoCanal}${otrasEnDestino + 1}`;
+        
+        const inputPuerto = document.getElementById(`puerto_canal_${uid}`);
+        if (inputPuerto) inputPuerto.value = c.puerto_canal;
+
+      } else if (campo === 'tipo_tecnologia') {
+        const esAnaloga = valor.includes('Análoga');
+        const prefijoCanal = esAnaloga ? 'Canal BNC #' : 'Puerto PoE #';
+        const totalMismaTecnologia = listaCamaras.filter(item => (item.tipo_tecnologia || '').includes(esAnaloga ? 'Análoga' : 'IP')).length;
+        c.puerto_canal = `${prefijoCanal}${totalMismaTecnologia}`;
+        
+        if (esAnaloga) {
+          c.destino = 'DVR / XVR Principal (Entrada BNC Directa)';
+        } else if (!c.destino || c.destino.includes('DVR')) {
+          c.destino = 'NVR Principal (Directo)';
+        }
+
+        sincronizarSelectoresDestinoEnCamaras();
+        actualizarTelemetriaEnVivo();
+
+        const inputPuerto = document.getElementById(`puerto_canal_${uid}`);
+        if (inputPuerto) inputPuerto.value = c.puerto_canal;
+
+        const wrapHost = document.getElementById(`wrap_hostname_${uid}`);
+        const wrapIp = document.getElementById(`wrap_ip_${uid}`);
+        const wrapPuerto = document.getElementById(`wrap_puerto_${uid}`);
+        const lblPuerto = document.getElementById(`lbl_puerto_canal_${uid}`);
+
+        if (esAnaloga) {
+          if (wrapHost) wrapHost.classList.add('hidden');
+          if (wrapIp) wrapIp.classList.add('hidden');
+          if (wrapPuerto) wrapPuerto.className = 'sm:col-span-3';
+          if (lblPuerto) {
+            lblPuerto.className = 'block text-[10px] font-bold text-blue-300 mb-1';
+            lblPuerto.innerText = 'Canal BNC en DVR';
+          }
+          if (inputPuerto) {
+            inputPuerto.className = 'cyber-input w-full rounded-lg p-2 font-tech-mono font-bold text-blue-300 shadow-inner';
+            inputPuerto.placeholder = 'Canal BNC 01';
+          }
+        } else {
+          if (wrapHost) wrapHost.classList.remove('hidden');
+          if (wrapIp) wrapIp.classList.remove('hidden');
+          if (wrapPuerto) wrapPuerto.className = 'sm:col-span-2';
+          if (lblPuerto) {
+            lblPuerto.className = 'block text-[10px] font-bold text-white/80 mb-1';
+            lblPuerto.innerText = 'Puerto Físico (Switch o NVR)';
+          }
+          if (inputPuerto) {
+            inputPuerto.className = 'cyber-input w-full rounded-lg p-2 font-tech-mono shadow-inner';
+            inputPuerto.placeholder = 'Puerto PoE #3';
+          }
+        }
+      }
+
+      const badgeUb = document.getElementById(`badge_ub_${uid}`);
+      const badgeConx = document.getElementById(`badge_conx_${uid}`);
+      
+      if (campo === 'ubicacion' && badgeUb) {
+        badgeUb.innerText = valor;
+        badgeUb.title = valor;
+      }
+      
+      if ((campo === 'destino' || campo === 'puerto_canal' || campo === 'tipo_tecnologia') && badgeConx) {
+        let esAnaloga = (c.tipo_tecnologia || '').toLowerCase().includes('análoga');
+        if (esAnaloga) {
+          badgeConx.innerHTML = `<i class="fa-solid fa-tv"></i> ${c.puerto_canal || '?'}`;
+        } else {
+          let destLimpio = c.destino ? c.destino.split(' (')[0] : 'NVR';
+          let portLimpio = c.puerto_canal ? c.puerto_canal.replace('Puerto PoE ', 'P') : '?';
+          badgeConx.innerHTML = `<i class="fa-solid fa-network-wired mr-1"></i> ${destLimpio} | ${portLimpio}`;
+        }
+      }
+    }
+
+    function actualizarDistancia(uid, valor) {
+      const c = listaCamaras.find(item => item.uid === uid);
+      if (c) {
+        c.distancia_m = parseFloat(valor) || 0;
+        calcularMetrajeTotalUTP();
+      }
+    }
+
+    function calcularMetrajeTotalUTP() {
+      const sumaMetrosCamaras = listaCamaras.reduce((acc, curr) => acc + (parseFloat(curr.distancia_m) || 0), 0);
+      const sumaMetrosSwitches = listaSwitchesCCTV.reduce((acc, curr) => {
+        const esFibra = (curr.enlace_uplink || '').includes('Fibra Óptica');
+        return acc + (esFibra ? 0 : (parseFloat(curr.distancia_m) || 0));
+      }, 0);
+
+      const sumaMetros = sumaMetrosCamaras + sumaMetrosSwitches;
+      const conHolgura = Math.ceil(sumaMetros * 1.10);
+      const textoMetros = `${conHolgura} m`;
+
+      const inputUtp = document.getElementById('acc_total_utp');
+      const kpiUtp = document.getElementById('kpi_live_utp');
+      if (inputUtp) inputUtp.value = textoMetros;
+      if (kpiUtp) kpiUtp.innerText = textoMetros;
+    }
+
+    // ==========================================
+    // 5. EVIDENCIA FOTOGRÁFICA Y COMPRESIÓN
+    // ==========================================
+    let camUidSeleccionadaFoto = null;
+
+    function abrirSelectorFoto(uid) {
+      camUidSeleccionadaFoto = uid;
+      document.getElementById('modal_origen_foto').classList.remove('hidden');
+    }
+
+    function cerrarSelectorFoto() {
+      document.getElementById('modal_origen_foto').classList.add('hidden');
+      document.getElementById('input_camara_directa').value = '';
+      document.getElementById('input_galeria_directa').value = '';
+    }
+
+    function procesarFotoDesdeModal(e) {
+      if (!camUidSeleccionadaFoto) return;
+      const targetUid = camUidSeleccionadaFoto;
+      const file = e.target.files[0];
+      
+      document.getElementById('modal_origen_foto').classList.add('hidden');
+      if (file) {
+        comprimirYSubirArchivo(file, targetUid);
+      }
+      
+      document.getElementById('input_camara_directa').value = '';
+      document.getElementById('input_galeria_directa').value = '';
+    }
+
+    function abrirLightbox(uid) {
+      const c = listaCamaras.find(item => item.uid === uid);
+      if (!c || !c.foto_base64) return;
+      document.getElementById('lightbox_img').src = c.foto_base64;
+      document.getElementById('lightbox_titulo').innerText = `${c.ubicacion} — Evidencia Visual`;
+      document.getElementById('modal_lightbox').classList.remove('hidden');
+    }
+
+    function cerrarLightbox() {
+      document.getElementById('modal_lightbox').classList.add('hidden');
+      document.getElementById('lightbox_img').src = '';
+    }
+
+    function actualizarPreviewFotoCamara(uid) {
+      const c = listaCamaras.find(item => item.uid === uid);
+      const containerPreview = document.getElementById(`preview_container_${uid}`);
+      const btnFotoLabel = document.getElementById(`btn_foto_label_${uid}`);
+      if (!c || !containerPreview) return;
+
+      if (c.foto_base64) {
+        containerPreview.innerHTML = `
+          <div class="relative group">
+            <img src="${c.foto_base64}" onclick="abrirLightbox('${c.uid}')" class="h-16 w-16 rounded-xl object-cover border border-blue-400/50 shadow-sm cursor-zoom-in hover:brightness-110 transition" title="Clic para ampliar vista">
+            <button type="button" onclick="eliminarFoto('${c.uid}')" class="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-[11px] shadow-md hover:bg-rose-700 transition" title="Eliminar fotografía">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <span class="text-[10px] text-emerald-300 font-bold font-tech-mono flex items-center gap-1">
+            <i class="fa-solid fa-circle-check"></i> Evidencia OK (${Math.round(c.foto_base64.length / 1024)} KB)
+          </span>
+        `;
+        if (btnFotoLabel) btnFotoLabel.innerText = 'Cambiar Foto';
+      } else {
+        containerPreview.innerHTML = `
+          <span id="preview_label_${c.uid}" class="text-[10px] text-white/50 italic font-tech-mono flex items-center gap-1">
+            <i class="fa-regular fa-image"></i> Sin evidencia adjunta
+          </span>
+        `;
+        if (btnFotoLabel) btnFotoLabel.innerText = 'Adjuntar Foto';
+      }
+    }
+
+    function eliminarFoto(uid) {
+      const c = listaCamaras.find(item => item.uid === uid);
+      if (c) {
+        c.foto_base64 = null;
+        actualizarPreviewFotoCamara(uid);
+        mostrarToast("Fotografía removida del punto", "info");
+      }
+    }
+
+    function comprimirYSubirArchivo(file, uid) {
+      const containerPreview = document.getElementById(`preview_container_${uid}`);
+      if (containerPreview) {
+        containerPreview.innerHTML = `<span class="text-[10px] text-blue-300 font-tech-mono font-bold"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Optimizando imagen...</span>`;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+          const maxDimension = 1280;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxDimension) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            }
+          } else {
+            if (height > maxDimension) {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const base64Comprimido = canvas.toDataURL('image/jpeg', 0.75);
+
+          const c = listaCamaras.find(item => item.uid === uid);
+          if (c) c.foto_base64 = base64Comprimido;
+
+          actualizarPreviewFotoCamara(uid);
+          mostrarToast("Fotografía optimizada y adjuntada", "success");
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ==========================================
+    // 6. INICIALIZACIÓN Y RESTAURACIÓN DE DATOS
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.body.classList.add('session-checked');
+      
+      const overlay = document.getElementById('page_transition_overlay');
+      if (overlay) {
+        setTimeout(() => {
+          overlay.classList.remove('opacity-100');
+          overlay.classList.add('opacity-0');
+          setTimeout(() => overlay.classList.add('hidden'), 380);
+        }, 350);
+      }
+
+      if (ticketId) {
+        document.getElementById('label_id_ticket').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+      } else {
+        document.getElementById('label_id_ticket').innerText = "# NUEVO";
+      }
+
+      await cargarCatalogoPrecios();
+
+      if (supabaseClient && ticketId) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('inspeccion_cctv')
+            .select('*')
+            .eq('ticket_id', ticketId)
+            .maybeSingle();
+
+          if (data && !error) {
+            document.getElementById('cctv_accion_grabador').value = data.accion_grabador || 'No Requiere';
+            document.getElementById('cctv_grabador_catalogo').value = data.grabador_catalogo_id || '';
+            document.getElementById('cctv_ubicacion_grabador').value = data.ubicacion_grabador || '';
+            document.getElementById('cctv_hdd_catalogo').value = data.hdd_catalogo_id || 'Sin Disco / No Requiere';
+            document.getElementById('cctv_estado_hdd').value = data.estado_hdd || 'Nuevo';
+            document.getElementById('cctv_condicion_electrica').value = data.condicion_electrica || 'Toma 110V disponible con Tierra';
+            document.getElementById('cctv_rack_catalogo').value = data.rack_catalogo_id || 'No Requiere';
+            document.getElementById('cctv_ups_catalogo').value = data.ups_catalogo_id || 'No Requiere';
+            document.getElementById('cctv_microsd_catalogo').value = data.microsd_catalogo_id || 'No Requiere / Sin MicroSD';
+            document.getElementById('cctv_cant_microsd').value = data.cant_microsd || 0;
+            document.getElementById('cctv_cable_catalogo').value = data.cable_catalogo_id || '';
+
+            document.getElementById('acc_balun_catalogo').value = data.balun_catalogo_id || '';
+            document.getElementById('acc_cant_baluns').value = data.cant_baluns || 0;
+            document.getElementById('acc_caja_catalogo').value = data.caja_catalogo_id || '';
+            document.getElementById('acc_cant_cajas').value = data.cant_cajas || 0;
+            document.getElementById('acc_fuente_indiv_catalogo').value = data.fuente_indiv_catalogo_id || '';
+            document.getElementById('acc_cant_fuentes_indiv').value = data.cant_fuentes_indiv || 0;
+            document.getElementById('acc_cortapicos_catalogo').value = data.cortapicos_catalogo_id || '';
+            document.getElementById('acc_cant_cortapicos').value = data.cant_cortapicos || 0;
+            document.getElementById('acc_fuente_central_catalogo').value = data.fuente_central_catalogo_id || 'No Requiere';
+
+            document.getElementById('acc_switch_poe_catalogo').value = data.switch_poe_catalogo_id || 'No Requiere';
+            document.getElementById('acc_switch_desktop_catalogo').value = data.switch_desktop_catalogo_id || 'No Requiere';
+            document.getElementById('acc_pdu_rack_catalogo').value = data.pdu_rack_catalogo_id || 'No Requiere';
+            document.getElementById('acc_patchcord_catalogo').value = data.patchcord_catalogo_id || '';
+            document.getElementById('acc_cant_patchcords').value = data.cant_patchcords || 0;
+
+            document.getElementById('aud_bocina_catalogo').value = data.bocina_catalogo_id || 'No Requiere';
+            document.getElementById('aud_cant_bocinas').value = data.cant_bocinas || 0;
+            document.getElementById('aud_amplificador_catalogo').value = data.amplificador_catalogo_id || 'No Requiere';
+
+            listaSwitchesCCTV = (data.switches_cctv || []).map(s => ({
+              ...s,
+              abierto: false
+            }));
+            renderizarSwitchesCCTV();
+
+            if (data.camaras && Array.isArray(data.camaras) && data.camaras.length > 0) {
+              listaCamaras = data.camaras.map(c => ({
+                ...c,
+                destino: c.destino ? c.destino.split('(')[0].trim() : 'NVR Principal (Directo)',
+                abierto: false 
+              }));
+            }
+          }
+        } catch (err) {
+          console.error("Error restaurando inspeccion_cctv:", err);
+          mostrarToast("Error recuperando datos previos de CCTV", "error");
+        }
+      }
+
+      renderizarCamaras();
+      calcularMetrajeTotalUTP();
+      calcularEstimacionDiasHDD();
+      actualizarTelemetriaEnVivo();
+    });
+
+    // ==========================================
+    // 7. GUARDADO EN SUPABASE CLOUD
+    // ==========================================
+    async function guardarModuloCCTV() {
+      const btn = document.getElementById('btn_guardar_cloud');
+      const btnMob = document.getElementById('btn_guardar_cloud_mobile');
+      const orig = btn ? btn.innerHTML : '';
+      const origMob = btnMob ? btnMob.innerHTML : '';
+
+      if (btn) { btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`; btn.disabled = true; }
+      if (btnMob) { btnMob.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`; btnMob.disabled = true; }
+
+      const sumaMetrosCamaras = listaCamaras.reduce((acc, curr) => acc + (parseFloat(curr.distancia_m) || 0), 0);
+      const sumaMetrosSwitches = listaSwitchesCCTV.reduce((acc, curr) => {
+        const esFibra = (curr.enlace_uplink || '').includes('Fibra Óptica');
+        return acc + (esFibra ? 0 : (parseFloat(curr.distancia_m) || 0));
+      }, 0);
+
+      const sumaMetros = sumaMetrosCamaras + sumaMetrosSwitches;
+      const totalMetrosConHolgura = Math.ceil(sumaMetros * 1.10);
+
+      const switchesLimpios = listaSwitchesCCTV.map(s => {
+        const { abierto, collapsed, ...swSinColapso } = s;
+        return swSinColapso;
+      });
+
+      const camarasLimpias = listaCamaras.map(c => {
+        const { abierto, collapsed, ...camaraSinColapso } = c;
+        return {
+          ...camaraSinColapso,
+          destino: c.destino ? c.destino.split('(')[0].trim() : 'NVR Principal (Directo)'
+        };
+      });
+
+      const cctvData = {
+        ticket_id: ticketId || null,
+        accion_grabador: document.getElementById('cctv_accion_grabador').value,
+        grabador_catalogo_id: document.getElementById('cctv_grabador_catalogo').value,
+        ubicacion_grabador: document.getElementById('cctv_ubicacion_grabador').value,
+        hdd_catalogo_id: document.getElementById('cctv_hdd_catalogo').value,
+        estado_hdd: document.getElementById('cctv_estado_hdd').value,
+        condicion_electrica: document.getElementById('cctv_condicion_electrica').value,
+        rack_catalogo_id: document.getElementById('cctv_rack_catalogo').value,
+        ups_catalogo_id: document.getElementById('cctv_ups_catalogo').value,
+        microsd_catalogo_id: document.getElementById('cctv_microsd_catalogo').value,
+        cant_microsd: parseInt(document.getElementById('cctv_cant_microsd').value) || 0,
+        cable_catalogo_id: document.getElementById('cctv_cable_catalogo').value,
+
+        switches_cctv: switchesLimpios,
+        camaras: camarasLimpias,
+        total_camaras: camarasLimpias.length,
+
+        balun_catalogo_id: document.getElementById('acc_balun_catalogo').value,
+        cant_baluns: parseInt(document.getElementById('acc_cant_baluns').value) || 0,
+        caja_catalogo_id: document.getElementById('acc_caja_catalogo').value,
+        cant_cajas: parseInt(document.getElementById('acc_cant_cajas').value) || 0,
+        fuente_indiv_catalogo_id: document.getElementById('acc_fuente_indiv_catalogo').value,
+        cant_fuentes_indiv: parseInt(document.getElementById('acc_cant_fuentes_indiv').value) || 0,
+        cortapicos_catalogo_id: document.getElementById('acc_cortapicos_catalogo').value,
+        cant_cortapicos: parseInt(document.getElementById('acc_cant_cortapicos').value) || 0,
+        fuente_central_catalogo_id: document.getElementById('acc_fuente_central_catalogo').value,
+
+        switch_poe_catalogo_id: document.getElementById('acc_switch_poe_catalogo').value,
+        switch_desktop_catalogo_id: document.getElementById('acc_switch_desktop_catalogo').value,
+        pdu_rack_catalogo_id: document.getElementById('acc_pdu_rack_catalogo').value,
+        patchcord_catalogo_id: document.getElementById('acc_patchcord_catalogo').value,
+        cant_patchcords: parseInt(document.getElementById('acc_cant_patchcords').value) || 0,
+        
+        total_metros_utp: `${totalMetrosConHolgura} m`,
+
+        bocina_catalogo_id: document.getElementById('aud_bocina_catalogo').value,
+        cant_bocinas: parseInt(document.getElementById('aud_cant_bocinas').value) || 0,
+        amplificador_catalogo_id: document.getElementById('aud_amplificador_catalogo').value,
+        updated_at: new Date().toISOString()
+      };
+
+      if (supabaseClient && ticketId) {
+        try {
+          const { data: existing } = await supabaseClient
+            .from('inspeccion_cctv')
+            .select('ticket_id')
+            .eq('ticket_id', ticketId)
+            .maybeSingle();
+
+          let errorSupabase = null;
+          if (existing && existing.ticket_id) {
+            const { error } = await supabaseClient
+              .from('inspeccion_cctv')
+              .update(cctvData)
+              .eq('ticket_id', ticketId);
+            errorSupabase = error;
+          } else {
+            const { error } = await supabaseClient
+              .from('inspeccion_cctv')
+              .insert([cctvData]);
+            errorSupabase = error;
+          }
+
+          if (errorSupabase) {
+            console.error("Error guardando en Supabase:", errorSupabase);
+            mostrarToast("Error al guardar: " + (errorSupabase.message || "Verifica conexión"), "error");
+            if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+            if (btnMob) { btnMob.innerHTML = origMob; btnMob.disabled = false; }
+            return false;
+          }
+        } catch (err) {
+          console.error("Excepción al guardar:", err);
+          mostrarToast("Excepción de red al intentar guardar en Supabase", "error");
+          if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+          if (btnMob) { btnMob.innerHTML = origMob; btnMob.disabled = false; }
+          return false;
+        }
+      }
+
+      mostrarToast(`Relevamiento CCTV guardado (${camarasLimpias.length} cámaras)`, "success");
+      if (btn) { btn.innerHTML = `<i class="fa-solid fa-check text-emerald-300"></i> Sincronizado`; }
+      if (btnMob) { btnMob.innerHTML = `<i class="fa-solid fa-check"></i> Guardado`; }
+
+      setTimeout(() => {
+        if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+        if (btnMob) { btnMob.innerHTML = origMob; btnMob.disabled = false; }
+      }, 1300);
+      return true;
+    }
+
+    async function guardarYSalir() {
+      const success = await guardarModuloCCTV();
+      if (success) {
+        setTimeout(() => {
+          navegarA('inspecciones_index.html', 'Dashboard Principal');
+        }, 450);
+      }
+    }
+  </script>
+
+</body>
+</html>

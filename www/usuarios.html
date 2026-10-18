@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Personal & Roles - ProTech Security</title>
+  
+  <!-- Configuración PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía Moderna, Limpia y Sobria -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    body.page-exiting {
+      animation: fadeOutPage 0.25s ease-in forwards !important;
+    }
+
+    @keyframes fadeOutPage {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-6px); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO NÍDIDO
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    /* ========================================================
+       2. TARJETAS Y CRISTAL CÓNCAVO (Homologado)
+       ======================================================== */
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        inset 5px 5px 12px rgba(0, 0, 0, 0.4), 
+        inset -5px -5px 12px rgba(255, 255, 255, 0.12),
+        0 25px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-glass-action {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 3px 3px 8px rgba(0, 0, 0, 0.25), 
+        inset -3px -3px 8px rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(0, 0, 0, 0.25);
+      border-radius: 1rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #ffffff;
+    }
+
+    .btn-glass-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.35), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.12),
+        0 15px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cyber-input, .glass-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+    .cyber-input option, .glass-input option {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    /* Menú lateral colapsable */
+    .collapse-content {
+      max-height: 400px; overflow: hidden; transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out; opacity: 1;
+    }
+    .collapse-content.collapsed { max-height: 0; opacity: 0; }
+    .collapse-icon { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapsed-btn .collapse-icon { transform: rotate(-90deg); }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: rgba(255, 255, 255, 0.22); 
+      color: #ffffff; 
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+
+    @keyframes slideInUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .toast-animate { animation: slideInUp 0.3s ease-out forwards; }
+  </style>
+</head>
+<body class="min-h-screen relative flex flex-col md:flex-row pb-20 md:pb-0 text-white antialiased overflow-x-hidden session-checked">
+
+  <!-- VIDEO DE FONDO NÍDIDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL TÁCTICA -->
+  <aside id="sidebar_menu" class="fixed md:sticky top-0 left-0 z-50 h-[100dvh] w-72 flex-col justify-between cyber-glass-card bg-slate-950/80 md:bg-slate-950/40 border-y-0 border-l-0 rounded-none flex-shrink-0 p-5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out flex">
+    <div class="space-y-4 relative z-10 overflow-y-auto max-h-[calc(100vh-100px)] pr-1 hide-scrollbar">
+      
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain drop-shadow" onerror="this.style.display='none'; document.getElementById('logo_nextgen').style.display='flex';">
+            <div id="logo_nextgen" style="display:none;" class="h-10 w-10 rounded-2xl gradient-cyber-brand text-white font-tech-head text-base items-center justify-center shadow-lg shadow-blue-500/25 font-black">PS</div>
+            <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-950"></span>
+            </span>
+          </div>
+          <div>
+            <h1 class="font-tech-head font-extrabold text-base text-white leading-none">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-1">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white/70 hover:text-rose-400 transition p-2 bg-white/10 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <nav class="space-y-3 text-xs font-semibold">
+        <div>
+          <a href="index.html" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white shadow-sm relative overflow-hidden group transition">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"></div>
+            <i class="fa-solid fa-layer-group w-4 text-center text-sm text-white/80"></i>
+            <span class="font-bold">Centro de Operaciones</span>
+          </a>
+        </div>
+
+        <!-- ÁREA OPERATIVA -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_operativa', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_operativa" class="collapse-content space-y-1 mt-2">
+            <a href="agenda_tickets.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
+              <span>Agenda & Tickets</span>
+            </a>
+            <a href="inspecciones_index.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-list"></i></div>
+              <span>Inspección</span>
+            </a>
+            <a href="orden_trabajo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+              <span>Órdenes de Trabajo</span>
+            </a>
+            <a href="clientes_tech.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-cyan-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-address-book"></i></div>
+              <span>Ficha Técnica / Clientes</span>
+            </a>
+            <a href="acta_entrega.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-signature"></i></div>
+              <span>Acta de Entrega</span>
+            </a>
+            <a href="bandeja_operativa.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-orange-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-list-check"></i></div>
+              <span>Monitor General OTs</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ADMINISTRACIÓN (Activa) -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_admin', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-rose-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-users-gear"></i> Administración</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_admin" class="collapse-content space-y-1 mt-2">
+            <a href="usuarios.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white bg-rose-600/40 font-bold transition group border border-rose-400/40 shadow-sm">
+              <div class="icon-box h-6 w-6 rounded-md bg-rose-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-users-gear"></i></div>
+              <span>Personal & Roles (RBAC)</span>
+            </a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="p-3.5 rounded-2xl cyber-glass-card border border-white/20 flex items-center justify-between shadow-sm relative z-10 mt-3">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-tech-head font-bold text-xs shadow-md">JP</div>
+        <div class="truncate">
+          <p class="text-xs font-bold text-white truncate">Juan Pablo Luna</p>
+          <p class="font-tech-mono text-[9px] text-blue-300 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-2 rounded-lg hover:bg-white/10 transition" title="Desconectar">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden">
+    
+    <!-- CABECERA HOMOLOGADA -->
+    <header class="cyber-glass-card border-x-0 border-t-0 rounded-none sticky top-0 z-40 px-4 md:px-8 py-3.5 flex items-center justify-between shadow-sm flex-shrink-0 bg-slate-950/30 backdrop-blur-md">
+      <div class="flex items-center space-x-3.5">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white p-2 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 transition">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <div class="flex items-center gap-3">
+          <img src="logo.png" alt="ProTech Security" class="h-8 w-auto object-contain drop-shadow" onerror="this.style.display='none';">
+          <div>
+            <h1 class="font-tech-head font-extrabold text-sm text-white leading-tight">ProTech Security</h1>
+            <p class="font-tech-mono text-[9px] text-white/70 uppercase tracking-wider">Administración RBAC & Personal</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex items-center space-x-2">
+        <a href="index.html" class="px-3.5 py-2.5 rounded-xl btn-glass-action text-white text-xs font-semibold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-house text-blue-400 text-[11px]"></i> Portal Principal
+        </a>
+        <button onclick="abrirModalUsuario()" class="px-4 py-2.5 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-user-plus text-emerald-400"></i> Nuevo Colaborador
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto hide-scrollbar relative z-10 space-y-6">
+      <div class="max-w-7xl mx-auto space-y-6">
+
+        <section class="cyber-glass-card rounded-3xl p-6 space-y-5">
+          <div class="flex flex-wrap justify-between items-center border-b border-white/15 pb-4 gap-3 relative z-10">
+            <div>
+              <h2 class="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2 font-tech-head">
+                <span class="w-1.5 h-4 bg-gradient-to-b from-blue-400 to-indigo-500 rounded-full"></span>
+                <i class="fa-solid fa-shield-halved text-blue-400"></i> Equipo de Trabajo & Permisos Asignados
+              </h2>
+              <p class="text-xs text-white/70 mt-0.5">Administra los accesos al portal y el rol operativo de cada miembro de ProTech Security.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="badge_total_usuarios" class="text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30 px-3 py-1.5 rounded-xl shadow-inner font-tech-mono">
+                <i class="fa-solid fa-spinner fa-spin"></i> Cargando personal...
+              </span>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto hide-scrollbar rounded-xl border border-white/15 shadow-sm relative z-10 bg-white/5">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-white/10 text-[11px] uppercase tracking-wider text-white/80 border-b border-white/15 font-tech-mono">
+                  <th class="p-3.5">Colaborador</th>
+                  <th class="p-3.5">Correo Electrónico</th>
+                  <th class="p-3.5">Rol Corporativo (RBAC)</th>
+                  <th class="p-3.5 text-center">Estado Clave</th>
+                  <th class="p-3.5 text-center">Fecha Registro</th>
+                  <th class="p-3.5 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla_usuarios_body" class="divide-y divide-white/10 text-white/90">
+                <tr>
+                  <td colspan="6" class="text-center text-white/50 py-10 italic font-tech-mono">Conectando con la base de datos de usuarios...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: CREAR / EDITAR COLABORADOR -->
+  <div id="modal_usuario" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex justify-center items-center p-4">
+    <div class="cyber-glass-card bg-slate-900/95 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-white/20 text-white">
+      
+      <div class="bg-slate-950/80 px-6 py-4 flex justify-between items-center border-b border-white/15">
+        <h3 id="modal_titulo" class="text-xs font-bold uppercase tracking-wider flex items-center gap-2 font-tech-head text-white">
+          <i class="fa-solid fa-user-plus text-blue-400"></i> Registrar Nuevo Colaborador
+        </h3>
+        <button onclick="cerrarModalUsuario()" class="text-white/70 hover:text-white text-base font-black px-2">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4 text-xs bg-slate-950/40">
+        <input type="hidden" id="form_user_id">
+
+        <div>
+          <label class="block text-white/80 font-semibold mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-user text-white/50 text-[10px]"></i> Nombre Completo
+          </label>
+          <input type="text" id="form_nombre" placeholder="Ej. Carlos Mendoza" class="cyber-input w-full rounded-lg px-3 py-2.5 outline-none font-medium">
+        </div>
+
+        <div>
+          <label class="block text-white/80 font-semibold mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-envelope text-white/50 text-[10px]"></i> Correo Electrónico Corporativo
+          </label>
+          <input type="email" id="form_correo" placeholder="carlos.mendoza@protechsecurityec.com" class="cyber-input w-full rounded-lg px-3 py-2.5 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-white/80 font-semibold mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-key text-white/50 text-[10px]"></i> Contraseña Temporal Asignada
+          </label>
+          <input type="password" id="form_password" placeholder="Mínimo 6 caracteres" class="cyber-input w-full rounded-lg px-3 py-2.5 outline-none">
+          <p class="text-[10px] text-amber-300 mt-1 flex items-center gap-1">
+            <i class="fa-solid fa-shield-halved"></i> El colaborador estará obligado a cambiar esta clave en su primer inicio de sesión.
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-white/80 font-semibold mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-shield-user text-white/50 text-[10px]"></i> Rol en la Plataforma (Nivel de Acceso)
+          </label>
+          <select id="form_rol" class="cyber-input w-full rounded-lg px-3 py-2.5 outline-none font-semibold text-white">
+            <option value="tecnico" style="background:#0f172a; color:#fff;">Técnico Operativo / Campo (Inspecciones, OTs, Actas)</option>
+            <option value="comercial" style="background:#0f172a; color:#fff;">Personal Comercial (Proformas y Catálogo)</option>
+            <option value="admin" style="background:#0f172a; color:#fff;">Administrador / Gerencia (Acceso Total y Roles)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="bg-white/5 px-6 py-3.5 border-t border-white/15 flex justify-end gap-2.5">
+        <button type="button" onclick="cerrarModalUsuario()" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold px-4 py-2 rounded-xl transition">
+          Cancelar
+        </button>
+        <button type="button" onclick="guardarUsuario()" id="btn_guardar_usuario" class="btn-glass-action bg-blue-600/60 hover:bg-blue-600/80 text-white font-semibold px-5 py-2 rounded-xl shadow-md transition flex items-center gap-1.5">
+          <i class="fa-solid fa-floppy-disk text-blue-300"></i> Guardar Colaborador
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast_container" class="fixed bottom-10 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    
+    let supabaseClient = null;
+    if (typeof supabase !== 'undefined') {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    function toggleArea(idContent, headerElement) {
+      const content = document.getElementById(idContent);
+      if (content) {
+        content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed-btn');
+      }
+    }
+
+    window.addEventListener('load', async () => {
+      await cargarUsuariosDesdeSupabase();
+    });
+
+    function mostrarToast(mensaje, tipo = 'success') {
+      const cont = document.getElementById('toast_container');
+      if (!cont) return;
+
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto toast-animate flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-xl border text-xs font-semibold backdrop-blur-xl ${
+        tipo === 'success' ? 'bg-slate-900/90 text-emerald-300 border-emerald-400/30 ring-1 ring-emerald-500/20' : 'bg-slate-900/90 text-rose-300 border-rose-400/30 ring-1 ring-rose-500/20'
+      }`;
+      toast.innerHTML = `
+        <i class="${tipo === 'success' ? 'fa-solid fa-circle-check text-emerald-400' : 'fa-solid fa-triangle-exclamation text-rose-400'} text-sm"></i>
+        <span>${mensaje}</span>
+      `;
+      cont.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+      }, 3500);
+    }
+
+    async function cargarUsuariosDesdeSupabase() {
+      const tbody = document.getElementById('tabla_usuarios_body');
+      const badgeTotal = document.getElementById('badge_total_usuarios');
+      if (!tbody) return;
+
+      try {
+        if (!supabaseClient) throw new Error("Cliente Supabase no inicializado");
+
+        const { data, error } = await supabaseClient
+          .from('perfiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const usuarios = data || [];
+        if (badgeTotal) badgeTotal.innerHTML = `<i class="fa-solid fa-users text-blue-400"></i> ${usuarios.length} Colaboradores Registrados`;
+
+        if (usuarios.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center text-white/50 py-10 italic font-tech-mono">No hay colaboradores registrados en la base de datos.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = '';
+        usuarios.forEach(u => {
+          let badgeRol = '';
+          const rol = (u.rol || 'tecnico').toLowerCase();
+          
+          if (rol === 'admin' || rol === 'administrador') {
+            badgeRol = `<span class="bg-rose-500/20 text-rose-300 border border-rose-400/30 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase shadow-sm flex items-center gap-1 w-fit"><i class="fa-solid fa-shield-halved text-[9px]"></i> Administrador</span>`;
+          } else if (rol === 'comercial') {
+            badgeRol = `<span class="bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase shadow-sm flex items-center gap-1 w-fit"><i class="fa-solid fa-briefcase text-[9px]"></i> Comercial</span>`;
+          } else {
+            badgeRol = `<span class="bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase shadow-sm flex items-center gap-1 w-fit"><i class="fa-solid fa-screwdriver-wrench text-[9px]"></i> Técnico Operativo</span>`;
+          }
+
+          const estadoClave = u.debe_cambiar_password 
+            ? `<span class="bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-md text-[10px] font-semibold flex items-center gap-1 w-fit mx-auto"><i class="fa-solid fa-clock-rotate-left text-[9px]"></i> Clave Temporal</span>`
+            : `<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-md text-[10px] font-semibold flex items-center gap-1 w-fit mx-auto"><i class="fa-solid fa-circle-check text-[9px]"></i> Actualizada</span>`;
+
+          const fechaReg = u.created_at ? new Date(u.created_at).toLocaleDateString('es-EC') : 'N/A';
+
+          tbody.innerHTML += `
+            <tr class="hover:bg-white/5 border-b border-white/10 transition">
+              <td class="p-3.5 font-bold text-white flex items-center gap-2.5">
+                <div class="h-7 w-7 rounded-full bg-white/10 text-white flex items-center justify-center font-black text-xs uppercase shadow-inner">
+                  ${(u.nombre || 'U').charAt(0)}
+                </div>
+                ${u.nombre || 'Sin Nombre'}
+              </td>
+              <td class="p-3.5 font-mono text-white/80">${u.correo || u.email || 'N/A'}</td>
+              <td class="p-3.5">${badgeRol}</td>
+              <td class="p-3.5 text-center">${estadoClave}</td>
+              <td class="p-3.5 text-center text-white/60 font-medium font-tech-mono">${fechaReg}</td>
+              <td class="p-3.5 text-center space-x-1">
+                <button onclick="editarUsuario('${u.id}', '${u.nombre || ''}', '${u.correo || u.email || ''}', '${rol}')" class="bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-white/20 transition" title="Editar Rol">
+                  <i class="fa-solid fa-pen text-blue-400"></i>
+                </button>
+                <button onclick="eliminarUsuario('${u.id}')" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-rose-400/30 transition" title="Revocar Acceso">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+
+      } catch (err) {
+        console.warn("Error cargando usuarios:", err.message);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center text-rose-400 py-8 font-semibold">Error al cargar colaboradores: ${err.message}</td></tr>`;
+      }
+    }
+
+    function abrirModalUsuario() {
+      document.getElementById('form_user_id').value = '';
+      document.getElementById('form_nombre').value = '';
+      document.getElementById('form_correo').value = '';
+      document.getElementById('form_password').value = '';
+      document.getElementById('form_rol').value = 'tecnico';
+      document.getElementById('modal_titulo').innerHTML = `<i class="fa-solid fa-user-plus text-blue-400"></i> Registrar Nuevo Colaborador`;
+      document.getElementById('modal_usuario').classList.remove('hidden');
+    }
+
+    function editarUsuario(id, nombre, correo, rol) {
+      document.getElementById('form_user_id').value = id;
+      document.getElementById('form_nombre').value = nombre;
+      document.getElementById('form_correo').value = correo;
+      document.getElementById('form_password').value = ''; 
+      document.getElementById('form_rol').value = rol;
+      document.getElementById('modal_titulo').innerHTML = `<i class="fa-solid fa-user-pen text-blue-400"></i> Editar Colaborador & Rol`;
+      document.getElementById('modal_usuario').classList.remove('hidden');
+    }
+
+    function cerrarModalUsuario() {
+      document.getElementById('modal_usuario').classList.add('hidden');
+    }
+
+    async function guardarUsuario() {
+      const id = document.getElementById('form_user_id').value;
+      const nombre = document.getElementById('form_nombre').value.trim();
+      const correo = document.getElementById('form_correo').value.trim();
+      const password = document.getElementById('form_password').value.trim();
+      const rol = document.getElementById('form_rol').value;
+
+      if (!nombre || !correo) {
+        mostrarToast('Por favor completa el nombre y el correo electrónico.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn_guardar_usuario');
+      const textoOrig = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`;
+      btn.disabled = true;
+
+      try {
+        if (!supabaseClient) throw new Error("Supabase no disponible");
+
+        if (!id) {
+          if (!password || password.length < 6) {
+            throw new Error("La contraseña temporal debe tener al menos 6 caracteres.");
+          }
+
+          const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+            email: correo,
+            password: password,
+            options: {
+              data: { nombre: nombre, rol: rol, debe_cambiar_password: true }
+            }
+          });
+
+          if (authError) throw authError;
+
+          const userId = authData.user ? authData.user.id : null;
+          if (userId) {
+            await supabaseClient.from('perfiles').upsert([
+              { 
+                id: userId, 
+                nombre: nombre, 
+                correo: correo, 
+                rol: rol,
+                debe_cambiar_password: true 
+              }
+            ]);
+          }
+
+          mostrarToast('Colaborador registrado. Se le pedirá cambio de clave al entrar.', 'success');
+        } else {
+          const { error: updateError } = await supabaseClient
+            .from('perfiles')
+            .update({ nombre: nombre, correo: correo, rol: rol })
+            .eq('id', id);
+
+          if (updateError) throw updateError;
+          mostrarToast('Datos de colaborador actualizados.', 'success');
+        }
+
+        cerrarModalUsuario();
+        await cargarUsuariosDesdeSupabase();
+      } catch (err) {
+        mostrarToast('Error: ' + err.message, 'error');
+      } finally {
+        btn.innerHTML = textoOrig;
+        btn.disabled = false;
+      }
+    }
+
+    async function eliminarUsuario(id) {
+      if (!confirm('¿Estás seguro de revocar el acceso a este colaborador?')) return;
+
+      try {
+        if (!supabaseClient) throw new Error("Supabase no disponible");
+
+        const { error } = await supabaseClient
+          .from('perfiles')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        mostrarToast('Acceso revocado correctamente.', 'success');
+        await cargarUsuariosDesdeSupabase();
+      } catch (err) {
+        mostrarToast('No se pudo eliminar: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

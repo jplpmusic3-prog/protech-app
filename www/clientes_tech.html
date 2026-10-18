@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha Técnica & Expedientes Master - ProTech Security</title>
+  
+  <!-- Configuración PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+  
+  <!-- Tipografía Corporativa Master -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    body.page-exiting {
+      animation: fadeOutPage 0.25s ease-in forwards !important;
+    }
+
+    @keyframes fadeOutPage {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-6px); }
+    }
+
+    /* ========================================================
+       1. VIDEO DE FONDO NÍDIDO
+       ======================================================== */
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      filter: contrast(1.2) brightness(1.05);
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background: rgba(2, 6, 23, 0.25);
+    }
+
+    /* ========================================================
+       2. TARJETAS Y CRISTAL CÓNCAVO (Homologado)
+       ======================================================== */
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.3), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.08),
+        0 20px 40px rgba(0, 0, 0, 0.35);
+      border-radius: 1.5rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        inset 5px 5px 12px rgba(0, 0, 0, 0.4), 
+        inset -5px -5px 12px rgba(255, 255, 255, 0.12),
+        0 25px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-glass-action {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        inset 3px 3px 8px rgba(0, 0, 0, 0.25), 
+        inset -3px -3px 8px rgba(255, 255, 255, 0.08),
+        0 10px 20px rgba(0, 0, 0, 0.25);
+      border-radius: 1rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #ffffff;
+    }
+
+    .btn-glass-action:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-1px);
+      box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, 0.35), 
+        inset -4px -4px 10px rgba(255, 255, 255, 0.12),
+        0 15px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cyber-input, .glass-input {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
+    .cyber-input option, .glass-input option {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .hide-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+
+    /* Menú lateral colapsable */
+    .collapse-content {
+      max-height: 400px; overflow: hidden; transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out; opacity: 1;
+    }
+    .collapse-content.collapsed { max-height: 0; opacity: 0; }
+    .collapse-icon { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .collapsed-btn .collapse-icon { transform: rotate(-90deg); }
+
+    .menu-link {
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.875rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.85); transition: all 0.2s; margin-bottom: 0.35rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .menu-link.active { 
+      background: rgba(255, 255, 255, 0.22); 
+      color: #ffffff; 
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+
+    select.custom-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1em;
+      padding-right: 2.2rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen relative flex flex-col md:flex-row pb-20 md:pb-0 text-white antialiased overflow-x-hidden session-checked">
+
+  <!-- VIDEO DE FONDO NÍDIDO -->
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline>
+      <source src="fondo-tech.mp4" type="video/mp4">
+      Tu navegador no soporta videos HTML5.
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+
+  <div id="mobile_menu_overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
+  <!-- BARRA LATERAL TÁCTICA -->
+  <aside id="sidebar_menu" class="fixed md:sticky top-0 left-0 z-50 h-[100dvh] w-72 flex-col justify-between cyber-glass-card bg-slate-950/80 md:bg-slate-950/40 border-y-0 border-l-0 rounded-none flex-shrink-0 p-5 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out flex no-print">
+    <div class="space-y-4 relative z-10 overflow-y-auto max-h-[calc(100vh-100px)] pr-1 hide-scrollbar">
+      
+      <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img src="logo.png" alt="ProTech" class="h-10 w-auto object-contain drop-shadow" onerror="this.style.display='none'; document.getElementById('logo_nextgen_side').style.display='flex';">
+            <div id="logo_nextgen_side" style="display:none;" class="h-10 w-10 rounded-2xl gradient-cyber-brand text-white font-tech-head text-base items-center justify-center shadow-lg shadow-blue-500/25 font-black">PS</div>
+            <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-slate-950"></span>
+            </span>
+          </div>
+          <div>
+            <h1 class="font-tech-head font-extrabold text-base text-white leading-none">ProTech</h1>
+            <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-1">Cyber-OS • v4.2</p>
+          </div>
+        </div>
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white/70 hover:text-rose-400 transition p-2 bg-white/10 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <nav class="space-y-3 text-xs font-semibold">
+        <div>
+          <a href="index.html" class="flex items-center gap-3.5 px-3.5 py-2.5 rounded-2xl bg-white/10 border border-white/20 text-white shadow-sm relative overflow-hidden group transition">
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r"></div>
+            <i class="fa-solid fa-layer-group w-4 text-center text-sm text-white/80"></i>
+            <span class="font-bold">Centro de Operaciones</span>
+          </a>
+        </div>
+
+        <!-- ÁREA OPERATIVA (Activa) -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_operativa', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-blue-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-wrench"></i> Área Operativa</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_operativa" class="collapse-content space-y-1 mt-2">
+            <a href="agenda_tickets.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-calendar-check"></i></div>
+              <span>Agenda & Tickets</span>
+            </a>
+            <a href="inspecciones_index.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-clipboard-list"></i></div>
+              <span>Inspección</span>
+            </a>
+            <a href="orden_trabajo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+              <span>Órdenes de Trabajo</span>
+            </a>
+            <a href="clientes_tech.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white bg-cyan-600/40 font-bold transition group border border-cyan-400/40 shadow-sm">
+              <div class="icon-box h-6 w-6 rounded-md bg-cyan-600 text-white flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-address-book"></i></div>
+              <span>Ficha Técnica / Clientes</span>
+            </a>
+            <a href="acta_entrega.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-file-signature"></i></div>
+              <span>Acta de Entrega</span>
+            </a>
+            <a href="bandeja_operativa.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-orange-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-list-check"></i></div>
+              <span>Monitor General OTs</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ÁREA COMERCIAL -->
+        <div class="cyber-glass-card rounded-2xl p-2.5 shadow-sm">
+          <div onclick="toggleArea('sec_comercial', this)" class="w-full flex items-center justify-between font-tech-mono text-[10px] uppercase font-bold text-purple-300 tracking-wider p-1 cursor-pointer select-none">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-store"></i> Área Comercial</span>
+            <i class="fa-solid fa-chevron-down collapse-icon text-[10px] transition-transform duration-300"></i>
+          </div>
+          <div id="sec_comercial" class="collapse-content space-y-1 mt-2">
+            <a href="bandeja.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-purple-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-folder-open"></i></div>
+              <span>Bandeja & Aprobaciones</span>
+            </a>
+            <a href="catalogo.html" class="flex items-center gap-3 px-3 py-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition group">
+              <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <span>Catálogo de Precios</span>
+            </a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="p-3.5 rounded-2xl cyber-glass-card border border-white/20 flex items-center justify-between shadow-sm relative z-10 mt-3">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <div class="h-9 w-9 rounded-xl gradient-cyber-brand text-white flex items-center justify-center font-tech-head font-bold text-xs shadow-md">JP</div>
+        <div class="truncate">
+          <p class="text-xs font-bold text-white truncate">Juan Pablo Luna</p>
+          <p class="font-tech-mono text-[9px] text-blue-300 uppercase font-bold">Administrador</p>
+        </div>
+      </div>
+      <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-2 rounded-lg hover:bg-white/10 transition" title="Desconectar">
+        <i class="fa-solid fa-power-off text-xs"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="flex-1 flex flex-col min-w-0 h-[100dvh] overflow-hidden">
+    
+    <!-- CABECERA HOMOLOGADA -->
+    <header class="cyber-glass-card border-x-0 border-t-0 rounded-none sticky top-0 z-40 px-4 md:px-8 py-3.5 flex items-center justify-between shadow-sm flex-shrink-0 bg-slate-950/30 backdrop-blur-md">
+      <div class="flex items-center space-x-3.5 w-full max-w-md">
+        <button onclick="toggleMobileMenu()" class="md:hidden text-white p-2 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 transition flex-shrink-0">
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <div class="relative w-full">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-white/50 text-xs"></i>
+          <input type="text" id="input-buscar-cliente" oninput="filtrarFichas()" placeholder="Buscar por cliente, sede, ubicación o equipo con S/N..." class="cyber-input w-full pl-9 pr-4 py-2.5 rounded-2xl text-xs outline-none shadow-sm relative z-10">
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2.5 flex-shrink-0">
+        <button onclick="abrirModalFicha()" class="px-4 py-2.5 rounded-xl btn-glass-action text-white font-bold text-xs flex items-center gap-2 transition">
+          <i class="fa-solid fa-user-plus text-cyan-400"></i> Nueva Ficha Técnica
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto hide-scrollbar relative z-10 space-y-6">
+      <div class="max-w-[1200px] mx-auto space-y-6">
+
+        <!-- TÍTULO PRINCIPAL HOMOLOGADO -->
+        <div>
+          <h2 class="font-tech-head font-extrabold text-2xl text-white tracking-tight flex items-center gap-3">
+            <i class="fa-solid fa-address-book text-cyan-400 drop-shadow-md"></i> Fichas Técnicas & Sedes Master
+          </h2>
+          <p class="font-tech-mono text-[11px] uppercase tracking-wider text-white/70 mt-1.5">EXPEDIENTES, CONTACTOS DE EMERGENCIA, SERIALES (S/N) & BITÁCORA</p>
+        </div>
+
+        <!-- Lista de Fichas Técnicas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="grid-fichas">
+          <!-- Skeletons de Carga -->
+          <div class="cyber-glass-card p-5 rounded-3xl h-48 border border-white/20 flex flex-col justify-between shadow-sm">
+            <div class="space-y-3">
+              <div class="h-5 w-2/3 rounded skeleton-shimmer"></div>
+              <div class="h-3 w-1/2 rounded skeleton-shimmer"></div>
+              <div class="h-10 w-full rounded-2xl skeleton-shimmer mt-4"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: CREAR / EDITAR FICHA TÉCNICA (EXPEDIENTE MAESTRO) -->
+  <div id="modal-ficha" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex justify-center items-center p-4 overflow-y-auto">
+    <div class="cyber-glass-card bg-slate-900/95 w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden my-6 border border-white/25 flex flex-col max-h-[92vh] text-white">
+      
+      <div class="bg-slate-950/80 px-6 py-4 flex justify-between items-center border-b border-white/15">
+        <h3 class="font-tech-head font-bold text-sm text-white" id="modal-titulo">Expediente Técnico Maestro del Cliente</h3>
+        <button onclick="cerrarModalFicha()" class="text-white/70 hover:text-white text-lg font-black px-2 transition">✕</button>
+      </div>
+
+      <div class="p-6 space-y-6 text-xs overflow-y-auto flex-1 bg-slate-950/40 hide-scrollbar">
+        <input type="hidden" id="ficha-id">
+
+        <!-- Selector para heredar datos de Proforma -->
+        <div id="seccion-selector-proforma" class="cyber-glass-card bg-white/5 p-4 rounded-2xl border border-white/15 flex flex-col md:flex-row items-center justify-between gap-3 shadow-sm">
+          <div>
+            <label class="block font-tech-head font-bold text-white text-xs mb-0.5"><i class="fa-solid fa-file-invoice text-blue-400 mr-1"></i> Autocompletar datos desde Proforma</label>
+            <p class="text-[11px] text-white/60">Selecciona una proforma existente para rellenar los datos del cliente automáticamente.</p>
+          </div>
+          <select id="select-heredar-proforma" onchange="heredarDatosProforma(this.value)" class="cyber-input w-full md:w-80 rounded-xl p-2.5 font-bold text-xs outline-none">
+            <option value="">-- Seleccionar Proforma --</option>
+          </select>
+        </div>
+
+        <!-- SECCIÓN 1: DATOS GENERALES & CICLO DE VIDA -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 cyber-glass-card bg-white/5 p-5 rounded-3xl border border-white/15 shadow-sm">
+            <div class="md:col-span-2">
+              <label class="block font-tech-head font-bold text-white mb-1 text-xs"><i class="fa-solid fa-building mr-1 text-white/60"></i> Nombre de la Sede / Sucursal *</label>
+              <input type="text" id="f-sede" placeholder="Ej. Casa Matriz, Oficina Norte, Bodega..." class="cyber-input w-full rounded-xl p-2.5 font-bold text-white outline-none">
+            </div>
+            <div>
+              <label class="block font-tech-head font-bold text-white mb-1 text-xs">Cliente / Razón Social *</label>
+              <input type="text" id="f-cliente" placeholder="Nombre completo" class="cyber-input w-full rounded-xl p-2.5 font-bold outline-none">
+            </div>
+            <div>
+              <label class="block font-tech-head font-bold text-white mb-1 text-xs">C.I. / RUC</label>
+              <input type="text" id="f-identificacion" placeholder="Número de identificación" class="cyber-input w-full rounded-xl p-2.5 font-mono outline-none">
+            </div>
+            <div>
+              <label class="block font-tech-head font-bold text-white mb-1 text-xs">Ubicación / Dirección de la Sede</label>
+              <input type="text" id="f-ubicacion" placeholder="Dirección específica" class="cyber-input w-full rounded-xl p-2.5 outline-none">
+            </div>
+            <div>
+              <label class="block font-tech-head font-bold text-white mb-1 text-xs">Teléfono de Contacto</label>
+              <input type="text" id="f-contacto" placeholder="Número telefónico" class="cyber-input w-full rounded-xl p-2.5 font-mono outline-none">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 cyber-glass-card bg-blue-500/10 p-5 rounded-3xl border border-blue-500/25 shadow-sm">
+            <h4 class="font-tech-head font-bold text-blue-300 uppercase text-[11px]"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Estado y Garantía</h4>
+            <div>
+              <label class="block text-[11px] text-white/80 font-bold mb-1">Estado de la Sede</label>
+              <select id="f-estado" class="cyber-input w-full rounded-xl p-2.5 font-bold text-white outline-none">
+                <option value="Activa">🟢 Instalación Activa</option>
+                <option value="En Mantenimiento">🟡 En Mantenimiento</option>
+                <option value="Garantía Vencida">🟠 Garantía Vencida</option>
+                <option value="Suspendida / Retirada">🔴 Suspendida / Inactiva</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-white/80 font-bold mb-1">Fecha de Instalación</label>
+              <input type="date" id="f-fecha-inst" class="cyber-input w-full rounded-xl p-2.5 text-white font-mono outline-none">
+            </div>
+            <div>
+              <label class="block text-[11px] text-white/80 font-bold mb-1">Vencimiento de Garantía</label>
+              <input type="date" id="f-fecha-garantia" class="cyber-input w-full rounded-xl p-2.5 text-white font-mono outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTACTOS DE EMERGENCIA & ESCALAMIENTO -->
+        <div class="cyber-glass-card bg-white/5 p-5 rounded-3xl border border-white/15 shadow-sm space-y-3">
+          <div class="flex justify-between items-center border-b border-white/15 pb-3">
+            <h4 class="font-tech-head font-bold text-white uppercase text-xs flex items-center gap-2">
+              <i class="fa-solid fa-address-book text-teal-400"></i> Contactos de Emergencia y Escalamiento en Sede
+            </h4>
+            <button type="button" onclick="agregarContactoEmergencia()" class="px-3 py-1.5 btn-glass-action text-teal-300 font-bold rounded-xl text-[11px] transition flex items-center gap-1.5">
+              <i class="fa-solid fa-plus"></i> Añadir Contacto
+            </button>
+          </div>
+          <div class="overflow-x-auto hide-scrollbar">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="text-white/60 font-semibold border-b border-white/15 font-tech-mono text-[10px] uppercase">
+                  <th class="p-2 w-1/4">Nombre / Responsable</th>
+                  <th class="p-2 w-1/4">Cargo / Rol</th>
+                  <th class="p-2 w-1/4">Teléfono Directo</th>
+                  <th class="p-2">Nivel de Autorización</th>
+                  <th class="p-2 w-10 text-center"></th>
+                </tr>
+              </thead>
+              <tbody id="tabla-contactos-emergencia-body" class="divide-y divide-white/10 text-white">
+                <tr><td colspan="5" class="p-3 text-center text-white/50 italic">Sin contactos registrados.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- INVENTARIO CON GARANTÍAS Y SERIALES (S/N) -->
+        <div class="cyber-glass-card bg-white/5 p-5 rounded-3xl border border-white/15 shadow-sm space-y-3">
+          <div class="flex justify-between items-center border-b border-white/15 pb-3">
+            <h4 class="font-tech-head font-bold text-white uppercase text-xs flex items-center gap-2">
+              <i class="fa-solid fa-boxes-stacked text-blue-400"></i> Inventario de Equipos, Seriales (S/N) & Garantías
+            </h4>
+            <button type="button" onclick="agregarEquipoFicha()" class="px-3 py-1.5 btn-glass-action text-blue-300 font-bold rounded-xl text-[11px] transition flex items-center gap-1.5">
+              <i class="fa-solid fa-plus"></i> Registrar Equipo
+            </button>
+          </div>
+          <div class="overflow-x-auto hide-scrollbar">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="text-white/60 font-semibold border-b border-white/15 font-tech-mono text-[10px] uppercase">
+                  <th class="p-2 w-12 text-center">Cant</th>
+                  <th class="p-2">Descripción / Modelo del Equipo</th>
+                  <th class="p-2 w-44">N° de Serie (S/N)</th>
+                  <th class="p-2 w-36">Venc. Garantía</th>
+                  <th class="p-2 w-10 text-center"></th>
+                </tr>
+              </thead>
+              <tbody id="tabla-inventario-fichas-body" class="divide-y divide-white/10 text-white">
+                <tr><td colspan="5" class="p-3 text-center text-white/50 italic">Sincronizado automáticamente desde el Acta de Entrega.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- BITÁCORA DE MANTENIMIENTOS & HISTORIAL DE OTs -->
+        <div class="cyber-glass-card bg-white/5 p-5 rounded-3xl border border-white/15 shadow-sm space-y-3">
+          <div class="border-b border-white/15 pb-3">
+            <h4 class="font-tech-head font-bold text-white uppercase text-xs flex items-center gap-2">
+              <i class="fa-solid fa-clock-rotate-left text-purple-400"></i> Bitácora de Mantenimientos & Historial de OTs en Sede
+            </h4>
+            <p class="text-[10px] text-white/60 mt-0.5">Rastro histórico de visitas técnicas y servicios ejecutados en esta sucursal.</p>
+          </div>
+          <div id="contenedor-historial-ots" class="space-y-2 max-h-48 overflow-y-auto hide-scrollbar">
+            <p class="text-white/50 italic text-center py-4 text-xs">Cargando historial de órdenes de trabajo asociadas...</p>
+          </div>
+        </div>
+
+        <!-- REPOSITORIO VISUAL (PLANOS Y FOTOS DE RACK) -->
+        <div class="cyber-glass-card bg-white/5 p-5 rounded-3xl border border-white/15 shadow-sm space-y-3">
+          <div class="border-b border-white/15 pb-3">
+            <h4 class="font-tech-head font-bold text-white uppercase text-xs flex items-center gap-2">
+              <i class="fa-solid fa-image text-indigo-400"></i> Repositorio Visual (Plano de Planta & Foto de Rack)
+            </h4>
+            <p class="text-[10px] text-white/60 mt-0.5">Adjunta esquemas de ubicación y fotografías del estado final del rack de comunicaciones.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="cyber-glass-card p-4 rounded-2xl border border-white/15 space-y-2 bg-white/5">
+              <span class="font-bold text-white text-xs block"><i class="fa-solid fa-map text-indigo-400 mr-1"></i> Plano / Mapa de Ubicación de Cámaras y Sensores</span>
+              <input type="file" id="file-plano-sede" accept="image/*" onchange="procesarImagenRepositorio(event, 'plano')" class="text-[10px] text-white/70 file:mr-2 file:py-1 file:px-2.5 file:rounded-xl file:border-0 file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 transition cursor-pointer w-full">
+              <div id="preview-plano-container" class="hidden mt-2">
+                <img id="img-plano-preview" src="" class="h-32 w-full object-cover rounded-xl border border-white/20 shadow-sm">
+                <button type="button" onclick="eliminarRepositorio('plano')" class="text-rose-400 text-[10px] font-bold mt-1 underline">Eliminar plano</button>
+              </div>
+            </div>
+            <div class="cyber-glass-card p-4 rounded-2xl border border-white/15 space-y-2 bg-white/5">
+              <span class="font-bold text-white text-xs block"><i class="fa-solid fa-server text-indigo-400 mr-1"></i> Fotografía del Rack de Comunicaciones / NVR</span>
+              <input type="file" id="file-rack-sede" accept="image/*" onchange="procesarImagenRepositorio(event, 'rack')" class="text-[10px] text-white/70 file:mr-2 file:py-1 file:px-2.5 file:rounded-xl file:border-0 file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 transition cursor-pointer w-full">
+              <div id="preview-rack-container" class="hidden mt-2">
+                <img id="img-rack-preview" src="" class="h-32 w-full object-cover rounded-xl border border-white/20 shadow-sm">
+                <button type="button" onclick="eliminarRepositorio('rack')" class="text-rose-400 text-[10px] font-bold mt-1 underline">Eliminar foto</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- REDES, ISP & ACCESO REMOTO -->
+        <div class="cyber-glass-card bg-cyan-500/10 p-5 rounded-3xl border border-cyan-500/25 space-y-3 shadow-sm relative overflow-hidden">
+          <i class="fa-solid fa-server absolute -right-4 -bottom-4 text-7xl text-cyan-500/10 pointer-events-none"></i>
+          <h4 class="font-tech-head font-bold text-cyan-300 uppercase text-[11px]"><i class="fa-solid fa-network-wired mr-1"></i> Infraestructura de Red & Acceso Remoto</h4>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3 relative z-10 text-white">
+            <div class="md:col-span-2">
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">Proveedor de Internet (ISP)</label>
+              <input type="text" id="f-isp" placeholder="Ej. Netlife, CNT..." class="cyber-input w-full rounded-xl p-2 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">IP Pública</label>
+              <input type="text" id="f-ip-publica" placeholder="190.x.x.x" class="cyber-input w-full rounded-xl p-2 font-mono outline-none">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">PC Cliente (AnyDesk / TeamViewer)</label>
+              <input type="text" id="f-anydesk" placeholder="ID: 123 456 789" class="cyber-input w-full rounded-xl p-2 font-mono font-bold text-cyan-300 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">Router Principal</label>
+              <input type="text" id="f-red-router" placeholder="Marca / Modelo" class="cyber-input w-full rounded-xl p-2 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">Gateway IP</label>
+              <input type="text" id="f-red-gateway" placeholder="192.168.1.1" class="cyber-input w-full rounded-xl p-2 font-mono outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">Wi-Fi (SSID)</label>
+              <input type="text" id="f-red-ssid" placeholder="Red Wi-Fi" class="cyber-input w-full rounded-xl p-2 outline-none">
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">Contraseña Wi-Fi</label>
+              <input type="text" id="f-red-pass" placeholder="Clave Wi-Fi" class="cyber-input w-full rounded-xl p-2 font-mono text-cyan-300 font-bold outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- CCTV -->
+        <div class="cyber-glass-card bg-blue-500/10 p-5 rounded-3xl border border-blue-500/25 space-y-3 shadow-sm relative overflow-hidden">
+          <i class="fa-solid fa-video absolute -right-4 -bottom-4 text-7xl text-blue-500/10 pointer-events-none"></i>
+          <h4 class="font-tech-head font-bold text-blue-300 uppercase text-[11px]"><i class="fa-solid fa-camera mr-1"></i> Credenciales CCTV & Grabador</h4>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3 relative z-10 text-white">
+            <div class="md:col-span-2">
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">Modelo Grabador (NVR/DVR)</label>
+              <input type="text" id="f-cctv-eq" list="lista-catalogos-cctv" placeholder="Ej. NVR Hikvision..." class="cyber-input w-full rounded-xl p-2 outline-none">
+              <datalist id="lista-catalogos-cctv"></datalist>
+            </div>
+            <div>
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">Dirección IP Local</label>
+              <input type="text" id="f-cctv-ip" placeholder="192.168.1.X" class="cyber-input w-full rounded-xl p-2 font-mono text-blue-300 font-bold outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">Puerto HTTP / RTSP</label>
+              <input type="text" id="f-cctv-puerto" placeholder="80 / 554" class="cyber-input w-full rounded-xl p-2 font-mono outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">Usuario (DVR)</label>
+              <input type="text" id="f-cctv-user" placeholder="admin" class="cyber-input w-full rounded-xl p-2 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">Contraseña (DVR)</label>
+              <input type="text" id="f-cctv-pass" placeholder="Clave de acceso" class="cyber-input w-full rounded-xl p-2 font-mono text-rose-300 font-bold outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">App Móvil P2P (Cloud)</label>
+              <input type="text" id="f-cctv-cloud" placeholder="Hik-Connect / DMSS" class="cyber-input w-full rounded-xl p-2 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] text-white/70 font-bold mb-0.5">Código Verificación (P2P)</label>
+              <input type="text" id="f-cctv-verif" placeholder="Ej. ABCde1" class="cyber-input w-full rounded-xl p-2 font-mono font-bold text-purple-300 outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- GESTOR DE CANALES CCTV CON SIMULADOR DVR -->
+        <div class="cyber-glass-card bg-white/5 p-5 rounded-3xl border border-white/15 shadow-sm space-y-4">
+          <div class="flex flex-wrap justify-between items-center border-b border-white/15 pb-3 gap-3">
+            <div>
+              <h4 class="font-tech-head font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
+                <i class="fa-solid fa-table-cells text-white/75"></i> Mapeo Visual de Cámaras y Canales
+              </h4>
+              <p class="text-[10px] text-white/60">Asigna canales (CH01, IP02), IPs y ubicación de cada cámara.</p>
+            </div>
+            <button type="button" onclick="agregarCanalCCTV()" class="px-3 py-1.5 btn-glass-action text-white font-bold rounded-xl text-[11px] transition shadow-sm flex items-center gap-1.5">
+              <i class="fa-solid fa-plus text-[10px] text-blue-400"></i> Añadir Cámara
+            </button>
+          </div>
+
+          <div id="contenedor-canales-edicion" class="space-y-3">
+            <p class="text-white/50 italic text-center py-4 text-xs">No hay cámaras añadidas todavía.</p>
+          </div>
+
+          <div class="pt-4 border-t border-white/15 space-y-2">
+            <span class="text-[10px] font-tech-head font-bold uppercase tracking-wider text-white/70 block">Simulador de Vista en Mosaico Estilo DVR:</span>
+            <div id="preview-cuadricula-dvr" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 bg-slate-950 p-3 rounded-2xl border border-white/15 min-h-[140px] items-center justify-center">
+              <span class="text-white/40 italic text-[11px] col-span-full text-center">Añade canales arriba para ver la simulación de pantalla dividida.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALARMAS & ZONAS -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="cyber-glass-card bg-amber-500/10 p-5 rounded-3xl border border-amber-500/25 shadow-sm relative overflow-hidden">
+            <i class="fa-solid fa-shield-cat absolute -right-2 -bottom-2 text-7xl text-amber-500/10 pointer-events-none"></i>
+            <h4 class="font-tech-head font-bold text-amber-300 uppercase text-[11px] mb-3"><i class="fa-solid fa-bell mr-1"></i> Panel de Alarma</h4>
+            <div class="space-y-3 relative z-10 text-white">
+              <div>
+                <label class="block text-[10px] text-white/70 font-bold mb-0.5">Panel / Central</label>
+                <input type="text" id="f-seg-panel" placeholder="Modelo de central" class="cyber-input w-full rounded-xl p-2 outline-none">
+              </div>
+              <div>
+                <label class="block text-[10px] text-white/70 font-bold mb-0.5">Clave Maestra / Código App</label>
+                <input type="text" id="f-seg-clave" placeholder="Código maestro" class="cyber-input w-full rounded-xl p-2 font-mono text-amber-300 font-bold outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card bg-white/5 lg:col-span-2 p-5 rounded-3xl border border-white/15 shadow-sm">
+            <div class="flex justify-between items-center border-b border-white/15 pb-2 mb-3">
+              <h4 class="font-tech-head font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
+                <i class="fa-solid fa-list-ol text-amber-400"></i> Zonificación y Sensores
+              </h4>
+              <button type="button" onclick="agregarZonaAlarma()" class="px-3 py-1.5 btn-glass-action text-amber-300 font-bold rounded-xl text-[10px] transition border border-white/20">
+                + Añadir Zona
+              </button>
+            </div>
+            <div class="overflow-x-auto hide-scrollbar">
+              <table class="w-full text-left border-collapse text-[11px]">
+                <thead>
+                  <tr class="text-white/60 font-semibold border-b border-white/15 font-tech-mono text-[10px] uppercase">
+                    <th class="p-2 w-16 text-center">Zona</th>
+                    <th class="p-2 w-1/4">Módulo</th>
+                    <th class="p-2">Ubicación Sensor</th>
+                    <th class="p-2 w-24 text-center">Tipo</th>
+                    <th class="p-2 w-8 text-center"></th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-zonas-body" class="divide-y divide-white/10 text-white">
+                  <tr><td colspan="5" class="p-3 text-center text-white/50 italic">Sin zonas.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLAS DE MAPEO Y USUARIOS APP -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="cyber-glass-card bg-white/5 p-5 rounded-3xl border border-white/15 shadow-sm">
+            <div class="flex justify-between items-center border-b border-white/15 pb-2 mb-3">
+              <h4 class="font-tech-head font-bold text-white uppercase text-[11px]"><i class="fa-solid fa-users text-purple-400 mr-1"></i> Accesos App Móvil</h4>
+              <button type="button" onclick="agregarUsuarioApp()" class="px-3 py-1.5 btn-glass-action text-purple-300 font-bold rounded-xl text-[10px] transition border border-white/20">+ Añadir</button>
+            </div>
+            <div class="overflow-x-auto hide-scrollbar">
+              <table class="w-full text-left border-collapse text-[10px]">
+                <thead>
+                  <tr class="text-white/60 font-semibold border-b border-white/15 font-tech-mono uppercase">
+                    <th class="p-1.5">Usuario / Rol</th>
+                    <th class="p-1.5">Correo Cuenta</th>
+                    <th class="p-1.5 text-center"></th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-usuarios-app-body" class="divide-y divide-white/10 text-white"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card bg-white/5 p-5 rounded-3xl border border-white/15 shadow-sm">
+            <div class="flex justify-between items-center border-b border-white/15 pb-2 mb-3">
+              <h4 class="font-tech-head font-bold text-white uppercase text-[11px]"><i class="fa-solid fa-ethernet text-cyan-400 mr-1"></i> Mapeo Patch/Switch</h4>
+              <button type="button" onclick="agregarFilaMapeo()" class="px-3 py-1.5 btn-glass-action text-cyan-300 font-bold rounded-xl text-[10px] transition border border-white/20">+ Añadir</button>
+            </div>
+            <div class="overflow-x-auto hide-scrollbar">
+              <table class="w-full text-left border-collapse text-[10px]">
+                <thead>
+                  <tr class="text-white/60 font-semibold border-b border-white/15 font-tech-mono uppercase">
+                    <th class="p-1.5">Destino</th>
+                    <th class="p-1.5">Switch</th>
+                    <th class="p-1.5 text-center">Puerto</th>
+                    <th class="p-1.5 text-center"></th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-mapeo-body" class="divide-y divide-white/10 text-white"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notas e Instrucciones -->
+        <div class="space-y-3 cyber-glass-card bg-white/5 p-5 rounded-3xl border border-white/15 shadow-sm">
+          <div>
+            <label class="block font-tech-head font-bold text-white mb-1 text-xs">Notas y Topología General</label>
+            <textarea id="f-notas" rows="2" placeholder="Ubicación de los equipos, claves de PC local, etc." class="cyber-input w-full rounded-xl p-3 text-xs outline-none resize-none"></textarea>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="bg-slate-950/80 backdrop-blur px-6 py-4 border-t border-white/15 flex justify-end gap-3 rounded-b-3xl">
+        <button type="button" onclick="cerrarModalFicha()" class="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/20 transition shadow-sm text-xs">Cancelar</button>
+        <button type="button" onclick="guardarFichaTecnica()" class="btn-glass-action px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2 text-xs">
+          <i class="fa-solid fa-floppy-disk text-blue-300"></i> Guardar Expediente Maestro
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let fichasLista = [];
+    let fichasAgrupadas = {}; 
+    let proformasLista = [];
+    let mapeoActual = [];
+    let canalesCCTVActual = [];
+    let zonificacionActual = [];
+    let usuariosAppActual = [];
+    let contactosEmergenciaActual = [];
+    let inventarioEquiposFichaActual = [];
+    let repositorioVisualActual = { plano: '', rack: '' };
+
+    function toggleMobileMenu() {
+      document.getElementById('sidebar_menu').classList.toggle('-translate-x-full');
+      document.getElementById('mobile_menu_overlay').classList.toggle('hidden');
+    }
+
+    function toggleArea(idContent, headerElement) {
+      const content = document.getElementById(idContent);
+      if (content) {
+        content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed-btn');
+      }
+    }
+
+    window.addEventListener('load', async () => {
+      document.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', (e) => {
+          const href = link.getAttribute('href');
+          if (href && !href.startsWith('#') && !href.startsWith('http') && !link.hasAttribute('target')) {
+            e.preventDefault();
+            document.body.classList.add('page-exiting');
+            setTimeout(() => { window.location.href = href; }, 230);
+          }
+        });
+      });
+
+      await cargarCatalogoCCTV();
+      await cargarProformas();
+      await cargarFichasTecnicas();
+    });
+
+    async function cargarCatalogoCCTV() {
+      try {
+        if (!supabaseClient) return;
+        const { data, error } = await supabaseClient.from('catalogo_precios').select('descripcion, subsistema').ilike('subsistema', '%CCTV%');
+        if (error) throw error;
+        
+        const datalist = document.getElementById('lista-catalogos-cctv');
+        if (!datalist) return;
+        const grabadores = (data || []).filter(item => {
+          const desc = item.descripcion.toUpperCase();
+          return desc.includes('NVR') || desc.includes('DVR') || desc.includes('XVR') || desc.includes('GRABADOR');
+        });
+        datalist.innerHTML = grabadores.map(item => `<option value="${item.descripcion}">`).join('');
+      } catch (err) {
+        console.error("No se pudo cargar el catálogo de grabadores:", err);
+      }
+    }
+
+    async function cargarProformas() {
+      try {
+        if (!supabaseClient) return;
+        const { data, error } = await supabaseClient.from('proformas').select('*').order('id', { ascending: false }).limit(50);
+        if (error) throw error;
+
+        proformasLista = (data || []).map(p => ({
+          id: p.id,
+          cliente: p.cliente_nombre || p.cliente || 'Cliente sin nombre',
+          identificacion: p.identificacion || p.ruc || '',
+          ubicacion: p.ubicacion || p.direccion || '',
+          contacto: p.contacto || p.telefono || ''
+        }));
+
+        const selectHeredar = document.getElementById('select-heredar-proforma');
+        if (selectHeredar) {
+          selectHeredar.innerHTML = `<option value="">-- Seleccionar Proforma --</option>` + 
+            proformasLista.map((p, idx) => `<option value="${idx}">[#${p.id}] ${p.cliente} - ${p.ubicacion || 'Sin dirección'}</option>`).join('');
+        }
+      } catch (err) {
+        console.warn("No se pudieron cargar las proformas:", err);
+      }
+    }
+
+    function heredarDatosProforma(indexStr) {
+      if (indexStr === "") return;
+      const idx = parseInt(indexStr);
+      const reg = proformasLista[idx];
+      if (!reg) return;
+
+      document.getElementById('f-cliente').value = reg.cliente || '';
+      document.getElementById('f-identificacion').value = reg.identificacion || '';
+      document.getElementById('f-ubicacion').value = reg.ubicacion || '';
+      document.getElementById('f-contacto').value = reg.contacto || '';
+      if (!document.getElementById('f-sede').value || document.getElementById('f-sede').value === 'Sede Principal') {
+        document.getElementById('f-sede').value = reg.ubicacion ? `Sucursal - ${reg.ubicacion}` : 'Sede Principal';
+      }
+    }
+
+    async function cargarFichasTecnicas() {
+      try {
+        if (!supabaseClient) throw new Error("Supabase no disponible");
+        const { data, error } = await supabaseClient.from('fichas_tecnicas').select('*').order('cliente_nombre', { ascending: true });
+
+        if (error) throw error;
+        fichasLista = data || [];
+
+        fichasAgrupadas = {};
+        fichasLista.forEach(f => {
+          const cliente = f.cliente_nombre || 'Cliente sin nombre';
+          if (!fichasAgrupadas[cliente]) fichasAgrupadas[cliente] = [];
+          fichasAgrupadas[cliente].push(f);
+        });
+
+        renderizarClientesAgrupados(fichasAgrupadas);
+      } catch (err) {
+        document.getElementById('grid-fichas').innerHTML = `
+          <div class="col-span-full text-center py-12 text-rose-400 font-bold text-xs cyber-glass-card rounded-3xl border border-rose-500/30">
+            Error al cargar expedientes: ${err.message}.
+          </div>
+        `;
+      }
+    }
+
+    function renderizarClientesAgrupados(agrupados) {
+      const grid = document.getElementById('grid-fichas');
+      if (!grid) return;
+
+      const nombresClientes = Object.keys(agrupados);
+      if (nombresClientes.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-white/50 italic text-xs">No hay expedientes técnicos registrados.</div>`;
+        return;
+      }
+
+      grid.innerHTML = nombresClientes.map((nombreCliente, clienteIdx) => {
+        const sedes = agrupados[nombreCliente];
+        const ref = sedes[0] || {};
+        
+        let colorEstado = 'bg-emerald-400';
+        if (ref.estado_sede === 'En Mantenimiento') colorEstado = 'bg-amber-400';
+        if (ref.estado_sede === 'Garantía Vencida') colorEstado = 'bg-orange-400';
+        if (ref.estado_sede === 'Suspendida / Retirada') colorEstado = 'bg-rose-400';
+
+        const optionsSedes = sedes.map((s, sIdx) => `<option value="${s.id}" ${sIdx === 0 ? 'selected' : ''} style="background:#0f172a; color:#fff;">${s.sede || 'Sede Principal'}</option>`).join('');
+
+        return `
+          <div class="cyber-glass-card p-6 rounded-3xl shadow-sm space-y-4 relative flex flex-col justify-between transition hover:-translate-y-1 hover:shadow-md" id="card-cliente-${clienteIdx}">
+            <div class="absolute top-4 right-4 flex items-center gap-1.5">
+              <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full ${colorEstado} opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 ${colorEstado}"></span>
+              </span>
+            </div>
+            
+            <div class="space-y-3">
+              <div>
+                <h3 class="font-tech-head font-extrabold text-white text-sm pr-6 leading-tight">${nombreCliente}</h3>
+                <p class="font-tech-mono text-[10px] text-white/60 mt-1 uppercase tracking-wide"><i class="fa-solid fa-id-card mr-1"></i>${ref.identificacion || 'N/A'} <span class="mx-1">|</span> <i class="fa-solid fa-phone mr-1"></i>${ref.contacto || 'Sin tel'}</p>
+              </div>
+
+              <!-- Selector de Sedes / Sucursales -->
+              <div class="cyber-glass-card bg-white/5 p-2.5 rounded-2xl border border-white/15 flex items-center gap-3 transition">
+                <div class="bg-cyan-600 text-white w-7 h-7 rounded-xl flex items-center justify-center shadow-sm text-xs flex-shrink-0">
+                  <i class="fa-solid fa-building"></i>
+                </div>
+                <select id="select-sede-${clienteIdx}" onchange="cambiarSedeActiva(${clienteIdx}, this.value)" class="w-full bg-transparent outline-none text-xs font-bold text-white border-none focus:ring-0 cursor-pointer custom-select">
+                  ${optionsSedes}
+                </select>
+                <button type="button" onclick="agregarSedeParaCliente('${nombreCliente.replace(/'/g, "\'")}')" class="text-cyan-300 hover:bg-white/10 p-1.5 rounded-xl transition" title="Añadir Sucursal">
+                  <i class="fa-solid fa-plus text-xs"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Contenedor del detalle de la sede activa -->
+            <div id="detalle-sede-${clienteIdx}" class="flex-grow pt-2">
+              ${renderizarDetalleSede(ref)}
+            </div>
+
+            <div class="flex items-center justify-between pt-4 mt-2 border-t border-white/15">
+              <button type="button" onclick="editarFicha(${ref.id})" id="btn-editar-${clienteIdx}" class="text-cyan-300 hover:text-cyan-200 font-bold text-xs flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-pen-to-square"></i> Abrir Expediente Maestro
+              </button>
+              <button type="button" onclick="eliminarFicha(${ref.id}, '${nombreCliente.replace(/'/g, "\'")}', '${(ref.sede || 'Sede Principal').replace(/'/g, "\'")}')" id="btn-eliminar-${clienteIdx}" class="text-white/50 hover:text-rose-400 transition px-2 py-1 rounded">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderizarDetalleSede(f) {
+      let badgesInfo = '';
+      const mapa = f.mapeo_red || [];
+      const canales = f.canales_cctv || [];
+      const zonas = f.zonificacion_alarma || [];
+      const usuarios = f.usuarios_app || [];
+      const contactos = f.contactos_emergencia || [];
+      
+      const tieneCCTV = canales.length > 0 || (f.cctv_equipo && f.cctv_equipo.trim() !== '');
+      const tieneAlarma = zonas.length > 0 || (f.seguridad_panel && f.seguridad_panel.trim() !== '');
+      const tieneRedes = mapa.length > 0 || (f.red_router && f.red_router.trim() !== '');
+      const tieneApp = usuarios.length > 0;
+      const tieneContactos = contactos.length > 0;
+
+      if (tieneCCTV) badgesInfo += `<span class="bg-blue-500/20 text-blue-300 text-[10px] font-bold px-2.5 py-1 rounded-xl flex items-center gap-1.5 border border-blue-400/30"><i class="fa-solid fa-video text-blue-400"></i> CCTV</span>`;
+      if (tieneAlarma) badgesInfo += `<span class="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2.5 py-1 rounded-xl flex items-center gap-1.5 border border-amber-400/30"><i class="fa-solid fa-shield-cat text-amber-400"></i> Alarma</span>`;
+      if (tieneRedes) badgesInfo += `<span class="bg-cyan-500/20 text-cyan-300 text-[10px] font-bold px-2.5 py-1 rounded-xl flex items-center gap-1.5 border border-cyan-400/30"><i class="fa-solid fa-network-wired text-cyan-400"></i> Redes</span>`;
+      if (tieneApp) badgesInfo += `<span class="bg-purple-500/20 text-purple-300 text-[10px] font-bold px-2.5 py-1 rounded-xl flex items-center gap-1.5 border border-purple-400/30"><i class="fa-solid fa-mobile-screen text-purple-400"></i> App Móvil</span>`;
+      if (tieneContactos) badgesInfo += `<span class="bg-teal-500/20 text-teal-300 text-[10px] font-bold px-2.5 py-1 rounded-xl flex items-center gap-1.5 border border-teal-400/30"><i class="fa-solid fa-address-book text-teal-400"></i> ${contactos.length} Contacto(s)</span>`;
+
+      if(!badgesInfo) badgesInfo = `<span class="text-white/50 italic text-[10px]">Expediente vacío. Sin sistemas registrados.</span>`;
+
+      return `
+        <div class="space-y-3">
+          <p class="text-xs text-white/80 font-medium leading-relaxed flex items-start gap-2">
+            <i class="fa-solid fa-location-dot text-white/50 mt-0.5"></i>
+            <span>${f.ubicacion || 'Sin dirección registrada en esta sucursal.'}</span>
+          </p>
+          
+          <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2">
+            <span class="font-tech-mono text-[9px] font-bold uppercase tracking-wider text-white/60 block">Sistemas & Expediente:</span>
+            <div class="flex flex-wrap gap-2">${badgesInfo}</div>
+            ${f.equipos_instalados ? `<div class="text-[10px] text-white/80 font-mono mt-1 pt-1 border-t border-white/15"><strong>Equipos & Seriales (S/N):</strong> ${f.equipos_instalados}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function cambiarSedeActiva(clienteIdx, fichaIdStr) {
+      const fichaId = parseInt(fichaIdStr);
+      let fichaEncontrada = null;
+      let clienteNombre = '';
+
+      for (const cliente in fichasAgrupadas) {
+        const match = fichasAgrupadas[cliente].find(s => s.id === fichaId);
+        if (match) {
+          fichaEncontrada = match;
+          clienteNombre = cliente;
+          break;
+        }
+      }
+      if (!fichaEncontrada) return;
+
+      const contenedorDetalle = document.getElementById(`detalle-sede-${clienteIdx}`);
+      if (contenedorDetalle) contenedorDetalle.innerHTML = renderizarDetalleSede(fichaEncontrada);
+
+      const btnEditar = document.getElementById(`btn-editar-${clienteIdx}`);
+      const btnEliminar = document.getElementById(`btn-eliminar-${clienteIdx}`);
+
+      if (btnEditar) btnEditar.setAttribute('onclick', `editarFicha(${fichaEncontrada.id})`);
+      if (btnEliminar) btnEliminar.setAttribute('onclick', `eliminarFicha(${fichaEncontrada.id}, '${clienteNombre.replace(/'/g, "\'")}', '${(fichaEncontrada.sede || 'Sede Principal').replace(/'/g, "\'")}')`);
+    }
+
+    function agregarSedeParaCliente(nombreCliente) {
+      abrirModalFicha();
+      document.getElementById('f-cliente').value = nombreCliente;
+      document.getElementById('f-sede').value = 'Nueva Sede / Sucursal';
+      
+      const sedesPrevias = fichasAgrupadas[nombreCliente] || [];
+      if (sedesPrevias.length > 0) {
+        const ref = sedesPrevias[0];
+        document.getElementById('f-identificacion').value = ref.identificacion || '';
+        document.getElementById('f-contacto').value = ref.contacto || '';
+      }
+    }
+
+    async function eliminarFicha(id, clienteNombre, sedeNombre) {
+      if (!confirm(`¿Eliminar la sede "${sedeNombre}" de "${clienteNombre}"?`)) return;
+      try {
+        const { error } = await supabaseClient.from('fichas_tecnicas').delete().eq('id', id);
+        if (error) throw error;
+        await cargarFichasTecnicas();
+      } catch (err) { alert("Error al eliminar: " + err.message); }
+    }
+
+    function filtrarFichas() {
+      const termino = document.getElementById('input-buscar-cliente').value.toLowerCase().trim();
+      if (!termino) { renderizarClientesAgrupados(fichasAgrupadas); return; }
+
+      const filtradasAgrupadas = {};
+      for (const cliente in fichasAgrupadas) {
+        const sedesMatch = fichasAgrupadas[cliente].filter(f => 
+          (f.cliente_nombre && f.cliente_nombre.toLowerCase().includes(termino)) ||
+          (f.sede && f.sede.toLowerCase().includes(termino)) ||
+          (f.ubicacion && f.ubicacion.toLowerCase().includes(termino)) ||
+          (f.equipos_instalados && f.equipos_instalados.toLowerCase().includes(termino))
+        );
+        if (sedesMatch.length > 0) filtradasAgrupadas[cliente] = sedesMatch;
+      }
+      renderizarClientesAgrupados(filtradasAgrupadas);
+    }
+
+    // GESTIÓN DE CONTACTOS DE EMERGENCIA
+    const fnContactos = {
+      render() {
+        const tbody = document.getElementById('tabla-contactos-emergencia-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (!contactosEmergenciaActual || contactosEmergenciaActual.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-white/50 italic">Sin contactos registrados.</td></tr>`;
+          return;
+        }
+        contactosEmergenciaActual.forEach((c, idx) => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-white/5 transition">
+              <td class="p-1.5"><input type="text" value="${c.nombre || ''}" oninput="contactosEmergenciaActual[${idx}].nombre = this.value" placeholder="Nombre completo" class="w-full cyber-input rounded-xl p-1.5 text-xs font-bold"></td>
+              <td class="p-1.5"><input type="text" value="${c.cargo || ''}" oninput="contactosEmergenciaActual[${idx}].cargo = this.value" placeholder="Ej. Gerente, Guardia..." class="w-full cyber-input rounded-xl p-1.5 text-xs"></td>
+              <td class="p-1.5"><input type="text" value="${c.telefono || ''}" oninput="contactosEmergenciaActual[${idx}].telefono = this.value" placeholder="099xxxxxxx" class="w-full cyber-input rounded-xl p-1.5 text-xs font-mono font-bold text-teal-300"></td>
+              <td class="p-1.5"><input type="text" value="${c.autorizacion || ''}" oninput="contactosEmergenciaActual[${idx}].autorizacion = this.value" placeholder="Nivel (Clave maestra, etc.)" class="w-full cyber-input rounded-xl p-1.5 text-xs"></td>
+              <td class="p-1.5 text-center"><button type="button" onclick="eliminarContactoEmergencia(${idx})" class="text-rose-400 font-bold text-xs p-1">✕</button></td>
+            </tr>
+          `;
+        });
+      }
+    };
+    function agregarContactoEmergencia() { contactosEmergenciaActual.push({ nombre: '', cargo: '', telefono: '', autorizacion: '' }); fnContactos.render(); }
+    function eliminarContactoEmergencia(idx) { contactosEmergenciaActual.splice(idx, 1); fnContactos.render(); }
+
+    // GESTIÓN DE INVENTARIO CON GARANTÍAS Y SERIALES
+    const fnInventarioFicha = {
+      render() {
+        const tbody = document.getElementById('tabla-inventario-fichas-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (!inventarioEquiposFichaActual || inventarioEquiposFichaActual.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-white/50 italic">No hay equipos registrados.</td></tr>`;
+          return;
+        }
+        inventarioEquiposFichaActual.forEach((eq, idx) => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-white/5 transition">
+              <td class="p-1.5 text-center"><input type="number" value="${eq.cant || 1}" oninput="inventarioEquiposFichaActual[${idx}].cant = this.value" class="w-12 text-center cyber-input rounded-xl p-1 text-xs font-mono font-bold"></td>
+              <td class="p-1.5"><input type="text" value="${eq.desc || ''}" oninput="inventarioEquiposFichaActual[${idx}].desc = this.value" placeholder="Modelo del equipo..." class="w-full cyber-input rounded-xl p-1.5 text-xs font-semibold"></td>
+              <td class="p-1.5"><input type="text" value="${eq.serial || ''}" oninput="inventarioEquiposFichaActual[${idx}].serial = this.value" placeholder="S/N de fábrica" class="w-full cyber-input rounded-xl p-1.5 text-xs font-mono font-bold text-blue-300"></td>
+              <td class="p-1.5"><input type="date" value="${eq.garantia || ''}" oninput="inventarioEquiposFichaActual[${idx}].garantia = this.value" class="w-full cyber-input rounded-xl p-1 text-xs font-mono"></td>
+              <td class="p-1.5 text-center"><button type="button" onclick="eliminarEquipoFicha(${idx})" class="text-rose-400 font-bold text-xs p-1">✕</button></td>
+            </tr>
+          `;
+        });
+      }
+    };
+    function agregarEquipoFicha() { inventarioEquiposFichaActual.push({ cant: 1, desc: '', serial: '', garantia: '' }); fnInventarioFicha.render(); }
+    function eliminarEquipoFicha(idx) { inventarioEquiposFichaActual.splice(idx, 1); fnInventarioFicha.render(); }
+
+    // HISTORIAL DE OTs (BITÁCORA)
+    async function cargarHistorialOTsCliente(nombreCliente) {
+      const contenedor = document.getElementById('contenedor-historial-ots');
+      if (!contenedor) return;
+      if (!nombreCliente) {
+        contenedor.innerHTML = `<p class="text-white/50 italic text-center py-3 text-xs">Guarde o seleccione un cliente para cargar su bitácora.</p>`;
+        return;
+      }
+      try {
+        const { data: ots, error } = await supabaseClient
+          .from('ordenes_trabajo')
+          .select('*')
+          .ilike('cliente', nombreCliente)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        if (!ots || ots.length === 0) {
+          contenedor.innerHTML = `<p class="text-white/50 italic text-center py-3 text-xs">No hay Órdenes de Trabajo anteriores registradas para este cliente.</p>`;
+          return;
+        }
+
+        contenedor.innerHTML = ots.map(ot => `
+          <div class="bg-white/5 p-3 rounded-2xl border border-white/10 flex justify-between items-center text-xs text-white">
+            <div>
+              <span class="font-tech-mono font-bold text-blue-300">${ot.numero_ot || 'OT-' + ot.id}</span>
+              <span class="mx-2">•</span>
+              <span class="text-white/90 font-semibold">${ot.tipo_trabajo || 'Mantenimiento / Instalación'}</span>
+              <p class="text-[10px] text-white/60 mt-0.5">Ubicación: ${ot.ubicacion || 'N/A'} — Fecha: ${ot.created_at ? new Date(ot.created_at).toLocaleDateString() : 'N/A'}</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase ${ot.estado === 'terminado' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30' : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'}">
+              ${ot.estado || 'Pendiente'}
+            </span>
+          </div>
+        `).join('');
+      } catch (err) {
+        contenedor.innerHTML = `<p class="text-rose-400 text-center py-3 text-xs">Error al cargar bitácora: ${err.message}</p>`;
+      }
+    }
+
+    // REPOSITORIO VISUAL (IMÁGENES)
+    function procesarImagenRepositorio(event, tipo) {
+      const archivo = event.target.files[0];
+      if (!archivo) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const imgOriginal = new Image();
+        imgOriginal.onload = function() {
+          const canvas = document.createElement('canvas');
+          let ancho = imgOriginal.width, alto = imgOriginal.height;
+          if (ancho > 1024) { alto = Math.round((alto * 1024) / ancho); ancho = 1024; }
+          canvas.width = ancho; canvas.height = alto;
+          canvas.getContext('2d').drawImage(imgOriginal, 0, 0, ancho, alto);
+          const base64Img = canvas.toDataURL('image/jpeg', 0.8);
+
+          if (tipo === 'plano') {
+            repositorioVisualActual.plano = base64Img;
+            document.getElementById('img-plano-preview').src = base64Img;
+            document.getElementById('preview-plano-container').classList.remove('hidden');
+          } else if (tipo === 'rack') {
+            repositorioVisualActual.rack = base64Img;
+            document.getElementById('img-rack-preview').src = base64Img;
+            document.getElementById('preview-rack-container').classList.remove('hidden');
+          }
+        };
+        imgOriginal.src = e.target.result;
+      };
+      reader.readAsDataURL(archivo);
+    }
+
+    function eliminarRepositorio(tipo) {
+      if (tipo === 'plano') {
+        repositorioVisualActual.plano = '';
+        document.getElementById('preview-plano-container').classList.add('hidden');
+        document.getElementById('file-plano-sede').value = '';
+      } else if (tipo === 'rack') {
+        repositorioVisualActual.rack = '';
+        document.getElementById('preview-rack-container').classList.add('hidden');
+        document.getElementById('file-rack-sede').value = '';
+      }
+    }
+
+    const fnUsuariosApp = {
+      render() {
+        const tbody = document.getElementById('tabla-usuarios-app-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (!usuariosAppActual || usuariosAppActual.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="3" class="p-2 text-center text-white/50 italic">No hay usuarios.</td></tr>`;
+          return;
+        }
+        usuariosAppActual.forEach((u, idx) => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-white/5 transition">
+              <td class="p-1.5"><input type="text" value="${u.nombre || ''}" oninput="usuariosAppActual[${idx}].nombre = this.value" placeholder="Nombre" class="w-full cyber-input rounded-xl p-1.5 text-xs">
+              <select onchange="usuariosAppActual[${idx}].privilegio = this.value" class="w-full mt-1 cyber-input rounded-xl p-1.5 text-xs bg-slate-900">
+                <option value="Administrador" ${u.privilegio === 'Administrador' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Admin</option>
+                <option value="Usuario Estándar" ${u.privilegio === 'Usuario Estándar' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Usuario</option>
+              </select></td>
+              <td class="p-1.5"><input type="text" value="${u.correo || ''}" oninput="usuariosAppActual[${idx}].correo = this.value" placeholder="correo / usr" class="w-full cyber-input rounded-xl p-1.5 text-xs font-mono"></td>
+              <td class="p-1.5 text-center"><button type="button" onclick="eliminarUsuarioApp(${idx})" class="text-rose-400 font-bold text-xs p-1">✕</button></td>
+            </tr>
+          `;
+        });
+      }
+    };
+    function agregarUsuarioApp() { usuariosAppActual.push({ nombre: '', correo: '', privilegio: 'Usuario Estándar', dispositivos: '' }); fnUsuariosApp.render(); }
+    function eliminarUsuarioApp(idx) { usuariosAppActual.splice(idx, 1); fnUsuariosApp.render(); }
+
+    const fnZonas = {
+      render() {
+        const tbody = document.getElementById('tabla-zonas-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (!zonificacionActual || zonificacionActual.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" class="p-2 text-center text-white/50 italic">Sin zonas.</td></tr>`;
+          return;
+        }
+        zonificacionActual.forEach((z, idx) => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-white/5 transition">
+              <td class="p-2 text-center"><input type="text" value="${z.zona || ''}" oninput="zonificacionActual[${idx}].zona = this.value" class="w-full cyber-input rounded-xl p-1.5 text-xs text-center font-bold"></td>
+              <td class="p-2"><input type="text" value="${z.modulo || ''}" oninput="zonificacionActual[${idx}].modulo = this.value" class="w-full cyber-input rounded-xl p-1.5 text-xs"></td>
+              <td class="p-2"><input type="text" value="${z.descripcion || ''}" oninput="zonificacionActual[${idx}].descripcion = this.value" placeholder="Sensor..." class="w-full cyber-input rounded-xl p-1.5 text-xs"></td>
+              <td class="p-2"><select onchange="zonificacionActual[${idx}].tipo = this.value" class="w-full cyber-input rounded-xl p-1.5 text-xs bg-slate-900"><option value="Instantánea" ${z.tipo === 'Instantánea' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Inst.</option><option value="Temporizada" ${z.tipo === 'Temporizada' ? 'selected' : ''} style="background:#0f172a; color:#fff;">Temp.</option></select></td>
+              <td class="p-2 text-center"><button type="button" onclick="eliminarZonaAlarma(${idx})" class="text-rose-400 font-bold text-xs p-1">✕</button></td>
+            </tr>
+          `;
+        });
+      }
+    };
+    function agregarZonaAlarma() { zonificacionActual.push({ zona: `Z${String(zonificacionActual.length + 1).padStart(2, '0')}`, modulo: 'Central', descripcion: '', tipo: 'Instantánea' }); fnZonas.render(); }
+    function eliminarZonaAlarma(idx) { zonificacionActual.splice(idx, 1); fnZonas.render(); }
+
+    const fnMap = {
+      render() {
+        const tbody = document.getElementById('tabla-mapeo-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (!mapeoActual || mapeoActual.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" class="p-2 text-center text-white/50 italic">Sin mapeo.</td></tr>`;
+          return;
+        }
+        mapeoActual.forEach((m, idx) => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-white/5 transition">
+              <td class="p-1.5"><input type="text" value="${m.dispositivo || ''}" oninput="mapeoActual[${idx}].dispositivo = this.value" placeholder="Destino" class="w-full cyber-input rounded-xl p-1.5 text-xs"></td>
+              <td class="p-1.5"><input type="text" value="${m.equipo_red || ''}" oninput="mapeoActual[${idx}].equipo_red = this.value" placeholder="Switch" class="w-full cyber-input rounded-xl p-1.5 text-xs"></td>
+              <td class="p-1.5"><input type="text" value="${m.puerto || ''}" oninput="mapeoActual[${idx}].puerto = this.value" placeholder="P01" class="w-full cyber-input rounded-xl p-1.5 text-xs text-center font-bold"></td>
+              <td class="p-1.5 text-center"><button type="button" onclick="eliminarFilaMapeo(${idx})" class="text-rose-400 font-bold text-xs p-1">✕</button></td>
+            </tr>
+          `;
+        });
+      }
+    };
+    function agregarFilaMapeo() { mapeoActual.push({ dispositivo: '', equipo_red: '', puerto: '' }); fnMap.render(); }
+    function eliminarFilaMapeo(idx) { mapeoActual.splice(idx, 1); fnMap.render(); }
+
+    const fnCCTV = {
+      render() {
+        const contenedor = document.getElementById('contenedor-canales-edicion');
+        if (!contenedor) return;
+        if (!canalesCCTVActual || canalesCCTVActual.length === 0) {
+          contenedor.innerHTML = `<p class="text-white/50 italic text-center py-4 text-xs">No hay cámaras añadidas todavía.</p>`;
+          this.renderCuadricula();
+          return;
+        }
+
+        contenedor.innerHTML = canalesCCTVActual.map((c, idx) => `
+          <div class="cyber-glass-card bg-white/5 p-3.5 rounded-2xl border border-white/15 shadow-sm space-y-2">
+            <div class="flex justify-between items-center border-b border-white/15 pb-1.5">
+              <span class="font-tech-head font-bold text-white text-xs"><i class="fa-solid fa-video mr-1"></i> Cámara #${idx + 1}</span>
+              <button type="button" onclick="eliminarCanalCCTV(${idx})" class="text-rose-400 hover:text-rose-300 text-[11px] font-bold">✕ Eliminar</button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <input type="text" value="${c.canal || ''}" oninput="canalesCCTVActual[${idx}].canal = this.value" onchange="fnCCTV.renderCuadricula()" placeholder="Canal (CH01)" class="cyber-input rounded-xl p-2 text-xs font-mono">
+              <input type="text" value="${c.ip || ''}" oninput="canalesCCTVActual[${idx}].ip = this.value" onchange="fnCCTV.renderCuadricula()" placeholder="IP (192.168...)" class="cyber-input rounded-xl p-2 text-xs font-mono">
+              <input type="text" value="${c.ubicacion || ''}" oninput="canalesCCTVActual[${idx}].ubicacion = this.value" onchange="fnCCTV.renderCuadricula()" placeholder="Ubicación" class="col-span-2 cyber-input rounded-xl p-2 text-xs">
+            </div>
+          </div>
+        `).join('');
+        this.renderCuadricula();
+      },
+      renderCuadricula() {
+        const cuadricula = document.getElementById('preview-cuadricula-dvr');
+        if (!cuadricula) return;
+        if (!canalesCCTVActual || canalesCCTVActual.length === 0) {
+          cuadricula.innerHTML = `<span class="text-white/40 italic text-[11px] col-span-full text-center">Añade canales arriba para ver la simulación de pantalla dividida.</span>`;
+          return;
+        }
+        cuadricula.innerHTML = canalesCCTVActual.map((c, idx) => `
+          <div class="relative bg-slate-900 rounded-xl border border-white/20 h-24 flex items-center justify-center overflow-hidden group shadow-inner">
+            <div class="text-white/30 text-[10px]">VIDEO CH</div>
+            <div class="absolute top-1 left-1 bg-slate-950/90 px-1.5 py-0.5 rounded-lg text-[9px] font-mono text-emerald-400 font-bold border border-emerald-500/30">
+              ${c.canal || `CH${idx+1}`} ${c.ubicacion ? '- '+c.ubicacion : ''}
+            </div>
+            <div class="absolute bottom-1 right-1 bg-slate-950/90 px-1.5 py-0.5 rounded-lg text-[8px] font-mono text-white/80">
+              ${c.ip || 'LIVE'}
+            </div>
+          </div>
+        `).join('');
+      }
+    };
+    function agregarCanalCCTV() { canalesCCTVActual.push({ tipo: 'IP', canal: `CH${String(canalesCCTVActual.length + 1).padStart(2, '0')}`, ip: '', ubicacion: '', img: '' }); fnCCTV.render(); }
+    function eliminarCanalCCTV(idx) { canalesCCTVActual.splice(idx, 1); fnCCTV.render(); }
+
+    function abrirModalFicha() {
+      document.getElementById('ficha-id').value = '';
+      document.getElementById('select-heredar-proforma').value = '';
+      document.getElementById('f-sede').value = 'Sede Principal';
+      document.getElementById('f-cliente').value = '';
+      document.getElementById('f-identificacion').value = '';
+      document.getElementById('f-ubicacion').value = '';
+      document.getElementById('f-contacto').value = '';
+      
+      document.getElementById('f-estado').value = 'Activa';
+      document.getElementById('f-fecha-inst').value = '';
+      document.getElementById('f-fecha-garantia').value = '';
+      document.getElementById('f-isp').value = '';
+      document.getElementById('f-ip-publica').value = '';
+      document.getElementById('f-anydesk').value = '';
+
+      document.getElementById('f-cctv-eq').value = '';
+      document.getElementById('f-cctv-ip').value = '';
+      document.getElementById('f-cctv-puerto').value = '';
+      document.getElementById('f-cctv-user').value = 'admin';
+      document.getElementById('f-cctv-pass').value = '';
+      document.getElementById('f-cctv-cloud').value = '';
+      document.getElementById('f-cctv-verif').value = '';
+
+      document.getElementById('f-red-router').value = '';
+      document.getElementById('f-red-gateway').value = '';
+      document.getElementById('f-red-ssid').value = '';
+      document.getElementById('f-red-pass').value = '';
+      document.getElementById('f-seg-panel').value = '';
+      document.getElementById('f-seg-clave').value = '';
+      document.getElementById('f-notas').value = '';
+
+      mapeoActual = []; canalesCCTVActual = []; zonificacionActual = []; usuariosAppActual = [];
+      contactosEmergenciaActual = []; inventarioEquiposFichaActual = [];
+      repositorioVisualActual = { plano: '', rack: '' };
+
+      document.getElementById('preview-plano-container').classList.add('hidden');
+      document.getElementById('preview-rack-container').classList.add('hidden');
+      document.getElementById('file-plano-sede').value = '';
+      document.getElementById('file-rack-sede').value = '';
+
+      fnMap.render(); fnCCTV.render(); fnZonas.render(); fnUsuariosApp.render();
+      fnContactos.render(); fnInventarioFicha.render();
+      cargarHistorialOTsCliente('');
+
+      document.getElementById('modal-titulo').textContent = "Nuevo Expediente Técnico Maestro";
+      document.getElementById('modal-ficha').classList.remove('hidden');
+    }
+
+    function editarFicha(id) {
+      let f = fichasLista.find(item => item.id === id);
+      if (!f) return;
+
+      document.getElementById('ficha-id').value = id;
+      document.getElementById('select-heredar-proforma').value = '';
+      document.getElementById('f-sede').value = f.sede || 'Sede Principal';
+      document.getElementById('f-cliente').value = f.cliente_nombre || '';
+      document.getElementById('f-identificacion').value = f.identificacion || '';
+      document.getElementById('f-ubicacion').value = f.ubicacion || '';
+      document.getElementById('f-contacto').value = f.contacto || '';
+      
+      document.getElementById('f-estado').value = f.estado_sede || 'Activa';
+      document.getElementById('f-fecha-inst').value = f.fecha_instalacion || '';
+      document.getElementById('f-fecha-garantia').value = f.fecha_garantia || '';
+      document.getElementById('f-isp').value = f.isp || '';
+      document.getElementById('f-ip-publica').value = f.ip_publica || '';
+      document.getElementById('f-anydesk').value = f.acceso_remoto || '';
+
+      document.getElementById('f-cctv-eq').value = f.cctv_equipo || '';
+      document.getElementById('f-cctv-ip').value = f.cctv_ip || '';
+      document.getElementById('f-cctv-puerto').value = f.cctv_puerto || '';
+      document.getElementById('f-cctv-user').value = f.cctv_usuario || '';
+      document.getElementById('f-cctv-pass').value = f.cctv_clave || '';
+      document.getElementById('f-cctv-cloud').value = f.cctv_cloud || '';
+      document.getElementById('f-cctv-verif').value = f.cctv_verificacion || '';
+
+      document.getElementById('f-red-router').value = f.red_router || '';
+      document.getElementById('f-red-gateway').value = f.red_ip_gateway || '';
+      document.getElementById('f-red-ssid').value = f.red_ssid || '';
+      document.getElementById('f-red-pass').value = f.red_clave_wifi || '';
+      document.getElementById('f-seg-panel').value = f.seguridad_panel || '';
+      document.getElementById('f-seg-clave').value = f.seguridad_clave_maestra || '';
+      document.getElementById('f-notas').value = f.notas_tecnicas || '';
+
+      mapeoActual = Array.isArray(f.mapeo_red) ? [...f.mapeo_red] : [];
+      canalesCCTVActual = Array.isArray(f.canales_cctv) ? [...f.canales_cctv] : [];
+      zonificacionActual = Array.isArray(f.zonificacion_alarma) ? [...f.zonificacion_alarma] : [];
+      usuariosAppActual = Array.isArray(f.usuarios_app) ? [...f.usuarios_app] : [];
+      contactosEmergenciaActual = Array.isArray(f.contactos_emergencia) ? [...f.contactos_emergencia] : [];
+      inventarioEquiposFichaActual = Array.isArray(f.inventario_equipos) ? [...f.inventario_equipos] : [];
+      repositorioVisualActual = f.repositorio_visual || { plano: '', rack: '' };
+
+      if (repositorioVisualActual.plano) {
+        document.getElementById('img-plano-preview').src = repositorioVisualActual.plano;
+        document.getElementById('preview-plano-container').classList.remove('hidden');
+      } else {
+        document.getElementById('preview-plano-container').classList.add('hidden');
+      }
+
+      if (repositorioVisualActual.rack) {
+        document.getElementById('img-rack-preview').src = repositorioVisualActual.rack;
+        document.getElementById('preview-rack-container').classList.remove('hidden');
+      } else {
+        document.getElementById('preview-rack-container').classList.add('hidden');
+      }
+      
+      fnMap.render(); fnCCTV.render(); fnZonas.render(); fnUsuariosApp.render();
+      fnContactos.render(); fnInventarioFicha.render();
+      cargarHistorialOTsCliente(f.cliente_nombre);
+
+      document.getElementById('modal-titulo').textContent = `Editar Expediente Sede: ${f.sede || 'Sede'}`;
+      document.getElementById('modal-ficha').classList.remove('hidden');
+    }
+
+    function cerrarModalFicha() { document.getElementById('modal-ficha').classList.add('hidden'); }
+
+    async function guardarFichaTecnica() {
+      const id = document.getElementById('ficha-id').value;
+      const cliente = document.getElementById('f-cliente').value.trim();
+      const btn = event.currentTarget;
+      
+      if (!cliente) { alert("El nombre del cliente es obligatorio."); return; }
+      
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+
+      const equiposResumenStr = inventarioEquiposFichaActual.map(eq => `[Cant: ${eq.cant}] ${eq.desc} - S/N: ${eq.serial || 'S/N'} (Garantía: ${eq.garantia || 'N/A'})`).join(' | ');
+
+      const payload = {
+        cliente_nombre: cliente,
+        sede: document.getElementById('f-sede').value.trim() || 'Sede Principal',
+        identificacion: document.getElementById('f-identificacion').value.trim(),
+        ubicacion: document.getElementById('f-ubicacion').value.trim(),
+        contacto: document.getElementById('f-contacto').value.trim(),
+        
+        estado_sede: document.getElementById('f-estado').value,
+        fecha_instalacion: document.getElementById('f-fecha-inst').value || null,
+        fecha_garantia: document.getElementById('f-fecha-garantia').value || null,
+        isp: document.getElementById('f-isp').value.trim(),
+        ip_publica: document.getElementById('f-ip-publica').value.trim(),
+        acceso_remoto: document.getElementById('f-anydesk').value.trim(),
+
+        cctv_equipo: document.getElementById('f-cctv-eq').value.trim(),
+        cctv_ip: document.getElementById('f-cctv-ip').value.trim(),
+        cctv_puerto: document.getElementById('f-cctv-puerto').value.trim(),
+        cctv_usuario: document.getElementById('f-cctv-user').value.trim(),
+        cctv_clave: document.getElementById('f-cctv-pass').value.trim(),
+        cctv_cloud: document.getElementById('f-cctv-cloud').value.trim(),
+        cctv_verificacion: document.getElementById('f-cctv-verif').value.trim(),
+        red_router: document.getElementById('f-red-router').value.trim(),
+        red_ip_gateway: document.getElementById('f-red-gateway').value.trim(),
+        red_ssid: document.getElementById('f-red-ssid').value.trim(),
+        red_clave_wifi: document.getElementById('f-red-pass').value.trim(),
+        seguridad_panel: document.getElementById('f-seg-panel').value.trim(),
+        seguridad_clave_maestra: document.getElementById('f-seg-clave').value.trim(),
+        equipos_instalados: equiposResumenStr,
+        notas_tecnicas: document.getElementById('f-notas').value.trim(),
+        mapeo_red: mapeoActual,
+        canales_cctv: canalesCCTVActual,
+        zonificacion_alarma: zonificacionActual,
+        usuarios_app: usuariosAppActual,
+        contactos_emergencia: contactosEmergenciaActual,
+        inventario_equipos: inventarioEquiposFichaActual,
+        repositorio_visual: repositorioVisualActual
+      };
+
+      try {
+        if (id) {
+          const { error } = await supabaseClient.from('fichas_tecnicas').update(payload).eq('id', id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient.from('fichas_tecnicas').insert([payload]);
+          if (error) throw error;
+        }
+        cerrarModalFicha();
+        await cargarFichasTecnicas();
+      } catch (err) {
+        alert("Error al guardar: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk text-blue-300"></i> Guardar Expediente Maestro';
+      }
+    }
+  </script>
+</body>
+</html>

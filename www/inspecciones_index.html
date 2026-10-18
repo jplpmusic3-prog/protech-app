@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Dashboard de Inspección - ProTech Security</title>
+  
+  <!-- Configuración PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProTech">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- Tipografía & Estilos Base -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Sistema de Diseño Master -->
+  <link rel="stylesheet" href="theme-protech.css">
+
+  <style>
+    :root {
+      --tech-mono: 'JetBrains Mono', monospace;
+      --tech-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+    body {
+      font-family: var(--tech-sans);
+      background: #020617;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease-out;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body.session-checked {
+      visibility: visible;
+      opacity: 1;
+      animation: fadeInPage 0.35s ease-out forwards;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .bg-video-container {
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      pointer-events: none;
+      overflow: hidden;
+      background: #020617;
+    }
+    .bg-video-container video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+    }
+    .bg-video-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.14), transparent 60%),
+        linear-gradient(rgba(2, 6, 23, 0.65), rgba(2, 6, 23, 0.78));
+    }
+    .tech-grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+    }
+
+    .cyber-glass-card, .glass-card, .glass-panel {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.82) 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.08),
+        inset -1px -1px 3px rgba(0, 0, 0, 0.5),
+        0 12px 28px -6px rgba(0, 0, 0, 0.55) !important;
+      border-radius: 1.25rem !important;
+      position: relative !important;
+      color: #ffffff !important;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.18s ease;
+      overflow: hidden;
+    }
+
+    .cyber-glass-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 12%;
+      right: 12%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.55), transparent);
+      pointer-events: none;
+    }
+    
+    .cyber-glass-card:hover, .glass-card:hover, .glass-panel:hover {
+      border-color: rgba(59, 130, 246, 0.55) !important;
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
+        0 14px 32px -6px rgba(15, 23, 42, 0.75),
+        0 0 18px rgba(37, 99, 235, 0.15) !important;
+    }
+
+    .subsistema-card.has-data {
+      border-color: rgba(16, 185, 129, 0.4) !important;
+    }
+    .subsistema-card.has-data::before {
+      background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.65), transparent);
+    }
+
+    .corner-telemetry::after {
+      content: "";
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid rgba(59, 130, 246, 0.45);
+      border-bottom: 2px solid rgba(59, 130, 246, 0.45);
+      pointer-events: none;
+    }
+
+    .btn-glass-action {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.92) 0%, rgba(51, 65, 85, 0.88) 100%) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 4px 12px rgba(0, 0, 0, 0.35) !important;
+      border-radius: 0.875rem !important;
+      transition: all 0.18s ease;
+      color: #ffffff !important;
+    }
+    .btn-glass-action:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(51, 65, 85, 0.98) 0%, rgba(71, 85, 105, 0.92) 100%) !important;
+      border-color: rgba(59, 130, 246, 0.65) !important;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25) !important;
+    }
+    .btn-glass-action:active:not(:disabled) { transform: scale(0.97); }
+    .btn-glass-action:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-cyber-primary {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+      border: 1px solid rgba(147, 197, 253, 0.4) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 16px rgba(37, 99, 235, 0.4) !important;
+      border-radius: 0.875rem !important;
+      color: #ffffff !important;
+      transition: all 0.18s ease;
+    }
+    .btn-cyber-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 20px rgba(37, 99, 235, 0.55) !important;
+    }
+    .btn-cyber-primary:active:not(:disabled) { transform: scale(0.97); }
+
+    .cyber-input, .glass-input {
+      background: rgba(15, 23, 42, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #ffffff !important;
+      box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.45) !important;
+      transition: all 0.2s;
+    }
+    .cyber-input::placeholder, .glass-input::placeholder { color: rgba(255, 255, 255, 0.45); }
+    .cyber-input:focus, .glass-input:focus {
+      background: rgba(30, 41, 59, 0.98) !important;
+      border-color: rgba(59, 130, 246, 0.85) !important;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+      outline: none;
+    }
+
+    .font-tech-mono { font-family: var(--tech-mono); }
+    .hide-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .hide-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .hide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+
+    #sidebar_menu {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, opacity 0.25s ease;
+    }
+    @media (min-width: 768px) {
+      #sidebar_menu.collapsed {
+        width: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        border-right-width: 0 !important;
+        opacity: 0;
+        pointer-events: none;
+        overflow: hidden;
+      }
+    }
+
+    .menu-link {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.55rem 0.75rem; border-radius: 0.75rem; font-size: 0.75rem; font-weight: 600; color: rgba(255, 255, 255, 0.82); transition: all 0.2s; margin-bottom: 0.3rem;
+    }
+    .menu-link:hover { background: rgba(255, 255, 255, 0.1); color: #ffffff; }
+    .menu-link.active { 
+      background: linear-gradient(90deg, rgba(37, 99, 235, 0.45) 0%, rgba(37, 99, 235, 0.2) 100%); 
+      color: #ffffff; 
+      border: 1px solid rgba(59, 130, 246, 0.6);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+    }
+    .menu-link.active .icon-box { background-color: #2563eb !important; color: white !important; border: none !important; box-shadow: 0 4px 12px rgba(37,99,235,0.5); }
+
+    #page_transition_overlay { transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    .glass-modal-report {
+      background: #0b1329 !important;
+      border: 1px solid rgba(255, 255, 255, 0.22) !important;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.88) !important;
+      color: #ffffff !important;
+    }
+    .glass-modal-report-header {
+      background: #111e38 !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+    }
+
+    .pdf-avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+
+    .pdf-export-mode {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      padding: 1.5rem !important;
+    }
+    .pdf-export-mode * {
+      color: #0f172a !important;
+      border-color: #cbd5e1 !important;
+      text-shadow: none !important;
+      box-shadow: none !important;
+    }
+    .pdf-export-mode .bg-slate-950\/60,
+    .pdf-export-mode .bg-white\/5,
+    .pdf-export-mode .bg-white\/10 {
+      background-color: #f8fafc !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+    .pdf-export-mode .text-blue-300,
+    .pdf-export-mode .text-blue-400,
+    .pdf-export-mode .text-indigo-300,
+    .pdf-export-mode .text-indigo-400 { color: #1d4ed8 !important; }
+    .pdf-export-mode .text-amber-300,
+    .pdf-export-mode .text-amber-400 { color: #b45309 !important; }
+    .pdf-export-mode .text-emerald-300,
+    .pdf-export-mode .text-emerald-400,
+    .pdf-export-mode .text-teal-300,
+    .pdf-export-mode .text-teal-400 { color: #047857 !important; }
+    .pdf-export-mode .text-rose-300,
+    .pdf-export-mode .text-rose-400 { color: #be123c !important; }
+
+    @media print {
+      header, main, aside, nav, .no-print, #toast_container, #lightbox_modal, #mobile_bottom_dock, .bg-video-container, .bg-video-overlay, .tech-grid-overlay, #page_transition_overlay { display: none !important; }
+      html, body, .app-window { background: #ffffff !important; color: #000000 !important; box-shadow: none !important; border: none !important; height: auto !important; margin: 0 !important; overflow: visible !important; }
+      #modal_dossier_informe { position: static !important; display: block !important; background: transparent !important; z-index: 9999 !important; padding: 0 !important; overflow: visible !important; }
+      #modal_dossier_informe > div { max-height: none !important; border: none !important; box-shadow: none !important; width: 100% !important; max-width: 100% !important; background: transparent !important; overflow: visible !important; }
+      .glass-modal-report-header { display: none !important; }
+      #dossier_contenido_body { box-shadow: none !important; border: none !important; padding: 0 !important; background: #ffffff !important; color: #000000 !important; }
+      #dossier_contenido_body * { color: #0f172a !important; border-color: #cbd5e1 !important; }
+      #dossier_contenido_body .bg-slate-950\/60, #dossier_contenido_body .bg-white\/5, #dossier_contenido_body .bg-white\/10 { background: #f8fafc !important; }
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center text-white">
+
+  <!-- PANTALLA DE CARGA / TRANSICIÓN -->
+  <div id="page_transition_overlay" class="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center opacity-100">
+    <div class="cyber-glass-card p-8 sm:p-10 flex flex-col items-center gap-5 min-w-[260px] sm:min-w-[290px]">
+      <div class="relative flex items-center justify-center">
+        <div class="absolute -inset-3 rounded-full border border-blue-500/30 animate-ping opacity-30"></div>
+        <img src="logo.png" alt="ProTech" class="h-28 sm:h-36 w-auto object-contain drop-shadow-lg relative z-10" onerror="this.style.display='none';">
+      </div>
+      <div class="text-center">
+        <p class="font-extrabold text-sm sm:text-base text-white tracking-wide">ProTech Cyber-OS</p>
+        <p class="font-tech-mono text-[10px] sm:text-xs uppercase tracking-widest text-blue-400 font-bold mt-1.5" id="transition_text">Inicializando Telemetría...</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast_container" class="fixed top-4 right-4 z-[9990] flex flex-col gap-2.5 max-w-xs sm:max-w-sm w-full pointer-events-none px-2 sm:px-0"></div>
+
+  <div id="lightbox_modal" onclick="cerrarLightbox()" class="fixed inset-0 z-[9980] bg-slate-950/95 hidden flex-col items-center justify-center p-4 cursor-zoom-out">
+    <div class="max-w-4xl w-full flex flex-col items-center gap-3" onclick="event.stopPropagation()">
+      <div class="w-full flex items-center justify-between px-2">
+        <span id="lightbox_caption" class="font-tech-mono text-xs text-blue-300 font-bold uppercase tracking-wider truncate">Evidencia Fotográfica</span>
+        <button onclick="cerrarLightbox()" class="h-9 w-9 rounded-xl bg-white/10 hover:bg-rose-500/20 text-white hover:text-rose-400 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+      <div class="cyber-glass-card p-2 w-full flex items-center justify-center max-h-[80vh] overflow-hidden">
+        <img id="lightbox_img" src="" alt="Vista Ampliada" class="max-h-[75vh] w-auto object-contain rounded-lg">
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-video-container">
+    <video autoplay muted loop playsinline preload="auto">
+      <source src="fondo-tech.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="bg-video-overlay"></div>
+  <div class="tech-grid-overlay"></div>
+
+  <div class="app-window flex w-full h-screen overflow-hidden relative z-10">
+    <div id="mobile_menu_overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-950/80 z-40 hidden md:hidden transition-opacity"></div>
+    
+    <aside id="sidebar_menu" class="fixed md:relative top-0 left-0 z-50 h-full w-72 flex-col justify-between border-r border-white/15 p-4 sm:p-5 flex bg-slate-950/95 md:bg-slate-950/55 shadow-2xl md:shadow-none -translate-x-full md:translate-x-0 flex-shrink-0">
+      <div class="space-y-4 overflow-y-auto max-h-[calc(100vh-115px)] pr-1 hide-scrollbar">
+        <div class="flex items-center justify-between pb-3.5 border-b border-white/15">
+          <div class="flex items-center gap-3">
+            <div class="relative">
+              <img src="logo.png" alt="ProTech" class="h-9 w-auto object-contain" onerror="this.style.display='none'; document.getElementById('logo_fallback').style.display='flex';">
+              <div id="logo_fallback" style="display:none;" class="h-9 w-9 rounded-xl bg-blue-600 text-white font-bold text-sm items-center justify-center shadow-md">PS</div>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="font-extrabold text-[15px] text-white leading-tight">ProTech</h1>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-400/30 text-[8px] font-tech-mono text-emerald-300 font-bold">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>ONLINE
+                </span>
+              </div>
+              <p class="font-tech-mono text-[9px] uppercase tracking-wider text-blue-400 font-bold mt-0.5">Cyber-OS • v4.2</p>
+            </div>
+          </div>
+          <button onclick="toggleSidebar()" class="md:hidden text-white/70 hover:text-white p-1.5 rounded-lg hover:bg-white/10">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+
+        <nav class="space-y-3.5">
+          <div class="cyber-glass-card p-2.5">
+            <div class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-blue-300 tracking-wider px-2 py-1 mb-1.5 select-none">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-clipboard-list"></i> Módulos de Campo</span>
+              <span id="sidebar_progreso_pct" class="text-emerald-300">0%</span>
+            </div>
+            <div class="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-2.5 mx-auto">
+              <div id="sidebar_progreso_bar" class="h-full bg-gradient-to-r from-blue-500 to-emerald-400 transition-all duration-500" style="width: 0%"></div>
+            </div>
+
+            <div class="space-y-1">
+              <button onclick="navegarA('inspecciones_index.html', 'Dashboard Principal')" class="menu-link active w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-gauge-high"></i></div>
+                  <span class="truncate">Panel Principal</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_cliente.html', 'Datos del Cliente')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-white/80 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-address-card"></i></div>
+                  <span class="truncate">1. Datos del Cliente</span>
+                </div>
+                <span id="side_badge_cliente" class="font-tech-mono text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/40">—</span>
+              </button>
+              <button onclick="navegarA('inspeccion_cctv.html', 'CCTV & Audio')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-video"></i></div>
+                  <span class="truncate">2. CCTV & Audio</span>
+                </div>
+                <span id="side_badge_cctv" class="font-tech-mono text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/40">0</span>
+              </button>
+              <button onclick="navegarA('inspeccion_alarmas.html', 'Sistema de Alarmas')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-amber-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-bell"></i></div>
+                  <span class="truncate">3. Alarmas</span>
+                </div>
+                <span id="side_badge_alarmas" class="font-tech-mono text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/40">0</span>
+              </button>
+              <button onclick="navegarA('inspeccion_redes.html', 'Redes & Fibra')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-indigo-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-network-wired"></i></div>
+                  <span class="truncate">4. Redes & Fibra</span>
+                </div>
+                <span id="side_badge_redes" class="font-tech-mono text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/40">0</span>
+              </button>
+              <button onclick="navegarA('inspeccion_cercos.html', 'Cercos Eléctricos')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-rose-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-bolt"></i></div>
+                  <span class="truncate">5. Cercos Eléctricos</span>
+                </div>
+                <span id="side_badge_cercos" class="font-tech-mono text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/40">0</span>
+              </button>
+              <button onclick="navegarA('inspeccion_acceso.html', 'Control de Acceso')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-teal-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-fingerprint"></i></div>
+                  <span class="truncate">6. Control Acceso</span>
+                </div>
+                <span id="side_badge_acceso" class="font-tech-mono text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/40">0</span>
+              </button>
+              <button onclick="navegarA('topologia_general.html', 'Topología de Obra')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-purple-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-sitemap"></i></div>
+                  <span class="truncate">Topología Dinámica Obra</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card p-2.5">
+            <div class="w-full flex items-center justify-between font-tech-mono text-[9px] uppercase font-bold text-white/60 tracking-wider px-2 py-1 mb-1 select-none">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-file-invoice"></i> Consolidación</span>
+            </div>
+            <div class="space-y-1">
+              <button onclick="navegarA('inspeccion_equipos.html', 'Consolidado de Equipos')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-blue-300 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-boxes-stacked"></i></div>
+                  <span class="truncate">Consolidado Equipos</span>
+                </div>
+              </button>
+              <button onclick="navegarA('inspeccion_materiales.html', 'Calculadora de Materiales')" class="menu-link w-full text-left">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="icon-box h-6 w-6 rounded-md bg-white/10 text-emerald-400 flex items-center justify-center text-[10px] shadow-sm flex-shrink-0"><i class="fa-solid fa-toolbox"></i></div>
+                  <span class="truncate">Calculadora Materiales</span>
+                </div>
+                <span id="side_badge_materiales" class="font-tech-mono text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/40">—</span>
+              </button>
+            </div>
+          </div>
+        </nav>
+      </div>
+
+      <div class="cyber-glass-card p-3 flex items-center justify-between mt-3">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div class="h-8 w-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shadow-md flex-shrink-0 border border-blue-400/30">JP</div>
+          <div class="truncate">
+            <p class="text-[11px] font-bold text-white truncate">Juan Pablo Luna</p>
+            <p class="font-tech-mono text-[8px] text-blue-300 uppercase font-bold">Ing. Proyectos • Admin</p>
+          </div>
+        </div>
+        <button onclick="window.location.href='index.html'" class="text-white/70 hover:text-rose-400 p-1.5 rounded-lg hover:bg-white/10 transition flex-shrink-0" title="Cerrar Sesión">
+          <i class="fa-solid fa-power-off text-xs"></i>
+        </button>
+      </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-y-auto hide-scrollbar relative z-10">
+      <header class="border-b border-white/15 px-3 sm:px-6 py-3 flex items-center justify-between gap-2 bg-slate-950/90 z-20 sticky top-0">
+        <div class="flex items-center gap-2 sm:gap-3.5 flex-1 min-w-0">
+          <button onclick="toggleSidebar()" class="text-white p-2 sm:p-2.5 rounded-xl bg-white/10 border border-white/20 shadow-sm hover:bg-white/20 active:scale-95 transition focus:outline-none flex-shrink-0" title="Alternar Menú">
+            <i class="fa-solid fa-bars text-xs sm:text-sm"></i>
+          </button>
+          
+          <div class="relative flex-1 max-w-xs">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-white/45 text-xs"></i>
+            <input id="input_buscar_subsistema" oninput="filtrarSubsistemas(this.value)" type="text" placeholder="Filtrar módulo (CCTV, Fibra, Cerco)..." class="cyber-input w-full text-xs pl-8 pr-7 py-2 rounded-xl font-medium">
+            <button id="btn_limpiar_busqueda" onclick="limpiarBusqueda()" class="hidden absolute right-2.5 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white text-xs">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button onclick="navegarA('index.html', 'Portal Principal')" class="cyber-glass-card px-2.5 sm:px-3 py-2 text-white text-[11px] font-bold flex items-center gap-1.5 transition hover:bg-white/10 active:scale-95" title="Salir al Portal Principal">
+            <i class="fa-solid fa-arrow-right-from-bracket text-rose-400"></i>
+            <span class="hidden lg:inline">Salir</span>
+          </button>
+          <button onclick="navegarA('catalogo.html', 'Catálogo Oficial')" class="cyber-glass-card px-2.5 sm:px-3 py-2 text-white text-[11px] font-bold flex items-center gap-1.5 active:scale-95" title="Catálogo Oficial">
+            <i class="fa-solid fa-book-open text-indigo-400"></i>
+            <span class="hidden lg:inline">Catálogo</span>
+          </button>
+          <button onclick="abrirModalInforme()" class="hidden sm:flex px-3.5 py-2 rounded-xl btn-glass-action text-white text-[11px] font-bold items-center gap-1.5 transition" title="Vista Previa">
+            <i class="fa-solid fa-file-invoice text-amber-300"></i>
+            <span>Vista Previa</span>
+          </button>
+          <button id="btn_guardar_cloud" onclick="procesarYFinalizarInspeccion()" class="hidden sm:flex px-4 py-2 rounded-xl btn-cyber-primary text-white text-[11px] font-bold items-center gap-1.5 transition" title="Guardar & Notificar">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Guardar & Notificar</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="flex-1 p-3.5 sm:p-6 lg:p-8 relative z-10">
+        <div class="max-w-6xl mx-auto space-y-5 sm:space-y-6 pb-24 sm:pb-16">
+          <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+            <div>
+              <div class="inline-flex items-center gap-2 text-[10px] font-tech-mono uppercase tracking-widest text-blue-400 font-bold mb-1">
+                <i class="fa-solid fa-satellite-dish animate-pulse"></i> TELEMETRÍA DE CAMPO • SUPABASE CLOUD
+              </div>
+              <h2 class="font-extrabold text-xl sm:text-2xl text-white tracking-tight">
+                Consola de Inspección & Relevamiento Técnico
+              </h2>
+            </div>
+            <div class="flex items-center gap-2 font-tech-mono text-[10px] text-white/60">
+              <span>Progreso Global:</span>
+              <span id="header_progreso_badge" class="px-2 py-0.5 rounded bg-blue-500/20 border border-blue-400/30 text-blue-300 font-bold">0 / 6 Subsistemas</span>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card corner-telemetry p-4 sm:p-6 border-l-4 border-l-amber-400 flex flex-col lg:flex-row justify-between lg:items-center gap-4">
+            <div class="min-w-0 space-y-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="bg-amber-500/20 text-amber-300 text-[9px] font-bold px-2 py-0.5 rounded border border-amber-400/30 uppercase font-tech-mono shadow-sm flex items-center gap-1.5">
+                  <span class="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping"></span>Ticket Activo
+                </span>
+                <span id="dash_id_ticket" class="text-[10px] text-blue-300 font-tech-mono font-bold bg-blue-500/10 px-2 py-0.5 rounded border border-blue-400/20"># INS-0000</span>
+                <span id="dash_estado_ticket" class="text-[9px] text-emerald-300 font-tech-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-400/20 uppercase">EN INSPECCIÓN</span>
+              </div>
+              <h2 id="dash_cliente" class="text-lg sm:text-2xl font-black text-white drop-shadow-sm truncate pt-0.5">Cargando Cliente...</h2>
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-white/80 font-medium">
+                <p id="dash_ubicacion" class="truncate"><i class="fa-solid fa-location-dot mr-1.5 text-blue-400"></i>Cargando ubicación...</p>
+                <p id="dash_telefono" class="truncate text-white/60"><i class="fa-solid fa-phone mr-1.5 text-emerald-400"></i>Sin teléfono</p>
+              </div>
+            </div>
+            <div class="bg-slate-950/55 p-3.5 sm:p-4 rounded-xl border border-white/15 shadow-inner lg:max-w-md w-full lg:w-auto flex-shrink-0">
+              <div class="flex items-center justify-between mb-1">
+                <p class="text-[9px] font-bold uppercase text-blue-300 font-tech-mono tracking-wider"><i class="fa-solid fa-bullseye mr-1"></i>Alcance / Requerimiento</p>
+                <button onclick="navegarA('inspeccion_cliente.html', 'Datos del Cliente')" class="text-[9px] font-tech-mono text-white/50 hover:text-white underline">Editar</button>
+              </div>
+              <p id="dash_motivo" class="text-[11px] text-white/90 font-semibold line-clamp-2 leading-relaxed">Cargando requerimiento...</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div onclick="navegarA('inspeccion_cctv.html', 'CCTV & Audio')" class="cyber-glass-card corner-telemetry p-4 sm:p-5 flex items-center gap-3.5 cursor-pointer hover:-translate-y-0.5 active:scale-[0.99]">
+              <div class="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 shadow-inner flex-shrink-0"><i class="fa-solid fa-video text-base sm:text-lg"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] sm:text-[10px] uppercase font-bold text-white/60 font-tech-mono truncate">Puntos CCTV</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_cctv" class="text-xl sm:text-2xl font-black text-white leading-none">0</p>
+                  <span class="text-[9px] font-tech-mono text-blue-300/80">cáms</span>
+                </div>
+              </div>
+            </div>
+
+            <div onclick="navegarA('inspeccion_alarmas.html', 'Sistema de Alarmas')" class="cyber-glass-card corner-telemetry p-4 sm:p-5 flex items-center gap-3.5 cursor-pointer hover:-translate-y-0.5 active:scale-[0.99]">
+              <div class="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-300 shadow-inner flex-shrink-0"><i class="fa-solid fa-bell text-base sm:text-lg"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] sm:text-[10px] uppercase font-bold text-white/60 font-tech-mono truncate">Zonas Alarma</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_alarmas" class="text-xl sm:text-2xl font-black text-white leading-none">0</p>
+                  <span class="text-[9px] font-tech-mono text-amber-300/80">zonas</span>
+                </div>
+              </div>
+            </div>
+
+            <div onclick="navegarA('inspeccion_redes.html', 'Redes & Fibra')" class="cyber-glass-card corner-telemetry p-4 sm:p-5 flex items-center gap-3.5 cursor-pointer hover:-translate-y-0.5 active:scale-[0.99]">
+              <div class="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shadow-inner flex-shrink-0"><i class="fa-solid fa-network-wired text-base sm:text-lg"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] sm:text-[10px] uppercase font-bold text-white/60 font-tech-mono truncate">Nodos de Red</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_redes" class="text-xl sm:text-2xl font-black text-white leading-none">0</p>
+                  <span class="text-[9px] font-tech-mono text-indigo-300/80">puntos</span>
+                </div>
+              </div>
+            </div>
+
+            <div onclick="navegarA('inspeccion_equipos.html', 'Consolidado de Equipos')" class="cyber-glass-card corner-telemetry p-4 sm:p-5 flex items-center gap-3.5 cursor-pointer hover:-translate-y-0.5 active:scale-[0.99]">
+              <div class="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 shadow-inner flex-shrink-0"><i class="fa-solid fa-boxes-stacked text-base sm:text-lg"></i></div>
+              <div class="min-w-0">
+                <p class="text-[9px] sm:text-[10px] uppercase font-bold text-white/60 font-tech-mono truncate">Total Puntos/Eq.</p>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                  <p id="kpi_equipos" class="text-xl sm:text-2xl font-black text-white leading-none">0</p>
+                  <span class="text-[9px] font-tech-mono text-emerald-300/80">activos</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cyber-glass-card p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-l-blue-500">
+            <div class="flex items-center gap-3.5 sm:gap-4">
+              <div class="h-11 w-11 sm:h-12 sm:w-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center text-lg sm:text-xl shadow-md flex-shrink-0 border border-blue-400/30">
+                <i class="fa-solid fa-file-pdf"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="font-extrabold text-xs sm:text-sm text-white">Dossier & Guía de Instalación Oficial</h4>
+                  <span class="hidden md:inline-block font-tech-mono text-[9px] px-2 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-400/25">Formato A4 • Alta Nitidez</span>
+                </div>
+                <p class="text-[11px] text-white/70 font-medium mt-0.5">Consolida automáticamente SKUs de catálogo, Racks, UPS, Materiales y Evidencia Fotográfica.</p>
+              </div>
+            </div>
+            <button onclick="abrirModalInforme()" class="w-full sm:w-auto px-5 py-2.5 sm:py-3 rounded-xl btn-glass-action text-white text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap">
+              <i class="fa-solid fa-eye text-blue-400"></i><span>Inspeccionar Dossier</span>
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-b border-white/15 pb-2">
+            <h3 class="font-tech-mono text-[10px] sm:text-[11px] font-bold text-white/85 uppercase tracking-widest flex items-center gap-2">
+              <i class="fa-solid fa-layer-group text-blue-400"></i> Módulos de Relevamiento e Ingeniería
+            </h3>
+            <span id="contador_subsistemas" class="font-tech-mono text-[10px] text-blue-400 font-bold">9 Módulos</span>
+          </div>
+          
+          <div id="grid_subsistemas" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            <div id="card_mod_cliente" data-keywords="cliente datos contacto direccion ubicacion paso 1" onclick="navegarA('inspeccion_cliente.html', 'Datos del Cliente')" class="subsistema-card cyber-glass-card p-5 group cursor-pointer hover:-translate-y-1 active:scale-[0.98]">
+              <div class="flex items-start justify-between mb-3.5">
+                <div class="h-11 w-11 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-white/85 group-hover:bg-blue-600 group-hover:text-white transition shadow-inner">
+                  <i class="fa-solid fa-address-card text-lg"></i>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[8px] font-bold bg-white/10 text-white/60 px-2 py-0.5 rounded font-tech-mono">PASO 01</span>
+                  <span id="badge_mod_cliente" class="text-[9px] font-tech-mono font-bold px-2 py-0.5 rounded bg-white/5 text-white/50 border border-white/10">○ Pendiente</span>
+                </div>
+              </div>
+              <h4 class="font-extrabold text-sm text-white group-hover:text-blue-300 transition">Datos del Cliente</h4>
+              <p class="text-[11px] text-white/70 mt-1 font-medium leading-relaxed">Información de contacto, coordenadas, dirección y requerimiento.</p>
+            </div>
+
+            <div id="card_mod_cctv" data-keywords="cctv camaras video audio nvr dvr grabador discos poe paso 2" onclick="navegarA('inspeccion_cctv.html', 'CCTV & Audio')" class="subsistema-card cyber-glass-card p-5 group cursor-pointer hover:-translate-y-1 active:scale-[0.98]">
+              <div class="flex items-start justify-between mb-3.5">
+                <div class="h-11 w-11 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 group-hover:bg-blue-600 group-hover:text-white transition shadow-inner">
+                  <i class="fa-solid fa-video text-lg"></i>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[8px] font-bold bg-blue-500/15 text-blue-300 px-2 py-0.5 rounded font-tech-mono">PASO 02</span>
+                  <span id="badge_mod_cctv" class="text-[9px] font-tech-mono font-bold px-2 py-0.5 rounded bg-white/5 text-white/50 border border-white/10">○ Sin registro</span>
+                </div>
+              </div>
+              <h4 class="font-extrabold text-sm text-white group-hover:text-blue-300 transition">CCTV & Audio IP</h4>
+              <p class="text-[11px] text-white/70 mt-1 font-medium leading-relaxed">Levantamiento de cámaras, NVR, almacenamiento, switches PoE y fotos.</p>
+            </div>
+
+            <div id="card_mod_alarmas" data-keywords="alarmas sensores zonas pir magneticos sirena teclado intrusion paso 3" onclick="navegarA('inspeccion_alarmas.html', 'Sistema de Alarmas')" class="subsistema-card cyber-glass-card p-5 group cursor-pointer hover:-translate-y-1 active:scale-[0.98]">
+              <div class="flex items-start justify-between mb-3.5">
+                <div class="h-11 w-11 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-300 group-hover:bg-amber-500 group-hover:text-white transition shadow-inner">
+                  <i class="fa-solid fa-bell text-lg"></i>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[8px] font-bold bg-amber-500/15 text-amber-300 px-2 py-0.5 rounded font-tech-mono">PASO 03</span>
+                  <span id="badge_mod_alarmas" class="text-[9px] font-tech-mono font-bold px-2 py-0.5 rounded bg-white/5 text-white/50 border border-white/10">○ Sin registro</span>
+                </div>
+              </div>
+              <h4 class="font-extrabold text-sm text-white group-hover:text-amber-300 transition">Sistema de Alarmas</h4>
+              <p class="text-[11px] text-white/70 mt-1 font-medium leading-relaxed">Panel central, teclados, módulos expansores, sirenas y zonas de intrusión.</p>
+            </div>
+
+            <div id="card_mod_redes" data-keywords="redes fibra optica rack gabinete switch router ap wifi nodos puntos utp paso 4" onclick="navegarA('inspeccion_redes.html', 'Redes & Fibra')" class="subsistema-card cyber-glass-card p-5 group cursor-pointer hover:-translate-y-1 active:scale-[0.98]">
+              <div class="flex items-start justify-between mb-3.5">
+                <div class="h-11 w-11 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 group-hover:bg-indigo-600 group-hover:text-white transition shadow-inner">
+                  <i class="fa-solid fa-network-wired text-lg"></i>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[8px] font-bold bg-indigo-500/15 text-indigo-300 px-2 py-0.5 rounded font-tech-mono">PASO 04</span>
+                  <span id="badge_mod_redes" class="text-[9px] font-tech-mono font-bold px-2 py-0.5 rounded bg-white/5 text-white/50 border border-white/10">○ Sin registro</span>
+                </div>
+              </div>
+              <h4 class="font-extrabold text-sm text-white group-hover:text-indigo-300 transition">Redes & Fibra Óptica</h4>
+              <p class="text-[11px] text-white/70 mt-1 font-medium leading-relaxed">Gabinete principal, puntos de datos Cat6, enlaces de fibra y switches.</p>
+            </div>
+
+            <div id="card_mod_cercos" data-keywords="cercos electricos perimetro energizador postes hilos alto voltaje paso 5" onclick="navegarA('inspeccion_cercos.html', 'Cercos Eléctricos')" class="subsistema-card cyber-glass-card p-5 group cursor-pointer hover:-translate-y-1 active:scale-[0.98]">
+              <div class="flex items-start justify-between mb-3.5">
+                <div class="h-11 w-11 rounded-xl bg-rose-500/20 border border-rose-400/30 flex items-center justify-center text-rose-300 group-hover:bg-rose-600 group-hover:text-white transition shadow-inner">
+                  <i class="fa-solid fa-bolt text-lg"></i>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[8px] font-bold bg-rose-500/15 text-rose-300 px-2 py-0.5 rounded font-tech-mono">PASO 05</span>
+                  <span id="badge_mod_cercos" class="text-[9px] font-tech-mono font-bold px-2 py-0.5 rounded bg-white/5 text-white/50 border border-white/10">○ Sin registro</span>
+                </div>
+              </div>
+              <h4 class="font-extrabold text-sm text-white group-hover:text-rose-300 transition">Cercos Eléctricos</h4>
+              <p class="text-[11px] text-white/70 mt-1 font-medium leading-relaxed">Energizador, metraje perimetral, cantidad de hilos, postería y tierra física.</p>
+            </div>
+
+            <div id="card_mod_acceso" data-keywords="control acceso biometrico puertas electroiman cerradura boton salida zk paso 6" onclick="navegarA('inspeccion_acceso.html', 'Control de Acceso')" class="subsistema-card cyber-glass-card p-5 group cursor-pointer hover:-translate-y-1 active:scale-[0.98]">
+              <div class="flex items-start justify-between mb-3.5">
+                <div class="h-11 w-11 rounded-xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-teal-300 group-hover:bg-teal-600 group-hover:text-white transition shadow-inner">
+                  <i class="fa-solid fa-fingerprint text-lg"></i>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[8px] font-bold bg-teal-500/15 text-teal-300 px-2 py-0.5 rounded font-tech-mono">PASO 06</span>
+                  <span id="badge_mod_acceso" class="text-[9px] font-tech-mono font-bold px-2 py-0.5 rounded bg-white/5 text-white/50 border border-white/10">○ Sin registro</span>
+                </div>
+              </div>
+              <h4 class="font-extrabold text-sm text-white group-hover:text-teal-300 transition">Control de Acceso</h4>
+              <p class="text-[11px] text-white/70 mt-1 font-medium leading-relaxed">Terminales biométricos, electroimanes, cerraduras, botones y fuentes.</p>
+            </div>
+
+            <div id="card_mod_equipos" data-keywords="consolidado equipos resumen bodega sku catalogo" onclick="navegarA('inspeccion_equipos.html', 'Consolidado de Equipos')" class="subsistema-card cyber-glass-card p-5 group cursor-pointer hover:-translate-y-1 active:scale-[0.98]">
+              <div class="flex items-start justify-between mb-3.5">
+                <div class="h-11 w-11 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 group-hover:bg-blue-600 group-hover:text-white transition shadow-inner">
+                  <i class="fa-solid fa-boxes-stacked text-lg"></i>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[8px] font-bold bg-white/10 text-white/70 px-2 py-0.5 rounded font-tech-mono">BODEGA</span>
+                  <span id="badge_mod_equipos" class="text-[9px] font-tech-mono font-bold px-2 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-400/30">Auto-Sync</span>
+                </div>
+              </div>
+              <h4 class="font-extrabold text-sm text-white group-hover:text-blue-300 transition">Consolidado de Equipos</h4>
+              <p class="text-[11px] text-white/70 mt-1 font-medium leading-relaxed">Listado maestro de equipos activos requeridos con código SKU de catálogo.</p>
+            </div>
+
+            <div id="card_mod_materiales" data-keywords="calculadora materiales tuberia emt canaleta cable utp cajas paso insumos" onclick="navegarA('inspeccion_materiales.html', 'Calculadora de Materiales')" class="subsistema-card cyber-glass-card p-5 group cursor-pointer hover:-translate-y-1 active:scale-[0.98]">
+              <div class="flex items-start justify-between mb-3.5">
+                <div class="h-11 w-11 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 group-hover:bg-emerald-600 group-hover:text-white transition shadow-inner">
+                  <i class="fa-solid fa-toolbox text-lg"></i>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[8px] font-bold bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded font-tech-mono">CÓMPUTO</span>
+                  <span id="badge_mod_materiales" class="text-[9px] font-tech-mono font-bold px-2 py-0.5 rounded bg-white/5 text-white/50 border border-white/10">○ Sin cálculo</span>
+                </div>
+              </div>
+              <h4 class="font-extrabold text-sm text-white group-hover:text-emerald-300 transition">Calculadora de Materiales</h4>
+              <p class="text-[11px] text-white/70 mt-1 font-medium leading-relaxed">Cálculo automático de tubería EMT, canaleta, cableado UTP, cajas y pasivos.</p>
+            </div>
+
+            <div id="card_mod_topologia" data-keywords="topologia dinamica obra diagrama mapa red arquitectura" onclick="navegarA('topologia_general.html', 'Topología de Obra')" class="subsistema-card cyber-glass-card p-5 group cursor-pointer hover:-translate-y-1 active:scale-[0.98]">
+              <div class="flex items-start justify-between mb-3.5">
+                <div class="h-11 w-11 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-purple-300 group-hover:bg-purple-600 group-hover:text-white transition shadow-inner">
+                  <i class="fa-solid fa-sitemap text-lg"></i>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-[8px] font-bold bg-purple-500/15 text-purple-300 px-2 py-0.5 rounded font-tech-mono">DIAGRAMA</span>
+                  <span class="text-[9px] font-tech-mono font-bold px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-400/30">Interactivo</span>
+                </div>
+              </div>
+              <h4 class="font-extrabold text-sm text-white group-hover:text-purple-300 transition">Topología Dinámica de Obra</h4>
+              <p class="text-[11px] text-white/70 mt-1 font-medium leading-relaxed">Arquitectura visual de interconexión de racks, switches, cámaras y paneles.</p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <div id="mobile_bottom_dock" class="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-slate-950/95 border-t border-white/15 px-3 py-2.5 flex items-center gap-2.5 shadow-2xl">
+        <button onclick="abrirModalInforme()" class="flex-1 py-2.5 px-3 rounded-xl btn-glass-action text-white text-xs font-bold flex items-center justify-center gap-2 active:scale-95">
+          <i class="fa-solid fa-file-invoice text-amber-300"></i>
+          <span>Vista Previa</span>
+        </button>
+        <button id="btn_guardar_cloud_mobile" onclick="procesarYFinalizarInspeccion()" class="flex-1 py-2.5 px-3 rounded-xl btn-cyber-primary text-white text-xs font-bold flex items-center justify-center gap-2 active:scale-95">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span>Guardar & Enviar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal_dossier_informe" class="fixed inset-0 z-[80] hidden flex justify-center items-center p-2 sm:p-4 overflow-y-auto transition-opacity bg-slate-950/90">
+    <div class="glass-modal-report w-full max-w-4xl rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col max-h-[94vh]">
+      <div class="px-4 sm:px-6 py-3.5 sm:py-4 glass-modal-report-header flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div class="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-sm flex-shrink-0">
+            <i class="fa-solid fa-file-contract"></i>
+          </div>
+          <div class="min-w-0">
+            <h3 class="font-bold text-xs sm:text-sm text-white leading-tight truncate">Guía de Instalación & Dossier Técnico</h3>
+            <p class="font-tech-mono text-[8px] sm:text-[9px] uppercase tracking-wider text-blue-300 font-bold truncate">Toca cualquier foto para ampliar • Formato A4</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button onclick="window.print()" class="px-3 sm:px-3.5 py-1.5 rounded-xl btn-glass-action text-white text-[10px] sm:text-[11px] font-bold flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-print text-blue-400"></i><span class="hidden sm:inline">Imprimir / PDF</span>
+          </button>
+          <button onclick="cerrarModalInforme()" class="text-white/70 hover:text-rose-400 p-2 rounded-lg hover:bg-white/10 transition">
+            <i class="fa-solid fa-xmark text-base sm:text-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="p-2 sm:p-6 overflow-y-auto hide-scrollbar flex-1 bg-slate-950/70">
+        <div id="dossier_contenido_body" class="text-xs text-white relative mx-auto p-3 sm:p-6 transition-all duration-300">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal_exito_final" class="fixed inset-0 z-[95] hidden flex items-center justify-center p-4 bg-slate-950/90">
+    <div class="cyber-glass-card max-w-md w-full p-6 text-center space-y-4 border-t-4 border-t-emerald-400">
+      <div class="h-14 w-14 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 flex items-center justify-center text-2xl mx-auto shadow-lg">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div>
+        <h3 class="text-lg font-extrabold text-white">¡Dossier Generado y Sincronizado!</h3>
+        <p class="text-xs text-white/70 mt-1">La inspección ha pasado al estado de <strong class="text-amber-300">Cotización</strong>.</p>
+      </div>
+      <div id="resumen_exito_detalles" class="bg-slate-950/70 p-3.5 rounded-xl border border-white/15 text-left font-tech-mono text-[11px] space-y-1.5 text-white/85">
+      </div>
+      <button onclick="window.location.href='agenda_tickets.html'" class="w-full py-3 rounded-xl btn-cyber-primary text-xs font-bold uppercase tracking-wider">
+        Ir a Agenda de Tickets <i class="fa-solid fa-arrow-right ml-1.5"></i>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://mmnwyeuhtsyfhazlireo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_eUr5Hftuf8K2_q5tFA23gw_fofx2XH2";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let urlParams = new URLSearchParams(window.location.search);
+    let ticketId = urlParams.get('id');
+
+    if (!ticketId || ticketId === "null" || ticketId === "undefined") {
+      ticketId = localStorage.getItem('protech_current_ticket_id');
+      if (!ticketId) {
+        ticketId = '885d363a-44f2-4c66-aff5-c6c7586831d1';
+      }
+    } else {
+      localStorage.setItem('protech_current_ticket_id', ticketId);
+    }
+
+    // ==========================================
+    // FUNCIÓN GLOBAL: NOTIFICACIONES N8N / PROTECH
+    // ==========================================
+    window.dispararNotificacionProTech = async function(tipoEvento, detalles) {
+      try {
+        const urlWebhookN8n = 'https://shall-peace-documents-truly.trycloudflare.com/webhook/protech-notificaciones';
+
+        const respuesta = await fetch(urlWebhookN8n, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json' 
+          },
+          body: JSON.stringify({
+            evento: tipoEvento,
+            usuario_id: window.user?.id || 'sistema',
+            data: detalles,
+            timestamp: new Date().toISOString()
+          })
+        });
+
+        if (!respuesta.ok) {
+          console.warn("El webhook de n8n respondió con un estado no exitoso:", respuesta.status);
+        }
+      } catch (err) {
+        console.error("Error de red al intentar notificar a n8n:", err);
+      }
+    };
+
+    function mostrarToast(mensaje, tipo = 'info') {
+      const container = document.getElementById('toast_container');
+      if (!container) return;
+
+      const colores = {
+        success: 'border-emerald-400/50 text-emerald-300 bg-slate-900/95',
+        error: 'border-rose-400/50 text-rose-300 bg-slate-900/95',
+        info: 'border-blue-400/50 text-blue-300 bg-slate-900/95'
+      };
+      const iconos = {
+        success: 'fa-circle-check text-emerald-400',
+        error: 'fa-triangle-exclamation text-rose-400',
+        info: 'fa-circle-info text-blue-400'
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 ${colores[tipo] || colores.info}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${iconos[tipo] || iconos.info} text-sm flex-shrink-0"></i>
+        <span class="text-xs font-semibold text-white leading-snug">${mensaje}</span>
+      `;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-4');
+        setTimeout(() => toast.remove(), 300);
+      }, 3800);
+    }
+
+    function abrirLightbox(src, caption = 'Evidencia Fotográfica') {
+      if (!src) return;
+      const modal = document.getElementById('lightbox_modal');
+      const img = document.getElementById('lightbox_img');
+      const cap = document.getElementById('lightbox_caption');
+      img.src = src;
+      cap.innerText = caption;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function cerrarLightbox() {
+      const modal = document.getElementById('lightbox_modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const overlay = document.getElementById('page_transition_overlay');
+        if (overlay) {
+          overlay.classList.remove('opacity-100');
+          overlay.classList.add('opacity-0');
+          setTimeout(() => overlay.classList.add('hidden'), 380);
+        }
+      }, 400);
+    });
+
+    function navegarA(pagina, moduloNombre = 'Módulo') {
+      const overlay = document.getElementById('page_transition_overlay');
+      const text = document.getElementById('transition_text');
+      
+      let url = pagina;
+      if (ticketId && pagina !== 'index.html' && pagina !== 'catalogo.html') {
+        url += '?id=' + encodeURIComponent(ticketId);
+      }
+
+      if (overlay && text) {
+        overlay.classList.remove('hidden');
+        void overlay.offsetWidth;
+        overlay.classList.remove('opacity-0');
+        overlay.classList.add('opacity-100');
+        text.innerText = `Abriendo ${moduloNombre}...`;
+        
+        setTimeout(() => {
+          window.location.href = url;
+        }, 380);
+      } else {
+        window.location.href = url;
+      }
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar_menu');
+      const overlay = document.getElementById('mobile_menu_overlay');
+      
+      if (window.innerWidth >= 768) {
+        sidebar.classList.toggle('collapsed');
+      } else {
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
+      }
+    }
+
+    function filtrarSubsistemas(termino) {
+      const query = (termino || '').trim().toLowerCase();
+      const cards = document.querySelectorAll('.subsistema-card');
+      const btnLimpiar = document.getElementById('btn_limpiar_busqueda');
+      let visibles = 0;
+
+      if (btnLimpiar) {
+        btnLimpiar.classList.toggle('hidden', !query);
+      }
+
+      cards.forEach(card => {
+        const texto = (card.innerText + ' ' + (card.dataset.keywords || '')).toLowerCase();
+        if (!query || texto.includes(query)) {
+          card.classList.remove('hidden');
+          visibles++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      const badge = document.getElementById('contador_subsistemas');
+      if (badge) {
+        badge.innerText = `${visibles} ${visibles === 1 ? 'Módulo' : 'Módulos'}`;
+      }
+    }
+
+    function limpiarBusqueda() {
+      const input = document.getElementById('input_buscar_subsistema');
+      if (input) {
+        input.value = '';
+        filtrarSubsistemas('');
+        input.focus();
+      }
+    }
+
+    function marcarEstadoSubsistema(clave, activo, textoBadgeCard, textoBadgeSidebar) {
+      const card = document.getElementById(`card_mod_${clave}`);
+      const badgeCard = document.getElementById(`badge_mod_${clave}`);
+      const badgeSide = document.getElementById(`side_badge_${clave}`);
+
+      if (card) {
+        card.classList.toggle('has-data', Boolean(activo));
+      }
+      if (badgeCard) {
+        if (activo) {
+          badgeCard.className = 'text-[9px] font-tech-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shadow-sm';
+          badgeCard.innerText = `● ${textoBadgeCard}`;
+        } else {
+          badgeCard.className = 'text-[9px] font-tech-mono font-bold px-2 py-0.5 rounded bg-white/5 text-white/45 border border-white/10';
+          badgeCard.innerText = `○ ${textoBadgeCard}`;
+        }
+      }
+      if (badgeSide) {
+        if (activo) {
+          badgeSide.className = 'font-tech-mono text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-bold';
+          badgeSide.innerText = textoBadgeSidebar;
+        } else {
+          badgeSide.className = 'font-tech-mono text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-white/40';
+          badgeSide.innerText = textoBadgeSidebar;
+        }
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.body.classList.add('session-checked');
+      if (!ticketId || !supabaseClient) return;
+      document.getElementById('dash_id_ticket').innerText = `# ${ticketId.substring(0,8).toUpperCase()}`;
+
+      try {
+        const [resTicket, resCCTV, resAlm, resRedes, resCercos, resAcceso, resMat] = await Promise.all([
+          supabaseClient.from('tickets').select('*').eq('id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_cctv').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_alarmas').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_redes').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_cercos').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_acceso').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_materiales').select('*').eq('ticket_id', ticketId).maybeSingle()
+        ]);
+
+        let modulosCompletados = 0;
+
+        const ticket = resTicket.data || {};
+        if (ticket.cliente) {
+          document.getElementById('dash_cliente').innerText = ticket.cliente;
+          document.getElementById('dash_ubicacion').innerHTML = `<i class='fa-solid fa-location-dot mr-1.5 text-blue-400'></i>${ticket.direccion || 'Dirección no registrada'}`;
+          document.getElementById('dash_telefono').innerHTML = `<i class='fa-solid fa-phone mr-1.5 text-emerald-400'></i>${ticket.telefono || 'Sin teléfono'}`;
+          document.getElementById('dash_motivo').innerText = ticket.motivo || "Sin observaciones previas.";
+          if (ticket.estado) {
+            document.getElementById('dash_estado_ticket').innerText = ticket.estado.toUpperCase();
+          }
+          marcarEstadoSubsistema('cliente', true, 'Verificado', 'OK');
+          modulosCompletados++;
+        } else {
+          document.getElementById('dash_cliente').innerText = "Cliente sin registrar";
+          document.getElementById('dash_motivo').innerText = "No se pudo recuperar la información de este ticket.";
+          marcarEstadoSubsistema('cliente', false, 'Pendiente', '—');
+        }
+
+        const cctvRes = resCCTV.data || {};
+        const totalCctv = Number(cctvRes.total_camaras || cctvRes.camaras?.length || 0);
+        document.getElementById('kpi_cctv').innerText = totalCctv;
+        if (totalCctv > 0 || cctvRes.nvr_catalogo_id) {
+          marcarEstadoSubsistema('cctv', true, `${totalCctv} Cámaras`, totalCctv);
+          modulosCompletados++;
+        } else {
+          marcarEstadoSubsistema('cctv', false, 'Sin registro', '0');
+        }
+
+        const almRes = resAlm.data || {};
+        const totalAlm = Number(almRes.total_zonas || almRes.zonas?.length || 0);
+        document.getElementById('kpi_alarmas').innerText = totalAlm;
+        if (totalAlm > 0 || almRes.central_catalogo_id) {
+          marcarEstadoSubsistema('alarmas', true, `${totalAlm} Zonas`, totalAlm);
+          modulosCompletados++;
+        } else {
+          marcarEstadoSubsistema('alarmas', false, 'Sin registro', '0');
+        }
+
+        const redesRes = resRedes.data || {};
+        const totalRedes = Number(redesRes.total_nodos || redesRes.nodos?.length || redesRes.puntos?.length || 0);
+        document.getElementById('kpi_redes').innerText = totalRedes;
+        if (totalRedes > 0 || redesRes.rack_catalogo_id || redesRes.ubicacion_rack) {
+          marcarEstadoSubsistema('redes', true, `${totalRedes} Nodos`, totalRedes);
+          modulosCompletados++;
+        } else {
+          marcarEstadoSubsistema('redes', false, 'Sin registro', '0');
+        }
+
+        const cercosRes = resCercos.data || {};
+        const metrosCerco = Number(cercosRes.metros_perimetro || cercosRes.perimetro_m || 0);
+        const tieneCerco = (cercosRes.energizador_catalogo_id && cercosRes.energizador_catalogo_id !== 'No Requiere') || metrosCerco > 0;
+        if (tieneCerco) {
+          marcarEstadoSubsistema('cercos', true, `${metrosCerco || 1} m`, `${metrosCerco}m`);
+          modulosCompletados++;
+        } else {
+          marcarEstadoSubsistema('cercos', false, 'Sin registro', '0');
+        }
+
+        const accesoRes = resAcceso.data || {};
+        const totalAcceso = Number(accesoRes.total_puertas || accesoRes.puertas?.length || accesoRes.accesos?.length || 0);
+        if (totalAcceso > 0) {
+          marcarEstadoSubsistema('acceso', true, `${totalAcceso} Accesos`, totalAcceso);
+          modulosCompletados++;
+        } else {
+          marcarEstadoSubsistema('acceso', false, 'Sin registro', '0');
+        }
+
+        const matRes = resMat.data || {};
+        const totalMatItems = (matRes.materiales_consolidados?.length || 0) + (matRes.materiales_extras?.length || 0);
+        if (totalMatItems > 0 || Number(matRes.total_cable_m || 0) > 0) {
+          marcarEstadoSubsistema('materiales', true, `${totalMatItems} Ítems`, 'OK');
+        } else {
+          marcarEstadoSubsistema('materiales', false, 'Sin cálculo', '—');
+        }
+
+        const sumaTotalPuntos = totalCctv + totalAlm + totalRedes + totalAcceso + (tieneCerco ? 1 : 0);
+        document.getElementById('kpi_equipos').innerText = sumaTotalPuntos;
+
+        const pct = Math.round((modulosCompletados / 6) * 100);
+        document.getElementById('sidebar_progreso_pct').innerText = `${pct}%`;
+        document.getElementById('sidebar_progreso_bar').style.width = `${pct}%`;
+        document.getElementById('header_progreso_badge').innerText = `${modulosCompletados} / 6 Subsistemas`;
+
+      } catch (err) {
+        console.error("Error consultando ticket o KPIs:", err);
+        mostrarToast("Error sincronizando datos del ticket", "error");
+      }
+    });
+
+    async function procesarYFinalizarInspeccion() {
+      const btnDesktop = document.getElementById('btn_guardar_cloud');
+      const btnMobile = document.getElementById('btn_guardar_cloud_mobile');
+      const origDesktop = btnDesktop ? btnDesktop.innerHTML : '';
+      const origMobile = btnMobile ? btnMobile.innerHTML : '';
+
+      const setEstadoBotones = (htmlTexto, deshabilitado) => {
+        if (btnDesktop) { btnDesktop.innerHTML = htmlTexto; btnDesktop.disabled = deshabilitado; }
+        if (btnMobile) { btnMobile.innerHTML = htmlTexto; btnMobile.disabled = deshabilitado; }
+      };
+
+      setEstadoBotones(`<i class="fa-solid fa-spinner fa-spin mr-1"></i> Preparando...`, true);
+      mostrarToast("Compilando Guía de Instalación en formato A4...", "info");
+
+      const modal = document.getElementById('modal_dossier_informe');
+      const estabaOculto = modal.classList.contains('hidden');
+      const elementoInforme = document.getElementById('dossier_contenido_body');
+
+      try {
+        if (!ticketId || !supabaseClient) throw new Error("No hay un Ticket ID válido en la sesión actual.");
+
+        const { data: ticketData, error: ticketErr } = await supabaseClient.from('tickets').select('*').eq('id', ticketId).single();
+        if (ticketErr || !ticketData) throw new Error("No se pudo leer el ticket de Supabase.");
+
+        const nombreCliente = ticketData.cliente || "Cliente General";
+        const codigoInforme = `PRO-TECH-2026-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+        if (estabaOculto) {
+          await abrirModalInforme();
+          await new Promise(resolve => setTimeout(resolve, 600));
+        }
+
+        if (!elementoInforme) throw new Error("No se encontró el contenedor del informe para generar el PDF.");
+
+        elementoInforme.classList.add('pdf-export-mode');
+
+        const opcionesPdf = {
+          margin: [10, 10, 10, 10],
+          filename: `Guia_Instalacion_${codigoInforme}.pdf`,
+          image: { type: 'jpeg', quality: 0.96 },
+          pagebreak: { mode: ['css', 'legacy'], avoid: '.pdf-avoid-break' },
+          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        setEstadoBotones(`<i class="fa-solid fa-spinner fa-spin mr-1"></i> Renderizando PDF...`, true);
+        const pdfBlob = await html2pdf().from(elementoInforme).set(opcionesPdf).outputPdf('blob');
+        if (!pdfBlob) throw new Error("Falló la conversión del documento a PDF.");
+
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        const linkDescarga = document.createElement('a');
+        linkDescarga.href = blobUrl;
+        linkDescarga.download = `Guia_Instalacion_${codigoInforme}.pdf`;
+        document.body.appendChild(linkDescarga);
+        linkDescarga.click();
+        document.body.removeChild(linkDescarga);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+
+        elementoInforme.classList.remove('pdf-export-mode');
+        if (estabaOculto) cerrarModalInforme();
+
+        setEstadoBotones(`<i class="fa-solid fa-spinner fa-spin mr-1"></i> Subiendo Cloud...`, true);
+        const nombreArchivo = `${codigoInforme}.pdf`;
+        
+        const { error: uploadErr } = await supabaseClient.storage.from('dossieres').upload(nombreArchivo, pdfBlob, {
+          contentType: 'application/pdf', upsert: true
+        });
+        if (uploadErr) throw new Error("Error al subir al Storage: " + uploadErr.message);
+
+        const { data: urlData } = supabaseClient.storage.from('dossieres').getPublicUrl(nombreArchivo);
+        const urlPublicaPdf = urlData?.publicUrl || null;
+
+        await supabaseClient.from('dossieres_generados').insert([{
+          ticket_id: ticketId,
+          codigo_unico: codigoInforme,
+          cliente_nombre: nombreCliente,
+          enlace_pdf: urlPublicaPdf,
+          resumen_datos: { ticket: ticketData },
+          enviado_correo: false
+        }]).select().maybeSingle();
+
+        setEstadoBotones(`<i class="fa-solid fa-spinner fa-spin mr-1"></i> Notificando...`, true);
+        let correoOK = false;
+        try {
+          const baseAppUrl = (window.location.origin && window.location.origin.startsWith('http'))
+            ? window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'))
+            : 'https://app.protechsecurityec.com';
+
+          const kpiCctvVal = document.getElementById('kpi_cctv')?.innerText || '0';
+          const kpiAlmVal = document.getElementById('kpi_alarmas')?.innerText || '0';
+          const kpiRedVal = document.getElementById('kpi_redes')?.innerText || '0';
+          const kpiEqVal = document.getElementById('kpi_equipos')?.innerText || '0';
+          const resumenAuto = `Puntos CCTV: ${kpiCctvVal} | Zonas Alarma: ${kpiAlmVal} | Nodos Red: ${kpiRedVal} | Total Activos: ${kpiEqVal}`;
+
+          const { error: emailErr } = await supabaseClient.functions.invoke('enviar-correo', {
+            body: {
+              cliente: nombreCliente,
+              codigoInforme: codigoInforme,
+              ticketId: ticketId,
+              telefono: ticketData.telefono || '',
+              direccion: ticketData.direccion || '',
+              resumenEquipos: resumenAuto,
+              observaciones: ticketData.motivo || ticketData.notas_rapidas || 'Relevamiento técnico completado en sitio.',
+              urlReabrirInspeccion: `${baseAppUrl}/inspecciones_index.html?id=${encodeURIComponent(ticketId)}`,
+              urlIniciarProforma: `${baseAppUrl}/proforma.html?id=${encodeURIComponent(ticketId)}`,
+              correoDestino: "jpluna@protechsecurityec.com",
+              urlPdf: urlPublicaPdf
+            }
+          });
+          if (!emailErr) correoOK = true;
+        } catch (eMail) {
+          console.error("Excepción en llamada de correo:", eMail);
+        }
+
+        await supabaseClient.from('tickets').update({ estado: 'cotizacion' }).eq('id', ticketId);
+
+        // ==========================================
+        // DISPARAR NOTIFICACIÓN PUSH INTELIGENTE (IA + N8N)
+        // ==========================================
+        await window.dispararNotificacionProTech('INSPECCION_COMPLETADA', {
+          ticket_id: ticketId,
+          cliente: nombreCliente,
+          codigo_dossier: codigoInforme,
+          resumen: `Inspección finalizada para el cliente ${nombreCliente}. Total equipos activos: ${document.getElementById('kpi_equipos')?.innerText || '0'}.`
+        });
+
+        mostrarToast("¡Dossier técnico respaldado en la nube!", "success");
+
+        const modalExito = document.getElementById('modal_exito_final');
+        const detallesExito = document.getElementById('resumen_exito_detalles');
+        if (detallesExito && modalExito) {
+          detallesExito.innerHTML = `
+            <div class="flex justify-between"><span>Código Dossier:</span><strong class="text-blue-300">${codigoInforme}</strong></div>
+            <div class="flex justify-between"><span>Copia Local:</span><strong class="text-emerald-300">DESCARGADA</strong></div>
+            <div class="flex justify-between"><span>Supabase Storage:</span><strong class="text-emerald-300">${urlPublicaPdf ? 'GUARDADO' : 'PENDIENTE'}</strong></div>
+            <div class="flex justify-between"><span>Notificación Push:</span><strong class="text-emerald-300">ENVIADA</strong></div>
+            <div class="flex justify-between"><span>Notificación Email:</span><strong class="${correoOK ? 'text-emerald-300' : 'text-amber-300'}">${correoOK ? 'ENVIADA' : 'OMITIDA'}</strong></div>
+          `;
+          modalExito.classList.remove('hidden');
+        }
+
+      } catch (err) {
+        console.error("Error al procesar la inspección:", err);
+        if (elementoInforme) elementoInforme.classList.remove('pdf-export-mode');
+        mostrarToast("Error: " + err.message, "error");
+      } finally {
+        if (btnDesktop) { btnDesktop.innerHTML = origDesktop; btnDesktop.disabled = false; }
+        if (btnMobile) { btnMobile.innerHTML = origMobile; btnMobile.disabled = false; }
+      }
+    }
+
+    async function abrirModalInforme() {
+      const modal = document.getElementById('modal_dossier_informe');
+      const container = document.getElementById('dossier_contenido_body');
+      modal.classList.remove('hidden');
+
+      container.innerHTML = `
+        <div class="text-center py-16 text-white/60">
+          <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-400 mb-3 block"></i>
+          <p class="font-bold text-sm">Recolección dinámica de catálogo y equipos de campo...</p>
+        </div>
+      `;
+
+      if (!ticketId || !supabaseClient) return;
+
+      try {
+        const [resTicket, resCCTV, resRedes, resAlarmas, resCercos, resAcceso, resMateriales, resCat] = await Promise.all([
+          supabaseClient.from('tickets').select('*').eq('id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_cctv').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_redes').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_alarmas').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_cercos').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_acceso').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('inspeccion_materiales').select('*').eq('ticket_id', ticketId).maybeSingle(),
+          supabaseClient.from('catalogo_precios').select('*')
+        ]);
+
+        const tk = resTicket.data || {};
+        const cctv = resCCTV.data || {};
+        const redes = resRedes.data || {};
+        const alm = resAlarmas.data || {};
+        const cco = resCercos.data || {};
+        const acc = resAcceso.data || {};
+        const matData = resMateriales.data || {};
+        const catalogoItems = resCat.data || [];
+
+        const catalogoObjetosDict = {};
+        catalogoItems.forEach(item => {
+          catalogoObjetosDict[item.id] = item;
+        });
+
+        const mapaEquiposInforme = new Map();
+
+        const agregarEquipoAlMapa = (keyMap, descripcion, codigo, cantidad = 1) => {
+          if (!keyMap || !descripcion) return;
+          if (mapaEquiposInforme.has(keyMap)) {
+            mapaEquiposInforme.get(keyMap).cantidad += cantidad;
+          } else {
+            mapaEquiposInforme.set(keyMap, {
+              cantidad: cantidad,
+              descripcion: descripcion,
+              codigo: codigo || 'EQP-GEN-001'
+            });
+          }
+        };
+
+        [cctv, redes, alm, cco, acc].forEach(obj => {
+          if (!obj) return;
+          Object.keys(obj).forEach(key => {
+            if (key.endsWith('_catalogo_id') && obj[key] && obj[key] !== 'No Requiere' && obj[key] !== '') {
+              const catId = obj[key];
+              const itemCat = catalogoObjetosDict[catId];
+              if (itemCat && itemCat.categoria === 'Equipo') {
+                let cant = 1;
+                if (key === 'switch_desktop_catalogo_id') {
+                  cant = parseInt(obj.cant_switches) || 1;
+                }
+                agregarEquipoAlMapa(itemCat.id, itemCat.descripcion, itemCat.codigo, cant);
+              }
+            }
+          });
+        });
+
+        (cctv.switches_cctv || []).forEach(sw => {
+          if (sw.item_catalogo_id && catalogoObjetosDict[sw.item_catalogo_id]) {
+            const itemCat = catalogoObjetosDict[sw.item_catalogo_id];
+            agregarEquipoAlMapa(itemCat.id, itemCat.descripcion, itemCat.codigo, 1);
+          }
+        });
+
+        const camaras = cctv.camaras || [];
+        camaras.forEach(cam => {
+          let descCamara = 'Cámara Domo IP Plástica';
+          let codigo = 'CCT-EQP-CAM';
+          let keyCam = 'cam_dinamica_' + (cam.descripcion_catalogo || 'std');
+
+          if (cam.item_catalogo_id && catalogoObjetosDict[cam.item_catalogo_id]) {
+            const itemCat = catalogoObjetosDict[cam.item_catalogo_id];
+            descCamara = itemCat.descripcion;
+            codigo = itemCat.codigo || codigo;
+            keyCam = itemCat.id;
+          } else if (cam.descripcion_catalogo) {
+            descCamara = cam.descripcion_catalogo;
+            const matchCat = Object.values(catalogoObjetosDict).find(
+              ci => ci.descripcion?.trim().toUpperCase() === descCamara.trim().toUpperCase() && ci.categoria === 'Equipo'
+            );
+            if (matchCat) {
+              descCamara = matchCat.descripcion;
+              codigo = matchCat.codigo || codigo;
+              keyCam = matchCat.id;
+            }
+          }
+          agregarEquipoAlMapa(keyCam, descCamara, codigo, 1);
+        });
+
+        const equiposInformeArray = Array.from(mapaEquiposInforme.values());
+        const totalEquiposCount = equiposInformeArray.reduce((accSum, curr) => accSum + curr.cantidad, 0);
+
+        let tablaEquiposHTML = '';
+        if (equiposInformeArray.length > 0) {
+          let rowsHTML = equiposInformeArray.map(eq => `
+            <tr class="border-b border-white/15 pdf-avoid-break">
+              <td class="py-2.5 font-tech-mono font-bold text-white pr-3">${eq.cantidad}</td>
+              <td class="py-2.5 font-medium text-white/90 pr-3">${eq.descripcion}</td>
+              <td class="py-2.5 text-white/70 font-tech-mono text-[10px] font-semibold">${eq.codigo || 'EQP-GEN-001'}</td>
+            </tr>
+          `).join('');
+          
+          tablaEquiposHTML = `
+            <div class="overflow-x-auto mt-3 mb-4">
+              <table class="w-full text-left text-[11px]">
+                <thead class="font-tech-mono uppercase text-[9px] text-white/60 border-b border-white/25">
+                  <tr>
+                    <th class="py-2.5 pr-3">Cant.</th>
+                    <th class="py-2.5 pr-3">Descripción del Equipo (Según Catálogo)</th>
+                    <th class="py-2.5">Código SKU</th>
+                  </tr>
+                </thead>
+                <tbody>${rowsHTML}</tbody>
+              </table>
+            </div>`;
+        } else {
+          tablaEquiposHTML = '<p class="text-white/50 italic text-[11px] mt-2 mb-4">Sin equipos consolidados en este registro.</p>';
+        }
+
+        let listaMaterialesFinales = matData.materiales_consolidados || [];
+        const materialesExtras = matData.materiales_extras || [];
+
+        const mapaMaterialesInforme = new Map();
+        [...listaMaterialesFinales, ...materialesExtras].forEach(m => {
+          const key = (m.descripcion || m.nombre || '').trim().toUpperCase();
+          if (!key) return;
+          const cant = parseFloat(m.cantidad || m.metros || 1) || 1;
+          const sku = m.sku || m.codigo || 'MAT-GEN-001';
+          const unidad = m.unidad || 'Unidades';
+
+          if (mapaMaterialesInforme.has(key)) {
+            mapaMaterialesInforme.get(key).cantidad += cant;
+          } else {
+            mapaMaterialesInforme.set(key, {
+              cantidad: cant,
+              descripcion: m.descripcion || m.nombre,
+              codigo: sku,
+              unidad: unidad
+            });
+          }
+        });
+
+        const materialesInformeArray = Array.from(mapaMaterialesInforme.values());
+        let tablaMaterialesHTML = '';
+        
+        if (materialesInformeArray.length > 0) {
+          let rowsMatHTML = materialesInformeArray.map(mat => `
+            <tr class="border-b border-white/15 pdf-avoid-break">
+              <td class="py-2.5 font-tech-mono font-bold text-white pr-3">${mat.cantidad}</td>
+              <td class="py-2.5 font-medium text-white/90 pr-3">${mat.descripcion}</td>
+              <td class="py-2.5 font-tech-mono text-white/80 pr-3">${mat.unidad}</td>
+              <td class="py-2.5 text-white/70 font-tech-mono text-[10px] font-semibold">${mat.codigo}</td>
+            </tr>
+          `).join('');
+          
+          tablaMaterialesHTML = `
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 mb-4 text-[10px] font-tech-mono text-white/80 pdf-avoid-break">
+              <div class="bg-white/5 p-2.5 rounded-lg border border-white/10"><span class="text-white/50 block">Cable Total (m):</span><strong class="text-blue-300 text-xs">${matData.total_cable_m || 0} m</strong></div>
+              <div class="bg-white/5 p-2.5 rounded-lg border border-white/10"><span class="text-white/50 block">Ductos Total (m):</span><strong class="text-white text-xs">${matData.total_ductos_m || 0} m</strong></div>
+              <div class="bg-white/5 p-2.5 rounded-lg border border-white/10"><span class="text-white/50 block">Cajas de Paso:</span><strong class="text-white text-xs">${matData.total_cajas || 0} u</strong></div>
+              <div class="bg-white/5 p-2.5 rounded-lg border border-white/10"><span class="text-white/50 block">Elementos Pasivos:</span><strong class="text-white text-xs">${matData.total_pasivos || 0} u</strong></div>
+            </div>
+            <div class="overflow-x-auto mt-2 mb-4">
+              <table class="w-full text-left text-[11px]">
+                <thead class="font-tech-mono uppercase text-[9px] text-white/60 border-b border-white/25">
+                  <tr>
+                    <th class="py-2.5 pr-3">Cant. / Medida</th>
+                    <th class="py-2.5 pr-3">Material / Insumo / Accesorio</th>
+                    <th class="py-2.5 pr-3">Unidad</th>
+                    <th class="py-2.5">Código SKU</th>
+                  </tr>
+                </thead>
+                <tbody>${rowsMatHTML}</tbody>
+              </table>
+            </div>`;
+        } else {
+          tablaMaterialesHTML = '<p class="text-white/50 italic text-[11px] mt-2 mb-4">No se han registrado materiales consolidados en la calculadora.</p>';
+        }
+
+        const renderImgConLightbox = (base64, titulo) => {
+          if (!base64) return '<span class="text-white/40 text-[10px] font-tech-mono">Sin Fotografía</span>';
+          const safeTitle = (titulo || 'Evidencia').replace(/'/g, "\\'");
+          return `<img src="${base64}" onclick="abrirLightbox(this.src, '${safeTitle}')" class="w-full h-full object-contain rounded-xl p-1 drop-shadow-md cursor-zoom-in hover:opacity-90 transition" title="Toca para ampliar">`;
+        };
+
+        let tablaCamarasHTML = '';
+        if (camaras.length > 0) {
+          let rowsCam = camaras.map((c, i) => {
+            const labelPunto = c.ubicacion || 'Punto #' + (i+1);
+            let imgHTML = renderImgConLightbox(c.foto_base64, `CCTV - ${labelPunto}`);
+            let mixtaHTML = (c.canalizacion_mixta && c.canalizacion_mixta !== 'No Requiere Tramo Mixto')
+              ? `<span class="text-indigo-300 block sm:inline"> ↳ ${c.canalizacion_mixta}</span>`
+              : '';
+            return `
+              <div class="py-4 border-b border-white/15 flex flex-col sm:flex-row gap-4 items-start pdf-avoid-break">
+                <div class="w-full sm:w-56 min-h-[160px] max-h-[240px] flex-shrink-0 bg-slate-950/60 rounded-xl overflow-hidden border border-white/15 flex items-center justify-center p-1 shadow-inner">${imgHTML}</div>
+                <div class="flex-1 space-y-1.5 text-xs w-full text-white">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-tech-mono font-bold text-blue-300 border border-blue-400/30 shadow-sm px-2 py-0.5 rounded text-[10px]">${labelPunto}</span>
+                    <span class="font-tech-mono font-bold text-white/80">Distancia: ${c.distancia_m || 0} metros</span>
+                  </div>
+                  <h5 class="font-bold text-white text-sm mt-1">${c.descripcion_catalogo || 'Cámara Estándar'}</h5>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 mt-1 border-t border-white/15 text-[11px] text-white/80">
+                    <div><strong>Tecnología:</strong> <span class="text-blue-300 font-semibold">${c.tipo_tecnologia || 'IP PoE'}</span></div>
+                    <div><strong>Altura Montaje:</strong> ${c.altura_m || 'No especificada'}</div>
+                    <div><strong>Superficie:</strong> ${c.superficie || 'No especificada'}</div>
+                    <div><strong>Tendido:</strong> ${c.tendido || 'Estándar'}</div>
+                    <div><strong>Canalización:</strong> ${c.canalizacion || 'EMT 3/4"'} ${mixtaHTML}</div>
+                    <div><strong>Soporte / Brazo:</strong> ${c.brazo || 'No Requiere'}</div>
+                  </div>
+                </div>
+              </div>`;
+          }).join('');
+          tablaCamarasHTML = `<div class="space-y-2 mt-3 mb-6">${rowsCam}</div>`;
+        } else {
+          tablaCamarasHTML = '<p class="text-white/50 italic text-[11px] mt-2 mb-6">No se han registrado puntos de cámaras en este ticket.</p>';
+        }
+
+        let centralImg = renderImgConLightbox(alm.foto_central_base64, 'Central de Alarma');
+        let tecladoImg = renderImgConLightbox(alm.foto_teclado_base64, 'Teclado de Control');
+        let expansorImg = renderImgConLightbox(alm.foto_expansor_base64, 'Módulo Expansor');
+        let sirenaImg = renderImgConLightbox(alm.foto_sirena_ext_base64, 'Sirena Exterior');
+
+        let expansorHTML = (alm.expansor_catalogo_id && alm.expansor_catalogo_id !== 'No Requiere') ? `
+          <div class="py-3 flex gap-3 items-start border-b border-white/15 pdf-avoid-break">
+            <div class="w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 bg-slate-950/60 rounded-xl overflow-hidden border border-white/15 flex items-center justify-center p-1 shadow-inner">${expansorImg}</div>
+            <div class="flex-1 text-[11px] space-y-1 mt-1 text-white min-w-0">
+              <span class="text-[9px] font-tech-mono font-bold text-blue-300 border border-blue-400/30 shadow-sm px-2 py-0.5 rounded inline-block">MÓDULO EXPANSOR</span>
+              <p class="font-bold text-white truncate mt-1">${alm.ubicacion_expansor || 'No especificado'}</p>
+            </div>
+          </div>` : '';
+
+        let sirenaExtHTML = (alm.sirena_ext_catalogo_id && alm.sirena_ext_catalogo_id !== 'No Requiere') ? `
+          <div class="py-3 flex gap-3 items-start border-b border-white/15 pdf-avoid-break">
+            <div class="w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 bg-slate-950/60 rounded-xl overflow-hidden border border-white/15 flex items-center justify-center p-1 shadow-inner">${sirenaImg}</div>
+            <div class="flex-1 text-[11px] space-y-1 mt-1 text-white min-w-0">
+              <span class="text-[9px] font-tech-mono font-bold text-rose-300 border border-rose-400/30 shadow-sm px-2 py-0.5 rounded inline-block">SIRENA EXTERIOR 30W</span>
+              <p class="font-bold text-white truncate mt-1">${alm.ubicacion_sirena_ext || 'No especificada'}</p>
+            </div>
+          </div>` : '';
+
+        let coreAlarmasHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 pdf-avoid-break">
+            <div class="py-3 flex gap-3 items-start border-b border-white/15">
+              <div class="w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 bg-slate-950/60 rounded-xl overflow-hidden border border-white/15 flex items-center justify-center p-1 shadow-inner">${centralImg}</div>
+              <div class="flex-1 text-[11px] space-y-1 mt-1 text-white min-w-0">
+                <span class="text-[9px] font-tech-mono font-bold text-amber-300 border border-amber-400/30 shadow-sm px-2 py-0.5 rounded inline-block">CENTRAL DE ALARMA</span>
+                <p class="font-bold text-white truncate mt-1">${alm.ubicacion_central || 'No especificada'}</p>
+                <p class="text-white/70 text-[10px]">Acción: ${alm.accion_central || 'Instalación Nueva'}</p>
+              </div>
+            </div>
+            <div class="py-3 flex gap-3 items-start border-b border-white/15">
+              <div class="w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 bg-slate-950/60 rounded-xl overflow-hidden border border-white/15 flex items-center justify-center p-1 shadow-inner">${tecladoImg}</div>
+              <div class="flex-1 text-[11px] space-y-1 mt-1 text-white min-w-0">
+                <span class="text-[9px] font-tech-mono font-bold text-indigo-300 border border-indigo-400/30 shadow-sm px-2 py-0.5 rounded inline-block">TECLADO DE CONTROL</span>
+                <p class="font-bold text-white truncate mt-1">${alm.ubicacion_teclado || 'No especificado'}</p>
+              </div>
+            </div>
+            ${expansorHTML}
+            ${sirenaExtHTML}
+          </div>`;
+
+        const zonasAlarmas = alm.zonas || [];
+        let tablaAlarmasHTML = '';
+        if (zonasAlarmas.length > 0) {
+          let rowsZonas = zonasAlarmas.map((z, i) => {
+            const labelZona = z.identificacion || 'Zona #' + (i+1);
+            let imgHTML = renderImgConLightbox(z.foto_base64, `Alarma - ${labelZona}`);
+            let mixtaHTML = (z.canalizacion_mixta && z.canalizacion_mixta !== 'No Requiere Tramo Mixto')
+              ? `<span class="text-indigo-300 block sm:inline"> ↳ ${z.canalizacion_mixta}</span>`
+              : '';
+            return `
+              <div class="py-4 border-b border-white/15 flex flex-col sm:flex-row gap-4 items-start pdf-avoid-break">
+                <div class="w-full sm:w-56 min-h-[160px] max-h-[240px] flex-shrink-0 bg-slate-950/60 rounded-xl overflow-hidden border border-white/15 flex items-center justify-center p-1 shadow-inner">${imgHTML}</div>
+                <div class="flex-1 space-y-1.5 text-xs w-full text-white">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-tech-mono font-bold text-amber-300 border border-amber-400/30 shadow-sm px-2 py-0.5 rounded text-[10px]">${labelZona}</span>
+                    <span class="font-tech-mono font-bold text-white/80">Distancia al Panel: ${z.distancia_m || 0} metros</span>
+                  </div>
+                  <h5 class="font-bold text-white text-sm mt-1">${z.descripcion || 'Sensor / Dispositivo Estándar'}</h5>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 mt-1 border-t border-white/15 text-[11px] text-white/80">
+                    <div><strong>Ubicación:</strong> ${z.ubicacion || 'No especificada'}</div>
+                    <div><strong>Tecnología:</strong> <span class="text-amber-300 font-semibold">${z.tecnologia || 'Cableado'}</span></div>
+                    <div><strong>Tipo de Disparo:</strong> ${z.tipo_disparo || 'Instantánea'}</div>
+                    <div><strong>Conectado A:</strong> <span class="text-indigo-300 font-semibold">${z.conectado_a || 'Panel Central de Alarma'}</span></div>
+                    <div class="sm:col-span-2"><strong>Canalización:</strong> ${z.canalizacion || 'EMT 3/4"'} ${mixtaHTML}</div>
+                  </div>
+                </div>
+              </div>`;
+          }).join('');
+          tablaAlarmasHTML = `<div class="space-y-2 mt-3 mb-6">${rowsZonas}</div>`;
+        } else {
+          tablaAlarmasHTML = '<p class="text-white/50 italic text-[11px] mt-2 mb-6">No se han registrado sensores o zonas de alarma en este ticket.</p>';
+        }
+
+        const listaNodosRed = redes.nodos || redes.puntos || [];
+        let seccionRedesHTML = '';
+        if (listaNodosRed.length > 0 || redes.ubicacion_rack || redes.rack_catalogo_id) {
+          let rowsNodos = listaNodosRed.map((n, i) => {
+            const labelNodo = n.ubicacion || n.identificacion || 'Nodo #' + (i+1);
+            let imgNodo = renderImgConLightbox(n.foto_base64, `Red - ${labelNodo}`);
+            return `
+              <div class="py-3.5 border-b border-white/15 flex flex-col sm:flex-row gap-4 items-start pdf-avoid-break">
+                <div class="w-full sm:w-48 min-h-[130px] max-h-[200px] flex-shrink-0 bg-slate-950/60 rounded-xl overflow-hidden border border-white/15 flex items-center justify-center p-1">${imgNodo}</div>
+                <div class="flex-1 space-y-1 text-xs w-full text-white">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-tech-mono font-bold text-indigo-300 border border-indigo-400/30 px-2 py-0.5 rounded text-[10px]">${labelNodo}</span>
+                    <span class="font-tech-mono font-bold text-white/80">Distancia: ${n.distancia_m || 0} m</span>
+                  </div>
+                  <h5 class="font-bold text-white text-sm mt-1">${n.tipo_punto || n.descripcion || 'Punto de Red / Datos'}</h5>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-2 mt-1 border-t border-white/15 text-[11px] text-white/80">
+                    <div><strong>Categoría / Medio:</strong> ${n.categoria_cable || n.medio || 'UTP Cat 6'}</div>
+                    <div><strong>Canalización:</strong> ${n.canalizacion || 'Estándar'}</div>
+                  </div>
+                </div>
+              </div>`;
+          }).join('');
+
+          seccionRedesHTML = `
+            <h5 class="font-bold text-[11px] uppercase tracking-wider text-white border-b border-white/15 pb-1 mt-8 mb-2">C. Infraestructura de Redes & Fibra Óptica</h5>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3 text-[11px] text-white/80 bg-white/5 p-3 rounded-xl border border-white/10 pdf-avoid-break">
+              <div><strong>Ubicación Rack/Core:</strong> ${redes.ubicacion_rack || 'No especificada'}</div>
+              <div><strong>Total Nodos Relevados:</strong> ${listaNodosRed.length}</div>
+              <div><strong>Certificación / Fibra:</strong> ${redes.requiere_fibra ? 'Incluye Fibra Óptica' : 'Cobre UTP'}</div>
+            </div>
+            ${rowsNodos || '<p class="text-white/50 italic text-[11px] mb-4">Sin nodos individuales detallados.</p>'}`;
+        }
+
+        let seccionCercosHTML = '';
+        if (cco && (cco.metros_perimetro || cco.perimetro_m || cco.energizador_catalogo_id || cco.ubicacion_energizador)) {
+          let imgCerco = renderImgConLightbox(cco.foto_base64 || cco.foto_energizador_base64, 'Cerco Eléctrico Perimetral');
+          seccionCercosHTML = `
+            <h5 class="font-bold text-[11px] uppercase tracking-wider text-white border-b border-white/15 pb-1 mt-8 mb-2">D. Sistema de Cerco Eléctrico Perimetral</h5>
+            <div class="py-3.5 border-b border-white/15 flex flex-col sm:flex-row gap-4 items-start pdf-avoid-break">
+              <div class="w-full sm:w-48 min-h-[130px] max-h-[200px] flex-shrink-0 bg-slate-950/60 rounded-xl overflow-hidden border border-white/15 flex items-center justify-center p-1">${imgCerco}</div>
+              <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-white/80">
+                <div><strong>Perímetro Total:</strong> <span class="text-rose-300 font-bold">${cco.metros_perimetro || cco.perimetro_m || 0} metros</span></div>
+                <div><strong>Número de Hilos:</strong> ${cco.cantidad_hilos || cco.hilos || '4 / 6 Hilos'}</div>
+                <div><strong>Ubicación Energizador:</strong> ${cco.ubicacion_energizador || 'No especificada'}</div>
+                <div><strong>Distancia Tierra Física:</strong> ${cco.distancia_tierra_m || 0} m</div>
+              </div>
+            </div>`;
+        }
+
+        const listaPuertas = acc.puertas || acc.accesos || [];
+        let seccionAccesoHTML = '';
+        if (listaPuertas.length > 0) {
+          let rowsPuertas = listaPuertas.map((p, i) => {
+            const labelPuerta = p.nombre || p.ubicacion || 'Acceso #' + (i+1);
+            let imgPuerta = renderImgConLightbox(p.foto_base64, `Acceso - ${labelPuerta}`);
+            return `
+              <div class="py-3.5 border-b border-white/15 flex flex-col sm:flex-row gap-4 items-start pdf-avoid-break">
+                <div class="w-full sm:w-48 min-h-[130px] max-h-[200px] flex-shrink-0 bg-slate-950/60 rounded-xl overflow-hidden border border-white/15 flex items-center justify-center p-1">${imgPuerta}</div>
+                <div class="flex-1 space-y-1 text-xs w-full text-white">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-tech-mono font-bold text-teal-300 border border-teal-400/30 px-2 py-0.5 rounded text-[10px]">${labelPuerta}</span>
+                    <span class="font-tech-mono font-bold text-white/80">Distancia: ${p.distancia_m || 0} m</span>
+                  </div>
+                  <h5 class="font-bold text-white text-sm mt-1">${p.descripcion || p.tipo_puerta || 'Punto de Control de Acceso'}</h5>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-2 mt-1 border-t border-white/15 text-[11px] text-white/80">
+                    <div><strong>Cerradura / Retención:</strong> ${p.tipo_cerradura || p.cerradura || 'Electroimán / Eléctrica'}</div>
+                    <div><strong>Canalización:</strong> ${p.canalizacion || 'EMT 3/4"'}</div>
+                  </div>
+                </div>
+              </div>`;
+          }).join('');
+
+          seccionAccesoHTML = `
+            <h5 class="font-bold text-[11px] uppercase tracking-wider text-white border-b border-white/15 pb-1 mt-8 mb-2">E. Control de Acceso Biométrico & Peatonal/Vehicular</h5>
+            <div class="space-y-2 mt-3 mb-6">${rowsPuertas}</div>`;
+        }
+
+        container.innerHTML = `
+          <div class="border-b-2 border-white/15 pb-4 mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-white pdf-avoid-break">
+            <div class="flex items-center gap-3.5 sm:gap-4">
+              <img src="logo.png" alt="ProTech Logo" class="h-10 sm:h-12 w-auto object-contain drop-shadow-md" onerror="this.style.display='none';">
+              <div>
+                <h1 class="font-black text-lg sm:text-xl text-white tracking-tight">PROTECH SECURITY</h1>
+                <p class="font-tech-mono text-[8px] sm:text-[9px] uppercase tracking-widest text-blue-400 font-bold mt-0.5">Guía Técnica de Instalación & Dimensionamiento</p>
+                <p class="text-[10px] text-white/60 mt-1">Quito, Ecuador • contacto@protechsecurityec.com</p>
+              </div>
+            </div>
+            <div class="sm:text-right font-tech-mono">
+              <span class="text-blue-300 border border-blue-400/30 shadow-sm font-bold px-2.5 py-1 rounded text-[10px] inline-block">TICKET #${ticketId.substring(0,8).toUpperCase()}</span>
+              <p class="text-[10px] text-white/60 mt-1.5">${new Date().toLocaleDateString('es-EC', { dateStyle: 'long' })}</p>
+            </div>
+          </div>
+
+          <div class="mb-8 text-white pdf-avoid-break">
+            <h4 class="font-bold text-[11px] uppercase tracking-wider text-white border-b border-white/15 pb-2 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-address-card text-blue-400"></i> 1. Información General del Proyecto
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-[11px]">
+              <div><strong class="text-white/50 block text-[9px] uppercase mb-0.5">Cliente:</strong> <span class="font-bold text-white text-sm">${tk.cliente || 'No registrado'}</span></div>
+              <div><strong class="text-white/50 block text-[9px] uppercase mb-0.5">Teléfono:</strong> <span class="font-medium text-white/90">${tk.telefono || 'No registrado'}</span></div>
+              <div><strong class="text-white/50 block text-[9px] uppercase mb-0.5">Ubicación:</strong> <span class="font-medium text-white/90">${tk.direccion || 'No especificada'}</span></div>
+              <div class="sm:col-span-3 mt-1"><strong class="text-white/50 block text-[9px] uppercase mb-0.5">Requerimiento:</strong> <span class="font-medium text-white/90">${tk.motivo || 'Relevamiento general'}</span></div>
+            </div>
+          </div>
+
+          <div class="mb-8 text-white">
+            <h4 class="font-bold text-[11px] uppercase tracking-wider text-white border-b border-white/15 pb-2 mb-2 flex flex-wrap items-center justify-between gap-2">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-boxes-stacked text-blue-400"></i> 2. Consolidado General de Equipos & Almacenamiento</span>
+              <span class="font-tech-mono text-[10px] text-blue-300 font-bold shadow-sm px-2 py-0.5 border border-blue-400/30 rounded">${totalEquiposCount} Ítems para Bodega</span>
+            </h4>
+            ${tablaEquiposHTML}
+          </div>
+
+          <div class="mb-8 text-white">
+            <h4 class="font-bold text-[11px] uppercase tracking-wider text-white border-b border-white/15 pb-2 mb-2 flex items-center justify-between">
+              <span class="flex items-center gap-2"><i class="fa-solid fa-toolbox text-emerald-400"></i> 3. Consolidado de Materiales & Canalización</span>
+            </h4>
+            ${tablaMaterialesHTML}
+          </div>
+
+          <div class="mb-8 text-white">
+            <h4 class="font-bold text-[11px] uppercase tracking-wider text-white border-b border-white/15 pb-2 mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-camera-retro text-indigo-400"></i> 4. Referencias Visuales & Puntos de Instalación en Sitio
+            </h4>
+            
+            <h5 class="font-bold text-[11px] uppercase tracking-wider text-white border-b border-white/15 pb-1 mb-2 mt-4">A. Puntos de CCTV</h5>
+            ${tablaCamarasHTML}
+
+            <h5 class="font-bold text-[11px] uppercase tracking-wider text-white border-b border-white/15 pb-1 mt-8 mb-2">B. Sistema de Alarmas (Equipos Core & Zonas)</h5>
+            ${coreAlarmasHTML}
+            ${tablaAlarmasHTML}
+            ${seccionRedesHTML}
+            ${seccionCercosHTML}
+            ${seccionAccesoHTML}
+          </div>
+
+          <div class="pt-6 border-t border-white/15 flex flex-col sm:flex-row justify-between sm:items-end gap-4 text-[10px] text-white/70 mt-12 pdf-avoid-break">
+            <div>
+              <p class="font-bold text-white text-xs">Técnico Instalador / Responsable: Juan Pablo Luna</p>
+              <p class="mt-1">Guía de Ejecución Generada con ProTech Cyber-OS v4.2</p>
+            </div>
+            <div class="sm:text-right">
+              <p class="font-tech-mono font-bold text-white">DOCUMENTO OFICIAL PARA CAMPO</p>
+              <p class="mt-1">Uso exclusivo técnico operativo</p>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        console.error("Error al generar la guía de instalación:", err);
+        container.innerHTML = `<div class="text-center py-10 text-rose-400 font-bold">Error al consultar los registros consolidados en Supabase. Detalles: ${err.message}</div>`;
+      }
+    }
+
+    function cerrarModalInforme() {
+      document.getElementById('modal_dossier_informe').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
